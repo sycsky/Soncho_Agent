@@ -208,7 +208,8 @@ function App() {
                 // - If should NOT increment -> keep existing count (DO NOT RESET TO 0)
                 const nextUnread = isNewUnread ? (shouldIncrement ? s.unreadCount + 1 : s.unreadCount) : 0;
                 
-                const nextLastActive = isOwned ? newMessage.timestamp : s.lastActive;
+                // Always update lastActive to ensure correct sorting within groups (Owned/Unowned)
+                const nextLastActive = newMessage.timestamp;
                 return {
                   ...s,
                   messages: s.messages ? [...s.messages, newMessage] : [newMessage],
@@ -219,7 +220,8 @@ function App() {
               }
               return s;
             });
-            return sortByOwnershipAndLastActive(prevCopy);
+            // ✅ Sort the list after updating to ensure correct order
+            return sortByOwnershipAndLastActive(mapped);
           } else {
             // ✅ 检查是否已经调度过
             if (scheduledFetchesRef.current.has(sessionId)) {
@@ -777,16 +779,16 @@ function App() {
           return prev;
         }
         
-        const newList = [newSession, ...prev].sort((a,b) => b.lastActive - a.lastActive);
+        const newList = [newSession, ...prev];
         console.log('  新会话列表长度:', newList.length);
         console.log('  新列表第一个会话ID:', newList[0].id);
-        console.log('  返回新列表');
+        console.log('  返回新列表 (Sorted)');
         
         // ✅ 验证：确保新会话在列表中
         const verifyExists = newList.some(s => s.id === sessionId);
         console.log('  验证新会话是否在列表中:', verifyExists);
         
-        return newList;
+        return sortByOwnershipAndLastActive(newList);
       });
       
       // ✅ 验证状态是否真的更新了（延迟检查）
