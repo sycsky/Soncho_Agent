@@ -123,12 +123,10 @@ function App() {
   const activeSession = sessions.find(s => s.id === activeSessionId);
   const sortByOwnershipAndLastActive = useCallback((arr: ChatSession[]) => {
     return arr.sort((a, b) => {
-      const ao = a.primaryAgentId === (currentUser?.id || '') ? 1 : 0;
-      const bo = b.primaryAgentId === (currentUser?.id || '') ? 1 : 0;
-      if (ao !== bo) return bo - ao;
+      // Prioritize time first (Newest messages at top)
       return b.lastActive - a.lastActive;
     });
-  }, [currentUser]);
+  }, []);
   const canManageSessionAgents = true;
 
   const showToast = (type: 'SUCCESS' | 'ERROR' | 'INFO', message: string) => {
@@ -265,7 +263,13 @@ function App() {
           const mapped = prev.map(s => {
             if (s.id === sessionData.id) {
               // Merge updates to preserve existing fields (like messages/user) if they are missing in the update
-              return { ...s, ...sessionData };
+              const updated = { ...s, ...sessionData };
+              // ✅ Ensure lastActive does not regress (go backwards in time)
+              // If the update has an older lastActive (or none), keep the current one
+              if (s.lastActive > (updated.lastActive || 0)) {
+                updated.lastActive = s.lastActive;
+              }
+              return updated;
             }
             return s;
           });
@@ -739,6 +743,12 @@ function App() {
         return;
       }
       
+      // ✅ Find default group ID from existing groups if not provided
+      const defaultGroupId = chatGroups.find(g => g.isSystem)?.id || (chatGroups.length > 0 ? chatGroups[0].id : 'inbox');
+      const targetGroupId = sessionData.sessionGroupId || sessionData.groupId || defaultGroupId;
+      
+      const messageTimestamp = firstMessage.timestamp && !isNaN(firstMessage.timestamp) ? firstMessage.timestamp : Date.now();
+
       // 转换后端会话数据为前端格式
       const newSession: ChatSession = {
         id: sessionData.id,
@@ -758,9 +768,9 @@ function App() {
         messages: [firstMessage], // 包含第一条消息
         lastMessage: firstMessage,
         status: sessionData.status,
-        lastActive: firstMessage.timestamp,
+        lastActive: messageTimestamp,
         unreadCount: 1, // 新会话有1条未读消息
-        groupId: sessionData.sessionGroupId || sessionData.groupId || 'inbox',  // ✅ 使用 sessionGroupId
+        groupId: targetGroupId,
         primaryAgentId: sessionData.primaryAgent?.id || '',
         supportAgentIds: sessionData.supportAgentIds || []
       };

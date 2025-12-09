@@ -379,9 +379,7 @@ export const ChatList: React.FC<ChatListProps> = ({
                     );
                 })
                 .sort((a, b) => {
-                  const ao = a.primaryAgentId === (currentUserId || '') ? 1 : 0;
-                  const bo = b.primaryAgentId === (currentUserId || '') ? 1 : 0;
-                  if (ao !== bo) return bo - ao;
+                  // Prioritize time first (Newest messages at top)
                   return b.lastActive - a.lastActive;
                 });
              
