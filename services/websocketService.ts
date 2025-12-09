@@ -63,6 +63,7 @@ class WebSocketService {
   private customerId: string | null = null;
   private channel: string | null = null;
   private isCustomer: boolean = false;
+  private heartbeatInterval: NodeJS.Timeout | null = null;
 
   /**
    * 连接 WebSocket 服务
@@ -128,6 +129,7 @@ class WebSocketService {
       console.log('✅ WebSocket (SockJS) connected');
       this.reconnectAttempts = 0;
       this.updateConnectionStatus('connected');
+      this.startHeartbeat();
     };
 
     this.socket.onmessage = (event: MessageEvent) => {
@@ -181,6 +183,7 @@ class WebSocketService {
     };
 
     this.socket.onclose = (event: CloseEvent) => {
+      this.stopHeartbeat();
       console.group('🔌 WebSocket close 事件');
       console.log('Code:', event.code);
       console.log('Reason:', event.reason);
@@ -410,7 +413,34 @@ class WebSocketService {
     return this.socket !== null && this.socket.readyState === WebSocket.OPEN;
   }
 
+  /**
+   * 启动心跳机制
+   */
+  private startHeartbeat() {
+    this.stopHeartbeat(); // 清除可能存在的旧心跳定时器
+    
+    // 每30秒发送一次心跳
+    this.heartbeatInterval = setInterval(() => {
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        // 发送 ping 事件
+        this.socket.send(JSON.stringify({ event: 'ping' }));
+        console.log('💓 Heartbeat sent');
+      }
+    }, 30000);
+  }
+
+  /**
+   * 停止心跳机制
+   */
+  private stopHeartbeat() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+  }
+
   disconnect() {
+    this.stopHeartbeat();
     this.shouldReconnect = false;
     if (this.socket) {
       this.socket.close(1000, 'Client closed connection');
