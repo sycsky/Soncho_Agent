@@ -196,8 +196,18 @@ function App() {
                 const isNewUnread = s.id !== activeSessionId;
                 const isOwned = s.primaryAgentId === (currentUser?.id || '');
                 const isMentioned = Array.isArray(newMessage.mentions) && (currentUser?.id ? newMessage.mentions.includes(currentUser.id) : false);
-                const shouldCountUnread = isOwned || isMentioned;
-                const nextUnread = isNewUnread ? (shouldCountUnread ? s.unreadCount + 1 : 0) : 0;
+                const isUserMessage = newMessage.sender === MessageSender.USER;
+                
+                // Only increment unread count if:
+                // 1. It's a user message AND the current agent owns the session
+                // 2. OR the current agent is explicitly mentioned in the message
+                const shouldIncrement = (isUserMessage && isOwned) || isMentioned;
+                
+                // If not active session:
+                // - If should increment -> count + 1
+                // - If should NOT increment -> keep existing count (DO NOT RESET TO 0)
+                const nextUnread = isNewUnread ? (shouldIncrement ? s.unreadCount + 1 : s.unreadCount) : 0;
+                
                 const nextLastActive = isOwned ? newMessage.timestamp : s.lastActive;
                 return {
                   ...s,
