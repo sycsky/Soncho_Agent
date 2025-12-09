@@ -198,9 +198,8 @@ class WebSocketService {
 
       // 根据关闭码判断是否需要重连
       if (event.code === 1006) {
-        // 异常关闭，可能是 token 问题
-        console.warn('⚠️ WebSocket 异常关闭 (code=1006)，可能是 Token 问题');
-        this.handleTokenExpired();
+        // 异常关闭，先验证 token 是否有效
+        this.checkTokenAndReconnect();
       } else if (event.code !== 1000) {
         // 非正常关闭，尝试重连
         console.log('🔌 WebSocket 非正常关闭，尝试重连...');
@@ -210,6 +209,40 @@ class WebSocketService {
         this.updateConnectionStatus('disconnected');
       }
     };
+  }
+
+  /**
+   * 检查 Token 有效性并决定是否重连
+   */
+  private async checkTokenAndReconnect() {
+    if (!this.token) {
+      this.handleTokenExpired();
+      return;
+    }
+
+    try {
+      console.log('🕵️‍♂️ 检查当前 token 是否已失效...');
+      const response = await fetch(`${BASE_URL}/api/v1/public/validate-token`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+        },
+      });
+
+      const isTokenValid = response.ok;
+
+      if (isTokenValid) {
+        console.log('✅ Token 有效，尝试重连...');
+        this.attemptReconnect();
+      } else {
+        console.warn('❌ Token 已失效，进行过期处理...');
+        this.handleTokenExpired();
+      }
+    } catch (error) {
+      console.error('❌ Token 验证请求失败，尝试重连:', error);
+      // 如果网络错误无法验证，尝试重连让重连逻辑处理
+      this.attemptReconnect();
+    }
   }
 
   /**
@@ -295,28 +328,9 @@ class WebSocketService {
       console.log(`🔄 ${delay}ms 后尝试第 ${this.reconnectAttempts} 次重连...`);
       this.updateConnectionStatus('reconnecting');
       
-      setTimeout(async () => {
+      setTimeout(() => {
         if (this.shouldReconnect) {
-          try {
-            console.log('🕵️‍♂️ 检查当前 token 是否已失效...');
-            const response = await fetch(`${BASE_URL}/api/v1/public/validate-token`, {
-              method: 'GET',
-              headers: {
-                'Authorization': `Bearer ${this.token}`,
-              },
-            });
-
-            if (response.ok) {
-              console.log('✅ Token 有效，继续重连...');
-              this.createWebSocket();
-            } else {
-              console.warn('❌ Token 已失效，停止重连');
-              this.handleTokenExpired();
-            }
-          } catch (error) {
-            console.error('❌ Token 验证请求失败，尝试继续连接...', error);
-            this.createWebSocket();
-          }
+          this.createWebSocket();
         }
       }, delay);
     } else {
