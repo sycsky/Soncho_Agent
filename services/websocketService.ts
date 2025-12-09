@@ -110,6 +110,16 @@ class WebSocketService {
         return;
     }
 
+    // Ensure previous socket is cleaned up
+    if (this.socket) {
+      try {
+        this.socket.close();
+      } catch (e) {
+        // Ignore errors during close
+      }
+      this.socket = null;
+    }
+
     this.updateConnectionStatus('connecting');
 
     // Use SockJS to connect to the WebSocket endpoint with token parameter
@@ -135,6 +145,7 @@ class WebSocketService {
     this.socket.onmessage = (event: MessageEvent) => {
       try {
         const message = JSON.parse(event.data);
+        console.log('📥 WebSocket received raw message:', message);
         
         // ✅ 统一处理不同格式的消息
         // 格式1 (后端标准): { event: string, payload: any }
@@ -170,7 +181,10 @@ class WebSocketService {
         }
         
         if (this.messageHandler) {
+          console.log('🔄 Dispatching message to handler:', serverMessage.type);
           this.messageHandler(serverMessage);
+        } else {
+          console.warn('⚠️ No message handler registered! Message ignored:', serverMessage);
         }
       } catch (error) {
         console.error('Failed to parse WebSocket message:', error, event.data);
