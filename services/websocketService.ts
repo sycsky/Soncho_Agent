@@ -295,9 +295,28 @@ class WebSocketService {
       console.log(`🔄 ${delay}ms 后尝试第 ${this.reconnectAttempts} 次重连...`);
       this.updateConnectionStatus('reconnecting');
       
-      setTimeout(() => {
+      setTimeout(async () => {
         if (this.shouldReconnect) {
-          this.createWebSocket();
+          try {
+            console.log('🕵️‍♂️ 检查当前 token 是否已失效...');
+            const response = await fetch(`${BASE_URL}/api/v1/public/validate-token`, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${this.token}`,
+              },
+            });
+
+            if (response.ok) {
+              console.log('✅ Token 有效，继续重连...');
+              this.createWebSocket();
+            } else {
+              console.warn('❌ Token 已失效，停止重连');
+              this.handleTokenExpired();
+            }
+          } catch (error) {
+            console.error('❌ Token 验证请求失败，尝试继续连接...', error);
+            this.createWebSocket();
+          }
         }
       }, delay);
     } else {
