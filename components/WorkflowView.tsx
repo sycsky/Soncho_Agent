@@ -161,7 +161,7 @@ const StartNode = ({ id, data }: NodeProps) => {
 const IntentNode = ({ id, data }: NodeProps) => {
   const intents = (data.config as any)?.intents || [];
   const config = data.config as any;
-  const modelDisplay = config?.modelDisplayName || config?.model || 'gpt-3.5-turbo';
+  const modelDisplay = config?.modelDisplayName || config?.model || 'Select Model';
 
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[280px] group hover:border-green-300 transition-colors relative">
@@ -256,7 +256,7 @@ const KnowledgeNode = ({ id, data }: NodeProps) => {
 
 const LLMNode = ({ id, data }: NodeProps) => {
   const config = data.config as any;
-  const modelDisplay = config?.modelDisplayName || config?.model || 'gpt-3.5-turbo';
+  const modelDisplay = config?.modelDisplayName || config?.model || 'Select Model';
   
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[240px] group hover:border-indigo-300 transition-colors relative">
@@ -961,10 +961,11 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose }: { node: NodeProp
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Model</label>
               <select 
-                value={node.data.config?.modelId || node.data.config?.model || 'gpt-3.5-turbo'}
+                value={node.data.config?.modelId || node.data.config?.model || ''}
                 onChange={(e) => handleConfigChange('modelId', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
+                <option value="" disabled>Select a model</option>
                 {llmModels.length > 0 ? (
                     llmModels.map(model => (
                       <option key={model.id} value={model.id}>{model.name} ({model.provider})</option>
@@ -977,6 +978,22 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose }: { node: NodeProp
                     </>
                   )}
               </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">History Turns</label>
+              <input 
+                type="number" 
+                min="0"
+                value={node.data.config?.historyCount ?? 0}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  handleConfigChange('historyCount', isNaN(val) ? 0 : Math.max(0, val));
+                }}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="0"
+              />
+              <p className="text-[10px] text-gray-400 mt-1">Number of historical messages to include (&gt;=0)</p>
             </div>
 
             <div>
@@ -1022,10 +1039,11 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose }: { node: NodeProp
              <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Model</label>
               <select 
-                value={node.data.config?.modelId || node.data.config?.model || 'gpt-3.5-turbo'}
+                value={node.data.config?.modelId || node.data.config?.model || ''}
                 onChange={(e) => handleConfigChange('modelId', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
+                <option value="" disabled>Select a model</option>
                 {llmModels.length > 0 ? (
                     llmModels.map(model => (
                       <option key={model.id} value={model.id}>{model.name} ({model.provider})</option>
