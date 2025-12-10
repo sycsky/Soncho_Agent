@@ -607,6 +607,8 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose }: { node: NodeProp
     
     if (activeField === 'systemPrompt') {
         handleConfigChange('systemPrompt', newValue);
+    } else if (activeField === 'customPrompt') {
+        handleConfigChange('customPrompt', newValue);
     } else if (activeField.startsWith('message-')) {
         const index = parseInt(activeField.split('-')[1]);
         handleUpdateMessage(index, 'content', newValue);
@@ -663,6 +665,8 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose }: { node: NodeProp
       
       if (field === 'systemPrompt') {
           handleConfigChange('systemPrompt', val);
+      } else if (field === 'customPrompt') {
+          handleConfigChange('customPrompt', val);
       } else if (field.startsWith('message-')) {
           const index = parseInt(field.split('-')[1]);
           handleUpdateMessage(index, 'content', val);
