@@ -931,7 +931,7 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose }: { node: NodeProp
   };
 
   return (
-    <div className="absolute top-4 right-4 w-80 bg-white rounded-xl shadow-xl border border-gray-200 z-20 flex flex-col max-h-[calc(100vh-32px)] overflow-hidden animate-in slide-in-from-right-5 duration-200">
+    <div className="absolute top-4 right-4 w-[450px] bg-white rounded-xl shadow-xl border border-gray-200 z-20 flex flex-col max-h-[calc(100vh-32px)] overflow-hidden animate-in slide-in-from-right-5 duration-200">
       <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
         <div className="flex items-center gap-2">
           <Settings size={16} className="text-gray-500" />
@@ -978,6 +978,22 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose }: { node: NodeProp
                     </>
                   )}
               </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">System Prompt</label>
+              
+              <div className="relative">
+                <textarea 
+                    ref={el => textareaRefs.current['customPrompt'] = el}
+                    value={node.data.config?.customPrompt || ''} 
+                    onChange={(e) => handleTextareaInput(e, 'customPrompt')}
+                    onKeyDown={handleKeyDown}
+                    rows={6}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-mono"
+                    placeholder="Enter system prompt for intent classification. Type '/' to insert variable..."
+                />
+              </div>
             </div>
 
             <div>
