@@ -1,4 +1,5 @@
 import React, { useCallback, useRef, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   ReactFlow, 
   MiniMap, 
@@ -19,7 +20,7 @@ import {
   EdgeProps
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Play, GitBranch, Database, Bot, MessageSquare, GripHorizontal, Plus, Trash2, X, MoreHorizontal, ArrowLeft, Calendar, User, Search, Filter, Save, Loader2, Square, Settings, ChevronRight, Star, Power, CheckCircle, Edit2, Headphones } from 'lucide-react';
+import { Play, GitBranch, Database, Bot, MessageSquare, GripHorizontal, Plus, Trash2, X, MoreHorizontal, ArrowLeft, Calendar, User, Search, Filter, Save, Loader2, Square, Settings, ChevronRight, Star, Power, CheckCircle, Edit2, Headphones, Hammer, ListFilter } from 'lucide-react';
 import { workflowApi } from '../services/workflowApi';
 import knowledgeBaseApi from '../services/knowledgeBaseApi';
 import aiToolApi from '../services/aiToolApi';
@@ -344,6 +345,150 @@ const TransferNode = ({ id, data }: NodeProps) => {
   );
 };
 
+const AgentNode = ({ id, data }: NodeProps) => {
+  const config = data.config as any;
+  const workflowName = config?.workflowName || 'Select Workflow';
+
+  return (
+    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[240px] group hover:border-purple-300 transition-colors relative">
+      <NodeMenu nodeId={id} />
+      <div className="bg-purple-50 px-4 py-2 rounded-t-xl border-b border-purple-100 flex items-center gap-2">
+        <div className="bg-purple-100 p-1 rounded-lg text-purple-600">
+          <Bot size={14} />
+        </div>
+        <span className="font-semibold text-gray-700 text-sm">Agent</span>
+      </div>
+      <div className="p-3 bg-gray-50 border-b border-gray-100">
+        <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
+          <Bot size={12} />
+          <span>{workflowName}</span>
+        </div>
+      </div>
+      <div className="p-4">
+        <p className="text-xs text-gray-500">Execute another workflow</p>
+      </div>
+      <Handle type="target" position={Position.Left} className="!bg-gray-400" />
+      <Handle type="source" position={Position.Right} className="!bg-purple-500" />
+    </div>
+  );
+};
+
+const AgentEndNode = ({ id, data }: NodeProps) => {
+  return (
+    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[200px] group hover:border-gray-400 transition-colors relative">
+      <NodeMenu nodeId={id} />
+      <div className="bg-gray-100 px-4 py-2 rounded-t-xl border-b border-gray-200 flex items-center gap-2">
+        <div className="bg-gray-200 p-1 rounded-lg text-gray-600">
+          <Square size={14} />
+        </div>
+        <span className="font-semibold text-gray-700 text-sm">Agent End</span>
+      </div>
+      <div className="p-4">
+        <div className="text-xs text-gray-500">Agent Execution End</div>
+      </div>
+      <Handle type="target" position={Position.Left} className="!bg-gray-500" />
+    </div>
+  );
+};
+
+const AgentUpdateNode = ({ id, data }: NodeProps) => {
+  return (
+    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[200px] group hover:border-yellow-300 transition-colors relative">
+      <NodeMenu nodeId={id} />
+      <div className="bg-yellow-50 px-4 py-2 rounded-t-xl border-b border-yellow-100 flex items-center gap-2">
+        <div className="bg-yellow-100 p-1 rounded-lg text-yellow-600">
+          <Edit2 size={14} />
+        </div>
+        <span className="font-semibold text-gray-700 text-sm">Agent Update</span>
+      </div>
+      <div className="p-4">
+        <div className="text-xs text-gray-500">Update Agent State</div>
+      </div>
+      <Handle type="target" position={Position.Left} className="!bg-gray-400" />
+      <Handle type="source" position={Position.Right} className="!bg-yellow-500" />
+    </div>
+  );
+};
+
+const ToolNode = ({ id, data }: NodeProps) => {
+  const config = data.config as any;
+  const toolName = config?.toolName || 'Select Tool';
+
+  return (
+    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[240px] group hover:border-orange-300 transition-colors relative">
+      <NodeMenu nodeId={id} />
+      <div className="bg-orange-50 px-4 py-2 rounded-t-xl border-b border-orange-100 flex items-center gap-2">
+        <div className="bg-orange-100 p-1 rounded-lg text-orange-600">
+          <Hammer size={14} />
+        </div>
+        <span className="font-semibold text-gray-700 text-sm">Tool Execution</span>
+      </div>
+      <div className="p-3 bg-gray-50 border-b border-gray-100">
+        <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
+          <Hammer size={12} />
+          <span>{toolName}</span>
+        </div>
+      </div>
+      <div className="flex flex-col">
+        <div className="flex justify-between items-center py-2 px-4 border-b border-gray-100 relative hover:bg-gray-50">
+           <span className="text-xs font-medium text-gray-600">Executed</span>
+           <Handle type="source" position={Position.Right} id="executed" className="!bg-orange-500 !right-[-6px]" style={{top: '50%'}} />
+        </div>
+        <div className="flex justify-between items-center py-2 px-4 relative hover:bg-gray-50">
+           <span className="text-xs font-medium text-gray-600">Not Executed</span>
+           <Handle type="source" position={Position.Right} id="not_executed" className="!bg-gray-400 !right-[-6px]" style={{top: '50%'}} />
+        </div>
+      </div>
+      <div className="p-3 bg-gray-50 rounded-b-xl text-[10px] text-gray-400 leading-relaxed border-t border-gray-100">
+        Execute tool if matched, else skip.
+      </div>
+      <Handle type="target" position={Position.Left} className="!bg-gray-400" />
+    </div>
+  );
+};
+
+const ParameterExtractionNode = ({ id, data }: NodeProps) => {
+  const config = data.config as any;
+  const toolName = config?.toolName || 'Select Tool';
+  const modelDisplay = config?.modelDisplayName || config?.model || 'Select Model';
+
+  return (
+    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[280px] group hover:border-violet-300 transition-colors relative">
+      <NodeMenu nodeId={id} />
+      <div className="bg-violet-50 px-4 py-2 rounded-t-xl border-b border-violet-100 flex items-center gap-2">
+        <div className="bg-violet-100 p-1 rounded-lg text-violet-600">
+          <ListFilter size={14} />
+        </div>
+        <span className="font-semibold text-gray-700 text-sm">Param Extraction</span>
+      </div>
+      <div className="p-3 bg-gray-50 border-b border-gray-100 space-y-2">
+        <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
+          <Hammer size={12} />
+          <span>{toolName}</span>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
+          <Bot size={12} />
+          <span>{modelDisplay}</span>
+        </div>
+      </div>
+      <div className="flex flex-col">
+        <div className="flex justify-between items-center py-2 px-4 border-b border-gray-100 relative hover:bg-gray-50">
+           <span className="text-xs font-medium text-gray-600">Success</span>
+           <Handle type="source" position={Position.Right} id="success" className="!bg-violet-500 !right-[-6px]" style={{top: '50%'}} />
+        </div>
+        <div className="flex justify-between items-center py-2 px-4 relative hover:bg-gray-50">
+           <span className="text-xs font-medium text-gray-600">Missing Params</span>
+           <Handle type="source" position={Position.Right} id="fail" className="!bg-red-400 !right-[-6px]" style={{top: '50%'}} />
+        </div>
+      </div>
+      <div className="p-3 bg-gray-50 rounded-b-xl text-[10px] text-gray-400 leading-relaxed border-t border-gray-100">
+        Extract parameters for tool execution.
+      </div>
+      <Handle type="target" position={Position.Left} className="!bg-gray-400" />
+    </div>
+  );
+};
+
 const KnowledgeSearchNode = ({ id, data }: NodeProps) => {
   const config = data.config as any || {};
   const kbName = config.selectedKnowledgeBase?.name || 'No KB selected';
@@ -520,22 +665,34 @@ const ToolSelectionDialog = ({
     );
 };
 
-const PropertyPanel = ({ node, nodes = [], onChange, onClose }: { node: NodeProps | any, nodes?: NodeProps[] | any[], onChange: (data: any) => void, onClose: () => void }) => {
+const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId }: { node: NodeProps | any, nodes?: NodeProps[] | any[], onChange: (data: any) => void, onClose: () => void, currentWorkflowId?: string }) => {
   const [llmModels, setLlmModels] = useState<LlmModel[]>([]);
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
+  const [workflows, setWorkflows] = useState<AiWorkflow[]>([]);
   const [tools, setTools] = useState<AiTool[]>([]);
   const [showToolDialog, setShowToolDialog] = useState(false);
   const [showVarMenu, setShowVarMenu] = useState(false);
-  const [varMenuPos, setVarMenuPos] = useState({ top: 0, left: 0 });
+  const [varMenuPos, setVarMenuPos] = useState({ top: 0, left: 0, placement: 'bottom' });
   const [cursorIndex, setCursorIndex] = useState(0);
   const [filterText, setFilterText] = useState('');
   const [activeField, setActiveField] = useState<string | null>(null);
-  const textareaRefs = useRef<{ [key: string]: HTMLTextAreaElement | null }>({});
+  const textareaRefs = useRef<{ [key: string]: HTMLTextAreaElement | HTMLInputElement | null }>({});
   
   // Test Session State
   const [testMessages, setTestMessages] = useState<{role: string, content: string}[]>([]);
   const [testInput, setTestInput] = useState('');
   const [isTesting, setIsTesting] = useState(false);
+  
+  // Debug State
+  // const [debugInfo, setDebugInfo] = useState<string>('');
+
+  // Reset variable menu state when switching nodes
+  useEffect(() => {
+      setShowVarMenu(false);
+      setFilterText('');
+      setActiveField(null);
+      // setDebugInfo('');
+  }, [node.id]);
 
   // Calculate available variables from other nodes
   const availableVariables = React.useMemo(() => {
@@ -552,6 +709,9 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose }: { node: NodeProp
         
         // User Category
         { id: 'user.id', label: 'id', value: '{{user.id}}', group: 'USER', type: 'String' },
+
+        // Agent Category
+        { id: 'agent.sysPrompt', label: 'sysPrompt', value: '{{agent.sysPrompt}}', group: 'AGENT', type: 'String' },
     ];
 
     if (nodes && node) {
@@ -612,6 +772,13 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose }: { node: NodeProp
     } else if (activeField.startsWith('message-')) {
         const index = parseInt(activeField.split('-')[1]);
         handleUpdateMessage(index, 'content', newValue);
+    } else if (activeField.startsWith('param-desc-')) {
+        const index = parseInt(activeField.split('param-desc-')[1]);
+        const currentParams = [...(node.data.config?.parameters || [])];
+        if (currentParams[index]) {
+            currentParams[index] = { ...currentParams[index], description: newValue };
+            handleConfigChange('parameters', currentParams);
+        }
     }
     
     setShowVarMenu(false);
@@ -627,7 +794,7 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose }: { node: NodeProp
     }, 0);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement | HTMLInputElement>) => {
     if (showVarMenu) {
         if (e.key === 'Escape') {
             setShowVarMenu(false);
@@ -636,30 +803,50 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose }: { node: NodeProp
     }
   };
 
-  const handleTextareaInput = (e: React.ChangeEvent<HTMLTextAreaElement>, field: string) => {
+  const handleTextareaInput = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>, field: string) => {
       const val = e.target.value;
-      const cursorPos = e.target.selectionStart;
+      const cursorPos = e.target.selectionStart || 0;
+      const charBefore = val[cursorPos - 1];
       
-      // Check if user just typed '/'
-      if (val[cursorPos - 1] === '/') {
+          // Check if user just typed '/' or full-width '／'
+      if (charBefore === '/' || charBefore === '／') {
           const rect = e.target.getBoundingClientRect();
-          const caret = getCaretCoordinates(e.target, cursorPos);
           
-          setVarMenuPos({
-              top: rect.top + caret.top + 24, // Offset for line height
-              left: rect.left + caret.left
-          });
+          // Calculate available space
+          const spaceBelow = window.innerHeight - rect.bottom;
+          const menuHeight = 300; // Estimated max height
+          const placement = spaceBelow < menuHeight && rect.top > menuHeight ? 'top' : 'bottom';
+          
+          // Clamp horizontal position
+          const menuWidth = 260;
+          const left = Math.min(rect.left, window.innerWidth - menuWidth - 20);
+
+          const newPos = {
+              top: placement === 'bottom' ? rect.bottom : rect.top,
+              left: left,
+              placement
+          };
+
+          setVarMenuPos(newPos);
           setCursorIndex(cursorPos);
           setShowVarMenu(true);
           setFilterText('');
           setActiveField(field);
-      } else if (showVarMenu && activeField === field) {
-          const diff = cursorPos - cursorIndex;
-          if (diff < 0) {
-             setShowVarMenu(false);
-          } else {
-              const potentialFilter = val.substring(cursorIndex, cursorPos);
-              setFilterText(potentialFilter);
+
+          // Immediate debug update with calculated values
+          // setDebugInfo(`TRIGGER: '/' (${cursorPos}), Menu: ON, Place: ${placement}, Pos: (${Math.round(newPos.top)}, ${Math.round(newPos.left)}), Field: ${field}, Vars: ${availableVariables.length}, Node: ${node.id}`);
+      } else {
+          // Update debug info for non-trigger cases
+          // setDebugInfo(`Last: '${charBefore}' (${cursorPos}), Menu: ${showVarMenu ? 'ON' : 'OFF'}, Place: ${varMenuPos.placement}, Field: ${activeField}, Vars: ${availableVariables.length}, Node: ${node.id}`);
+          
+          if (showVarMenu && activeField === field) {
+              const diff = cursorPos - cursorIndex;
+              if (diff < 0) {
+                 setShowVarMenu(false);
+              } else {
+                  const potentialFilter = val.substring(cursorIndex, cursorPos);
+                  setFilterText(potentialFilter);
+              }
           }
       }
       
@@ -670,11 +857,18 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose }: { node: NodeProp
       } else if (field.startsWith('message-')) {
           const index = parseInt(field.split('-')[1]);
           handleUpdateMessage(index, 'content', val);
+      } else if (field.startsWith('param-desc-')) {
+          const index = parseInt(field.split('param-desc-')[1]);
+          const currentParams = [...(node.data.config?.parameters || [])];
+          if (currentParams[index]) {
+              currentParams[index] = { ...currentParams[index], description: val };
+              handleConfigChange('parameters', currentParams);
+          }
       }
   };
 
   useEffect(() => {
-    if (node && (node.type === 'intent' || node.type === 'llm')) {
+    if (node && (node.type === 'intent' || node.type === 'llm' || node.type === 'parameter_extraction')) {
       workflowApi.getAllModels()
         .then(data => {
             const enabledModels = data.filter((m: LlmModel) => m.enabled);
@@ -683,7 +877,7 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose }: { node: NodeProp
         .catch(err => console.error('Failed to fetch models', err));
     }
 
-    if (node && node.type === 'llm') {
+    if (node && (node.type === 'llm' || node.type === 'tool' || node.type === 'parameter_extraction')) {
         aiToolApi.getTools()
             .then(data => setTools(data))
             .catch(err => console.error('Failed to fetch tools', err));
@@ -743,6 +937,12 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose }: { node: NodeProp
             }
         })
         .catch(err => console.error('Failed to fetch knowledge bases', err));
+    }
+
+    if (node && node.type === 'agent') {
+        workflowApi.getAllWorkflows()
+            .then(data => setWorkflows(data))
+            .catch(err => console.error('Failed to fetch workflows', err));
     }
   }, [node.type, node.id]); // Changed dependency to avoid loop, was [node]
 
@@ -937,9 +1137,11 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose }: { node: NodeProp
   return (
     <div className="absolute top-4 right-4 w-[450px] bg-white rounded-xl shadow-xl border border-gray-200 z-20 flex flex-col max-h-[calc(100vh-32px)] overflow-hidden animate-in slide-in-from-right-5 duration-200">
       <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-        <div className="flex items-center gap-2">
-          <Settings size={16} className="text-gray-500" />
-          <h3 className="font-bold text-gray-800">Properties</h3>
+        <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <Settings size={16} className="text-gray-500" />
+              <h3 className="font-bold text-gray-800">Properties</h3>
+            </div>
         </div>
         <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
           <X size={18} />
@@ -1054,6 +1256,305 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose }: { node: NodeProp
             </div>
           </div>
         )}
+
+        {node.type === 'agent' && (
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Select Workflow</label>
+            <select 
+              value={node.data.config?.workflowId || ''}
+              onChange={(e) => {
+                  const selectedId = e.target.value;
+                  const selectedWorkflow = workflows.find(w => w.id === selectedId);
+                  onChange({
+                      ...node.data,
+                      config: {
+                          ...node.data.config,
+                          workflowId: selectedId,
+                          workflowName: selectedWorkflow?.name || ''
+                      }
+                  });
+              }}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="" disabled>Select a workflow</option>
+              {workflows
+                .filter(w => w.id !== currentWorkflowId)
+                .map(workflow => (
+                <option key={workflow.id} value={workflow.id}>{workflow.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {node.type === 'tool' && (
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Select Tool</label>
+            <select 
+              value={node.data.config?.toolId || ''}
+              onChange={(e) => {
+                  const selectedId = e.target.value;
+                  const selectedTool = tools.find(t => t.id === selectedId);
+                  onChange({
+                      ...node.data,
+                      config: {
+                          ...node.data.config,
+                          toolId: selectedId,
+                          toolName: selectedTool?.displayName || ''
+                      }
+                  });
+              }}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="" disabled>Select a tool</option>
+              {tools.map(tool => (
+                <option key={tool.id} value={tool.id}>{tool.displayName}</option>
+              ))}
+            </select>
+            <p className="text-[10px] text-gray-400 mt-2">
+                This node will try to match and execute the selected tool.
+            </p>
+          </div>
+        )}
+
+        {node.type === 'parameter_extraction' && (
+           <div className="space-y-4">
+              {/* Tool Selection */}
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Bind Tool</label>
+                <select 
+                  value={node.data.config?.toolId || ''}
+                  onChange={(e) => {
+                      const selectedId = e.target.value;
+                      const selectedTool = tools.find(t => t.id === selectedId);
+                      onChange({
+                          ...node.data,
+                          config: {
+                              ...node.data.config,
+                              toolId: selectedId,
+                              toolName: selectedTool?.displayName || ''
+                          }
+                      });
+                  }}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="" disabled>Select a tool to bind</option>
+                  {tools.map(tool => (
+                    <option key={tool.id} value={tool.id}>{tool.displayName}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Model Selection */}
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Extraction Model</label>
+                <select 
+                  value={node.data.config?.modelId || ''}
+                  onChange={(e) => {
+                      handleConfigChange('modelId', e.target.value);
+                  }}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="" disabled>Select a model</option>
+                  {llmModels.length > 0 ? (
+                      llmModels.map(model => (
+                        <option key={model.id} value={model.id}>{model.name} ({model.provider})</option>
+                      ))
+                    ) : (
+                      <option value="" disabled>No models available</option>
+                    )}
+                </select>
+              </div>
+
+              {/* System Prompt */}
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">System Prompt</label>
+                <div className="relative">
+                  <textarea 
+                      ref={el => textareaRefs.current['systemPrompt'] = el}
+                      value={node.data.config?.systemPrompt || ''} 
+                      onChange={(e) => handleTextareaInput(e, 'systemPrompt')}
+                      onKeyDown={handleKeyDown}
+                      rows={4}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-mono"
+                      placeholder="Instruction for parameter extraction..."
+                  />
+                </div>
+              </div>
+
+              {/* History Configuration */}
+              <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+                <label className="flex items-center gap-2 text-xs font-medium text-gray-700 cursor-pointer">
+                    <input 
+                        type="checkbox"
+                        checked={node.data.config?.useHistory || false}
+                        onChange={(e) => handleConfigChange('useHistory', e.target.checked)}
+                        className="rounded text-blue-600 focus:ring-blue-500"
+                    />
+                    Read Conversation History
+                </label>
+                
+                {node.data.config?.useHistory && (
+                    <div className="mt-3 pl-6 border-l-2 border-blue-100 animate-in fade-in slide-in-from-top-1 duration-200">
+                        <label className="block text-xs font-medium text-gray-500 mb-1">History Message Count</label>
+                        <input 
+                            type="number"
+                            min="1"
+                            max="50"
+                            value={node.data.config?.readCount || 10}
+                            onChange={(e) => handleConfigChange('readCount', parseInt(e.target.value))}
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                            placeholder="Number of messages to read"
+                        />
+                    </div>
+                )}
+              </div>
+              
+              {/* Conversation History Config */}
+              <div>
+                 <label className="block text-xs font-medium text-gray-500 mb-2">Conversation History</label>
+                 <div className="space-y-3">
+                    {(node.data.config?.messages || []).map((msg: any, index: number) => (
+                        <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
+                            <div className="bg-gray-50 px-3 py-2 border-b border-gray-200 flex justify-between items-center">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-gray-700 uppercase">{msg.role}</span>
+                                    <button 
+                                        onClick={() => handleUpdateMessage(index, 'role', msg.role === 'user' ? 'assistant' : 'user')}
+                                        className="text-[10px] text-blue-600 hover:underline"
+                                    >
+                                        Switch Role
+                                    </button>
+                                </div>
+                                <button 
+                                    onClick={() => handleDeleteMessage(index)}
+                                    className="text-gray-400 hover:text-red-500 transition-colors"
+                                >
+                                    <Trash2 size={12} />
+                                </button>
+                            </div>
+                            <div className="relative">
+                                <textarea
+                                    ref={el => textareaRefs.current[`message-${index}`] = el}
+                                    value={msg.content}
+                                    onChange={(e) => handleTextareaInput(e, `message-${index}`)}
+                                    onKeyDown={handleKeyDown}
+                                    rows={3}
+                                    className="w-full px-3 py-2 text-sm focus:outline-none resize-none block border-none"
+                                    placeholder={`Enter ${msg.role} message. Type '/' to insert variable...`}
+                                />
+                            </div>
+                        </div>
+                    ))}
+                 </div>
+                 <button 
+                    onClick={handleAddMessage}
+                    className="w-full mt-2 py-2 border border-dashed border-gray-300 rounded-lg text-xs text-gray-500 hover:bg-gray-50 hover:border-gray-400 transition-colors flex items-center justify-center gap-1"
+                 >
+                    <Plus size={12} /> Add Message
+                 </button>
+              </div>
+
+              {/* Parameter Definition */}
+              <div>
+                 <div className="flex justify-between items-center mb-2">
+                    <label className="block text-xs font-medium text-gray-500">Extraction Parameters</label>
+                    <button 
+                        onClick={() => {
+                            const currentParams = node.data.config?.parameters || [];
+                            handleConfigChange('parameters', [...currentParams, { name: '', description: '', required: true, type: 'string' }]);
+                        }}
+                        className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                    >
+                        <Plus size={12} /> Add Parameter
+                    </button>
+                 </div>
+                 
+                 <div className="space-y-3">
+                    {(node.data.config?.parameters || []).map((param: any, index: number) => (
+                        <div key={index} className="bg-white border border-gray-200 rounded-lg p-3 space-y-2 relative group">
+                            <button 
+                                onClick={() => {
+                                    const newParams = [...(node.data.config?.parameters || [])];
+                                    newParams.splice(index, 1);
+                                    handleConfigChange('parameters', newParams);
+                                }}
+                                className="absolute top-2 right-2 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                                <X size={14} />
+                            </button>
+                            
+                            <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label className="block text-[10px] text-gray-400 mb-1">Name</label>
+                                    <input 
+                                        type="text"
+                                        value={param.name}
+                                        onChange={(e) => {
+                                            const newParams = [...(node.data.config?.parameters || [])];
+                                            newParams[index] = { ...newParams[index], name: e.target.value };
+                                            handleConfigChange('parameters', newParams);
+                                        }}
+                                        className="w-full px-2 py-1 border border-gray-200 rounded text-xs focus:outline-none focus:border-blue-500"
+                                        placeholder="param_name"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] text-gray-400 mb-1">Type</label>
+                                    <select
+                                        value={param.type}
+                                        onChange={(e) => {
+                                            const newParams = [...(node.data.config?.parameters || [])];
+                                            newParams[index] = { ...newParams[index], type: e.target.value };
+                                            handleConfigChange('parameters', newParams);
+                                        }}
+                                        className="w-full px-2 py-1 border border-gray-200 rounded text-xs focus:outline-none focus:border-blue-500"
+                                    >
+                                        <option value="string">String</option>
+                                        <option value="number">Number</option>
+                                        <option value="boolean">Boolean</option>
+                                        <option value="array">Array</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label className="block text-[10px] text-gray-400 mb-1">Description</label>
+                                <textarea 
+                                    ref={el => textareaRefs.current[`param-desc-${index}`] = el}
+                                    value={param.description}
+                                    onChange={(e) => handleTextareaInput(e, `param-desc-${index}`)}
+                                    onKeyDown={handleKeyDown}
+                                    rows={2}
+                                    className="w-full px-2 py-1 border border-gray-200 rounded text-xs focus:outline-none focus:border-blue-500 resize-none"
+                                    placeholder="Description for extraction. Type '/' to insert variable..."
+                                />
+                            </div>
+                            
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input 
+                                    type="checkbox"
+                                    checked={param.required}
+                                    onChange={(e) => {
+                                        const newParams = [...(node.data.config?.parameters || [])];
+                                        newParams[index] = { ...newParams[index], required: e.target.checked };
+                                        handleConfigChange('parameters', newParams);
+                                    }}
+                                    className="rounded text-blue-600 w-3 h-3"
+                                />
+                                <span className="text-[10px] text-gray-500">Required</span>
+                            </label>
+                        </div>
+                    ))}
+                    {(node.data.config?.parameters || []).length === 0 && (
+                        <div className="text-center py-3 bg-gray-50 rounded-lg border border-dashed border-gray-200 text-xs text-gray-400">
+                            No parameters defined
+                        </div>
+                    )}
+                 </div>
+              </div>
+           </div>
+        )}
+
         {node.type === 'llm' && (
           <>
              <div>
@@ -1281,60 +1782,7 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose }: { node: NodeProp
                 </div>
             </div>
 
-            {showVarMenu && (
-                <div 
-                    className="fixed z-[100] bg-white rounded-lg shadow-2xl border border-gray-200 w-64 max-h-80 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100"
-                    style={{ top: varMenuPos.top, left: varMenuPos.left }}
-                >
-                    <div className="p-2 border-b border-gray-100 bg-gray-50">
-                        <div className="relative">
-                            <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" size={12} />
-                            <div className="w-full pl-7 pr-2 py-1 text-xs border border-gray-200 rounded bg-white text-gray-500 truncate">
-                                {filterText || 'Search variable...'}
-                            </div>
-                        </div>
-                    </div>
-                    <div className="overflow-y-auto flex-1 p-1 custom-scrollbar">
-                        {(() => {
-                            const filteredVars = availableVariables.filter(v => 
-                                v.label.toLowerCase().includes(filterText.toLowerCase()) || 
-                                v.value.toLowerCase().includes(filterText.toLowerCase())
-                            );
 
-                            const groupedVars = filteredVars.reduce((acc, v) => {
-                                if (!acc[v.group]) acc[v.group] = [];
-                                acc[v.group].push(v);
-                                return acc;
-                            }, {} as Record<string, typeof availableVariables>);
-
-                            if (Object.keys(groupedVars).length === 0) {
-                                return <div className="p-4 text-center text-xs text-gray-400">No variables found</div>;
-                            }
-
-                            return Object.entries(groupedVars).map(([group, vars]) => (
-                                <div key={group} className="mb-2">
-                                    <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase">{group}</div>
-                                    {vars.map(v => (
-                                        <button
-                                            key={v.id}
-                                            onClick={() => handleInsertVariable(v.value)}
-                                            className="w-full text-left px-2 py-1.5 hover:bg-blue-50 rounded flex items-center justify-between group transition-colors"
-                                        >
-                                            <div className="flex items-center gap-2 overflow-hidden">
-                                                <div className="w-4 h-4 rounded bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-mono font-bold">
-                                                    {'{x}'}
-                                                </div>
-                                                <span className="text-xs text-gray-700 truncate" title={v.value}>{v.label}</span>
-                                            </div>
-                                            <span className="text-[10px] text-gray-400 font-mono ml-2">{v.type}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            ));
-                        })()}
-                    </div>
-                </div>
-            )}
 
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Temperature: {node.data.config?.temperature || 0.7}</label>
@@ -1498,6 +1946,66 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose }: { node: NodeProp
           </div>
         )}
       </div>
+      
+      {showVarMenu && typeof document !== 'undefined' && createPortal(
+                <div 
+                    className="fixed z-[99999] bg-white rounded-lg shadow-2xl border border-gray-200 w-64 max-h-80 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100"
+                    style={{ 
+                        top: varMenuPos.placement === 'bottom' ? `${varMenuPos.top}px` : undefined,
+                        bottom: varMenuPos.placement === 'top' ? `${window.innerHeight - varMenuPos.top}px` : undefined,
+                        left: `${varMenuPos.left}px` 
+                    }}
+                >
+                    <div className="p-2 border-b border-gray-100 bg-gray-50">
+                        <div className="relative">
+                            <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" size={12} />
+                            <div className="w-full pl-7 pr-2 py-1 text-xs border border-gray-200 rounded bg-white text-gray-500 truncate">
+                                {filterText || 'Search variable...'}
+                            </div>
+                        </div>
+                    </div>
+                    <div className="overflow-y-auto flex-1 p-1 custom-scrollbar">
+                        {(() => {
+                            const filteredVars = availableVariables.filter(v => 
+                                v.label.toLowerCase().includes(filterText.toLowerCase()) || 
+                                v.value.toLowerCase().includes(filterText.toLowerCase())
+                            );
+
+                            const groupedVars = filteredVars.reduce((acc, v) => {
+                                if (!acc[v.group]) acc[v.group] = [];
+                                acc[v.group].push(v);
+                                return acc;
+                            }, {} as Record<string, typeof availableVariables>);
+
+                            if (Object.keys(groupedVars).length === 0) {
+                                return <div className="p-4 text-center text-xs text-gray-400">No variables found</div>;
+                            }
+
+                            return Object.entries(groupedVars).map(([group, vars]) => (
+                                <div key={group} className="mb-2">
+                                    <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase">{group}</div>
+                                    {vars.map(v => (
+                                        <button
+                                            key={v.id}
+                                            onClick={() => handleInsertVariable(v.value)}
+                                            className="w-full text-left px-2 py-1.5 hover:bg-blue-50 rounded flex items-center justify-between group transition-colors"
+                                        >
+                                            <div className="flex items-center gap-2 overflow-hidden">
+                                                <div className="w-4 h-4 rounded bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-mono font-bold">
+                                                    {'{x}'}
+                                                </div>
+                                                <span className="text-xs text-gray-700 truncate" title={v.value}>{v.label}</span>
+                                            </div>
+                                            <span className="text-[10px] text-gray-400 font-mono ml-2">{v.type}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            ));
+                        })()}
+                    </div>
+                </div>,
+                document.body
+            )}
     </div>
   );
 };
@@ -1511,6 +2019,11 @@ const nodeTypes = {
   llm: LLMNode,
   reply: ReplyNode,
   human_transfer: TransferNode,
+  agent: AgentNode,
+  agent_end: AgentEndNode,
+  agent_update: AgentUpdateNode,
+  tool: ToolNode,
+  parameter_extraction: ParameterExtractionNode,
 };
 
 const edgeTypes = {
@@ -1609,6 +2122,51 @@ const Sidebar = () => {
         >
           <div className="bg-pink-100 p-1.5 rounded text-pink-600"><Headphones size={16}/></div>
           <span className="text-sm font-medium text-gray-700">Transfer to Human</span>
+        </div>
+
+        <div 
+          className="flex items-center gap-3 p-3 bg-purple-50 border border-purple-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
+          onDragStart={(event) => onDragStart(event, 'agent', 'Agent')}
+          draggable
+        >
+          <div className="bg-purple-100 p-1.5 rounded text-purple-600"><Bot size={16}/></div>
+          <span className="text-sm font-medium text-gray-700">Agent</span>
+        </div>
+
+        <div 
+          className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
+          onDragStart={(event) => onDragStart(event, 'agent_end', 'Agent End')}
+          draggable
+        >
+          <div className="bg-gray-200 p-1.5 rounded text-gray-600"><Square size={16}/></div>
+          <span className="text-sm font-medium text-gray-700">Agent End</span>
+        </div>
+
+        <div 
+          className="flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
+          onDragStart={(event) => onDragStart(event, 'agent_update', 'Agent Update')}
+          draggable
+        >
+          <div className="bg-yellow-100 p-1.5 rounded text-yellow-600"><Edit2 size={16}/></div>
+          <span className="text-sm font-medium text-gray-700">Agent Update</span>
+        </div>
+
+        <div 
+          className="flex items-center gap-3 p-3 bg-orange-50 border border-orange-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
+          onDragStart={(event) => onDragStart(event, 'tool', 'Tool Execution')}
+          draggable
+        >
+          <div className="bg-orange-100 p-1.5 rounded text-orange-600"><Hammer size={16}/></div>
+          <span className="text-sm font-medium text-gray-700">Tool Execution</span>
+        </div>
+
+        <div 
+          className="flex items-center gap-3 p-3 bg-violet-50 border border-violet-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
+          onDragStart={(event) => onDragStart(event, 'parameter_extraction', 'Param Extraction')}
+          draggable
+        >
+          <div className="bg-violet-100 p-1.5 rounded text-violet-600"><ListFilter size={16}/></div>
+          <span className="text-sm font-medium text-gray-700">Param Extraction</span>
         </div>
       </div>
     </div>
@@ -1866,7 +2424,8 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
             node={selectedNode} 
             nodes={nodes}
             onChange={onNodeDataChange} 
-            onClose={() => setSelectedNodeId(null)} 
+            onClose={() => setSelectedNodeId(null)}
+            currentWorkflowId={workflowId} 
             />
         )}
         
