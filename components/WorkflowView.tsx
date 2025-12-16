@@ -28,6 +28,7 @@ import { AiWorkflow, LlmModel } from '../types/workflow';
 import { KnowledgeBase } from '../types';
 import { AiTool } from '../types/aiTool';
 import { CreateWorkflowDialog } from './settings/CreateWorkflowDialog';
+import { WorkflowTestDialog } from './WorkflowTestDialog';
 
 // Custom Edge Component with Delete Button
 const CustomEdge = ({
@@ -2185,6 +2186,7 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
   const [workflowDescription, setWorkflowDescription] = useState('');
   const [workflowCategoryIds, setWorkflowCategoryIds] = useState<string[]>([]);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [showTestDialog, setShowTestDialog] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: any) => {
@@ -2378,6 +2380,13 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
             </div>
             <div className="h-6 w-px bg-gray-200 mx-2"></div>
             <button 
+              onClick={() => setShowTestDialog(true)}
+              className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-800 transition-colors"
+              title="Test Workflow"
+            >
+              <Play size={20} />
+            </button>
+            <button 
               onClick={() => setIsSettingsOpen(true)}
               className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-800 transition-colors"
               title="Workflow Settings"
@@ -2440,6 +2449,13 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
             }}
             mode="edit"
             workflowId={workflowId}
+        />
+        
+        <WorkflowTestDialog 
+            isOpen={showTestDialog}
+            onClose={() => setShowTestDialog(false)}
+            workflowId={workflowId}
+            workflowName={workflowName}
         />
       </div>
     </div>
