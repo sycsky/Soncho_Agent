@@ -34,7 +34,7 @@ const api: ApiService = {
     const token = getToken();
 
     const headers = new Headers(options.headers || {});
-    if (!headers.has('Content-Type')) {
+    if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
       headers.set('Content-Type', 'application/json');
     }
     
@@ -107,19 +107,21 @@ const api: ApiService = {
 
   // Fix: Added `this: ApiService` to fix "Untyped function calls may not accept type arguments" error.
   post<T>(this: ApiService, endpoint: string, body: unknown, options?: RequestInit): Promise<T> {
+    const isFormData = body instanceof FormData;
     return this.request<T>(endpoint, {
       ...options,
       method: 'POST',
-      body: JSON.stringify(body),
+      body: isFormData ? (body as BodyInit) : JSON.stringify(body),
     });
   },
   
   // Fix: Added `this: ApiService` to fix "Untyped function calls may not accept type arguments" error.
   put<T>(this: ApiService, endpoint: string, body: unknown, options?: RequestInit): Promise<T> {
+    const isFormData = body instanceof FormData;
     return this.request<T>(endpoint, {
       ...options,
       method: 'PUT',
-      body: JSON.stringify(body),
+      body: isFormData ? (body as BodyInit) : JSON.stringify(body),
     });
   },
 
