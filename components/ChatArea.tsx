@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChatSession, Message, MessageSender, ChatStatus, Attachment, Agent, QuickReply } from '../types';
 import sessionService from '../services/sessionService';
+import fileService from '../services/fileService';
 import { 
   Send, Paperclip, Smile, Bot, User, CheckCircle, X, 
   Eye, EyeOff, Wand2, Loader2, Sparkles, ArrowRightLeft, 
@@ -101,6 +102,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   const [mentionedAgents, setMentionedAgents] = useState<Agent[]>([]);
   const [mentionableAgents, setMentionableAgents] = useState<Agent[]>([]);
   const [mentionLoading, setMentionLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -197,18 +199,27 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     textareaRef.current?.focus();
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      const newAttachment: Attachment = {
-        id: Date.now().toString(),
-        type: file.type.startsWith('image/') ? 'IMAGE' : 'FILE',
-        url: URL.createObjectURL(file),
-        name: file.name,
-        size: (file.size / 1024).toFixed(1) + ' KB'
-      };
-      setAttachments([...attachments, newAttachment]);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      setIsUploading(true);
+
+      try {
+        const response = await fileService.uploadFile(file, session.id);
+        const newAttachment: Attachment = {
+          id: response.id,
+          type: response.contentType.startsWith('image/') ? 'IMAGE' : 'FILE',
+          url: response.url,
+          name: response.originalName,
+          size: (response.fileSize / 1024).toFixed(1) + ' KB'
+        };
+        setAttachments([...attachments, newAttachment]);
+      } catch (error) {
+        console.error('File upload failed:', error);
+      } finally {
+        setIsUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -499,7 +510,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                     <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileSelect} />
                     
                     <div className="flex items-center gap-0.5 mr-2 bg-gray-100 rounded-lg p-1">
-                        <button onClick={() => fileInputRef.current?.click()} className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-white rounded-md transition-all" title="Attach File"><Paperclip size={16} /></button>
+                        <button onClick={() => fileInputRef.current?.click()} disabled={isUploading} className={`p-1.5 text-gray-500 hover:text-gray-700 hover:bg-white rounded-md transition-all ${isUploading ? 'opacity-50 cursor-wait' : ''}`} title="Attach File">{isUploading ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} />}</button>
                         <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} disabled={isResolved} className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-white rounded-md transition-all" title="Emoji"><Smile size={16} /></button>
                         
                         <div className="w-px h-4 bg-gray-300 mx-1"></div>
@@ -512,7 +523,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
                     <button 
                         onClick={handleSend} 
-                        disabled={(!inputText.trim() && attachments.length === 0 && mentionedAgents.length === 0) || isRewriting || isResolved} 
+                        disabled={(!inputText.trim() && attachments.length === 0 && mentionedAgents.length === 0) || isRewriting || isResolved || isUploading} 
                         className={`p-2 rounded-xl transition-all flex items-center justify-center ${(inputText.trim() || attachments.length > 0 || mentionedAgents.length > 0) ? (isInternalMode || mentionedAgents.length > 0 ? 'bg-yellow-600 text-white shadow-md hover:bg-yellow-700' : 'bg-blue-600 text-white shadow-md hover:bg-blue-700') : 'bg-gray-200 text-gray-400'}`}
                     >
                         {isRewriting ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
