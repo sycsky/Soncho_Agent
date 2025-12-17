@@ -154,7 +154,7 @@ export const WorkflowTestDialog: React.FC<WorkflowTestDialogProps> = ({
               </div>
               
               <div className={`flex flex-col gap-1 max-w-[80%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                <div className={`px-4 py-3 rounded-2xl shadow-sm text-sm leading-relaxed ${
+                <div className={`px-4 py-3 rounded-2xl shadow-sm text-sm leading-relaxed whitespace-pre-wrap ${
                   msg.role === 'user' 
                     ? 'bg-blue-600 text-white rounded-tr-none' 
                     : 'bg-white text-gray-800 border border-gray-100 rounded-tl-none'
@@ -219,14 +219,19 @@ export const WorkflowTestDialog: React.FC<WorkflowTestDialogProps> = ({
         {/* Input Area */}
         <div className="p-4 bg-white border-t border-gray-100">
           <div className="flex gap-2 relative">
-            <input
-              type="text"
+            <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
-              placeholder="Type a message to test..."
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
+              placeholder="Type a message to test... (Shift+Enter for new line)"
               disabled={loading || !testSessionId}
-              className="flex-1 bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block w-full p-3 outline-none transition-all focus:bg-white focus:shadow-sm disabled:opacity-60"
+              rows={1}
+              className="flex-1 bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block w-full p-3 outline-none transition-all focus:bg-white focus:shadow-sm disabled:opacity-60 resize-none min-h-[46px] max-h-[120px]"
             />
             <button
               onClick={handleSendMessage}
