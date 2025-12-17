@@ -18,12 +18,14 @@ export type McpServerType = 'stdio' | 'sse' | 'websocket';
 
 export interface ParameterDefinition {
   name: string;              // Parameter name
-  displayName: string;       // Display name
+  displayName?: string;       // Display name
   type: FieldType;           // Parameter type
   required: boolean;         // Is required
   description: string;       // Parameter description
   enumValues?: string[];     // Enum values (when type is ENUM)
   defaultValue?: string;     // Default value
+  properties?: ParameterDefinition[]; // Nested properties (when type is OBJECT)
+  items?: ParameterDefinition; // Array items definition (when type is ARRAY)
 }
 
 export interface AiTool {

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Save, Play, ChevronDown, ChevronUp, HelpCircle } from 'lucide-react';
+import { X, Plus, Trash2, Save, Play, ChevronDown, ChevronUp, HelpCircle, Code, List } from 'lucide-react';
 import { AiTool, ParameterDefinition, FieldType, AiToolType, AuthType, ApiMethod, McpServerType } from '../../types/aiTool';
 import aiToolApi from '../../services/aiToolApi';
 import notificationService from '../../services/notificationService';
+import { ParameterEditor } from './ParameterEditor';
 
 interface AiToolEditDialogProps {
   tool: AiTool | null;
@@ -10,10 +11,6 @@ interface AiToolEditDialogProps {
   onClose: () => void;
   onSave: () => void;
 }
-
-const FIELD_TYPES: FieldType[] = [
-  'STRING', 'NUMBER', 'INTEGER', 'BOOLEAN', 'DATE', 'DATETIME', 'EMAIL', 'PHONE', 'ENUM', 'ARRAY', 'OBJECT'
-];
 
 const DEFAULT_TOOL: Partial<AiTool> = {
   name: '',
@@ -35,14 +32,52 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
   const [formData, setFormData] = useState<Partial<AiTool>>(DEFAULT_TOOL);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [parameterMode, setParameterMode] = useState<'form' | 'json'>('form');
+  const [jsonParameters, setJsonParameters] = useState('');
   
   // State for Metadata Table
   const [metadataRows, setMetadataRows] = useState<{ key: string, description: string }[]>([]);
+
+  // Helper to clean parameter data (keep only whitelisted fields)
+  const cleanParameter = (param: ParameterDefinition): ParameterDefinition => {
+    // Define whitelist of allowed fields
+    const allowedFields: (keyof ParameterDefinition)[] = [
+      'name',
+      'type',
+      'required',
+      'description',
+      'enumValues',
+      'properties',
+      'items'
+    ];
+
+    const cleaned: any = {};
+    
+    // Only copy allowed fields if they exist and are not null
+    allowedFields.forEach(field => {
+      if (param[field] !== undefined && param[field] !== null) {
+        cleaned[field] = param[field];
+      }
+    });
+    
+    // Recursively clean nested properties
+    if (cleaned.properties) {
+      cleaned.properties = (cleaned.properties as ParameterDefinition[]).map(cleanParameter);
+    }
+    if (cleaned.items) {
+      cleaned.items = cleanParameter(cleaned.items as ParameterDefinition);
+    }
+    
+    return cleaned as ParameterDefinition;
+  };
 
   // Initialize form data
   useEffect(() => {
     if (tool) {
       setFormData(JSON.parse(JSON.stringify(tool))); // Deep copy
+      // Initialize JSON mode state with cleaned parameters
+      const cleanedParams = (tool.parameters || []).map(cleanParameter);
+      setJsonParameters(JSON.stringify(cleanedParams, null, 2));
       
       // Parse resultMetadata if exists
       if (tool.resultMetadata) {
@@ -61,11 +96,36 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
     } else {
       setFormData({ ...DEFAULT_TOOL });
       setMetadataRows([]);
+      setJsonParameters('[]');
     }
   }, [tool, isOpen]);
 
   const updateField = (field: keyof AiTool, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const toggleParameterMode = (mode: 'form' | 'json') => {
+    if (mode === parameterMode) return;
+
+    if (mode === 'json') {
+      // Sync from Form to JSON and clean it
+      const cleanedParams = (formData.parameters || []).map(cleanParameter);
+      setJsonParameters(JSON.stringify(cleanedParams, null, 2));
+    } else {
+      // Sync from JSON to Form
+      try {
+        const parsed = JSON.parse(jsonParameters);
+        if (!Array.isArray(parsed)) {
+          notificationService.error('Parameters must be an array');
+          return;
+        }
+        updateField('parameters', parsed);
+      } catch (e) {
+        notificationService.error('Invalid JSON format');
+        return;
+      }
+    }
+    setParameterMode(mode);
   };
 
   const handleMetadataChange = (index: number, field: 'key' | 'description', value: string) => {
@@ -91,16 +151,15 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
   };
 
 
-  const handleParameterChange = (index: number, field: keyof ParameterDefinition, value: any) => {
+  const handleParameterChange = (index: number, updatedParam: ParameterDefinition) => {
     const newParams = [...(formData.parameters || [])];
-    newParams[index] = { ...newParams[index], [field]: value };
+    newParams[index] = updatedParam;
     updateField('parameters', newParams);
   };
 
   const addParameter = () => {
     const newParam: ParameterDefinition = {
       name: '',
-      displayName: '',
       type: 'STRING',
       required: true,
       description: ''
@@ -129,13 +188,69 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
       return;
     }
 
+    // Helper to clean parameter data (keep only whitelisted fields)
+    const cleanParameter = (param: ParameterDefinition): ParameterDefinition => {
+      // Define whitelist of allowed fields
+      const allowedFields: (keyof ParameterDefinition)[] = [
+        'name',
+        'type',
+        'required',
+        'description',
+        'enumValues',
+        'properties',
+        'items'
+      ];
+
+      const cleaned: any = {};
+      
+      // Only copy allowed fields if they exist and are not null
+      allowedFields.forEach(field => {
+        if (param[field] !== undefined && param[field] !== null) {
+          cleaned[field] = param[field];
+        }
+      });
+      
+      // Recursively clean nested properties
+      if (cleaned.properties) {
+        cleaned.properties = (cleaned.properties as ParameterDefinition[]).map(cleanParameter);
+      }
+      if (cleaned.items) {
+        cleaned.items = cleanParameter(cleaned.items as ParameterDefinition);
+      }
+      
+      return cleaned as ParameterDefinition;
+    };
+
+    const cleanToolData = (data: Partial<AiTool>) => {
+      const cleaned = { ...data };
+      if (cleaned.parameters) {
+        cleaned.parameters = cleaned.parameters.map(cleanParameter);
+      }
+      return cleaned;
+    };
+
+    let payloadData = { ...formData };
+    if (parameterMode === 'json') {
+      try {
+        const parsed = JSON.parse(jsonParameters);
+        if (!Array.isArray(parsed)) throw new Error('Parameters must be an array');
+        payloadData.parameters = parsed;
+      } catch (e) {
+        notificationService.error('Invalid JSON in parameters');
+        return;
+      }
+    }
+
+    const payload = cleanToolData(payloadData);
+
     setIsSubmitting(true);
+    console.log('Submitting cleaned tool data:', JSON.stringify(payload, null, 2));
     try {
       if (tool) {
-        await aiToolApi.updateTool(tool.id, formData);
+        await aiToolApi.updateTool(tool.id, payload);
         notificationService.success('Tool updated successfully');
       } else {
-        await aiToolApi.createTool(formData as Omit<AiTool, 'id'>);
+        await aiToolApi.createTool(payload as Omit<AiTool, 'id'>);
         notificationService.success('Tool created successfully');
       }
       onSave();
@@ -332,104 +447,72 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
             <section className="space-y-4">
               <div className="flex justify-between items-center border-b border-gray-100 pb-2">
                 <h4 className="font-bold text-gray-800">Parameters</h4>
-                <button
-                  type="button"
-                  onClick={addParameter}
-                  className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-                >
-                  <Plus size={16} /> Add Parameter
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                {(formData.parameters || []).map((param, index) => (
-                  <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200 relative group">
+                <div className="flex gap-2">
+                  <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200">
                     <button
                       type="button"
-                      onClick={() => removeParameter(index)}
-                      className="absolute right-2 top-2 text-gray-400 hover:text-red-500 p-1 rounded hover:bg-red-50 transition-colors"
+                      onClick={() => toggleParameterMode('form')}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-all ${
+                        parameterMode === 'form' 
+                          ? 'bg-white text-blue-600 shadow-sm' 
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
                     >
-                      <Trash2 size={16} />
+                      <List size={14} /> Form
                     </button>
-
-                    <div className="grid grid-cols-2 gap-4 mb-3">
-                      <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Parameter Name</label>
-                        <input
-                          type="text"
-                          value={param.name}
-                          onChange={(e) => handleParameterChange(index, 'name', e.target.value)}
-                          className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm font-mono"
-                          placeholder="name"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Display Name</label>
-                        <input
-                          type="text"
-                          value={param.displayName}
-                          onChange={(e) => handleParameterChange(index, 'displayName', e.target.value)}
-                          className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
-                          placeholder="Display Name"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-4 gap-4 mb-3">
-                      <div className="col-span-2">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Type</label>
-                        <select
-                          value={param.type}
-                          onChange={(e) => handleParameterChange(index, 'type', e.target.value)}
-                          className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
-                        >
-                          {FIELD_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                        </select>
-                      </div>
-                      <div className="flex items-end pb-2">
-                        <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={param.required}
-                            onChange={(e) => handleParameterChange(index, 'required', e.target.checked)}
-                            className="rounded text-blue-600 focus:ring-blue-500"
-                          />
-                          Required
-                        </label>
-                      </div>
-                    </div>
-
-                    {param.type === 'ENUM' && (
-                      <div className="mb-3">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Enum Values (comma separated)</label>
-                        <input
-                          type="text"
-                          value={param.enumValues?.join(', ') || ''}
-                          onChange={(e) => handleParameterChange(index, 'enumValues', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-                          className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm font-mono"
-                          placeholder="metric, imperial"
-                        />
-                      </div>
-                    )}
-
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Description</label>
-                      <input
-                        type="text"
-                        value={param.description}
-                        onChange={(e) => handleParameterChange(index, 'description', e.target.value)}
-                        className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
-                        placeholder="Parameter description"
-                      />
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => toggleParameterMode('json')}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-all ${
+                        parameterMode === 'json' 
+                          ? 'bg-white text-blue-600 shadow-sm' 
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      <Code size={14} /> JSON
+                    </button>
                   </div>
-                ))}
-                {(!formData.parameters || formData.parameters.length === 0) && (
-                  <div className="text-center py-8 text-gray-400 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                    No parameters defined. Click "Add Parameter" to create one.
-                  </div>
-                )}
+                  {parameterMode === 'form' && (
+                    <button
+                      type="button"
+                      onClick={addParameter}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 ml-2"
+                    >
+                      <Plus size={16} /> Add Parameter
+                    </button>
+                  )}
+                </div>
               </div>
+
+              {parameterMode === 'form' ? (
+                <div className="space-y-4">
+                  {(formData.parameters || []).map((param, index) => (
+                    <ParameterEditor
+                      key={index}
+                      parameter={param}
+                      onChange={(updatedParam) => handleParameterChange(index, updatedParam)}
+                      onRemove={() => removeParameter(index)}
+                    />
+                  ))}
+                  {(!formData.parameters || formData.parameters.length === 0) && (
+                    <div className="text-center py-8 text-gray-400 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                      No parameters defined. Click "Add Parameter" to create one.
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div>
+                   <textarea
+                     value={jsonParameters}
+                     onChange={(e) => setJsonParameters(e.target.value)}
+                     className="w-full h-[400px] font-mono text-sm border border-gray-300 rounded-lg p-4 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                     placeholder="Enter parameters JSON here..."
+                   />
+                   <p className="text-xs text-gray-500 mt-2">
+                     Edit parameters as a JSON array. Be careful with syntax.
+                   </p>
+                </div>
+              )}
             </section>
 
             {/* API Config */}

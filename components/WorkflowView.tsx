@@ -16,7 +16,7 @@ import {
   useReactFlow,
   BaseEdge,
   EdgeLabelRenderer,
-  getSmoothStepPath,
+  getBezierPath,
   EdgeProps
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -44,7 +44,7 @@ const CustomEdge = ({
   selected,
 }: EdgeProps) => {
   const { deleteElements } = useReactFlow();
-  const [edgePath, labelX, labelY] = getSmoothStepPath({
+  const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
     sourcePosition,
