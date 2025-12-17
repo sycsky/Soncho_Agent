@@ -29,6 +29,7 @@ import { KnowledgeBase } from '../types';
 import { AiTool } from '../types/aiTool';
 import { CreateWorkflowDialog } from './settings/CreateWorkflowDialog';
 import { WorkflowTestDialog } from './WorkflowTestDialog';
+import TiptapEditor, { TiptapEditorRef } from './TiptapEditor';
 
 // Custom Edge Component with Delete Button
 const CustomEdge = ({
@@ -677,12 +678,9 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
   const [cursorIndex, setCursorIndex] = useState(0);
   const [filterText, setFilterText] = useState('');
   const [activeField, setActiveField] = useState<string | null>(null);
-  const textareaRefs = useRef<{ [key: string]: HTMLTextAreaElement | HTMLInputElement | null }>({});
+  const textareaRefs = useRef<{ [key: string]: HTMLTextAreaElement | HTMLInputElement | TiptapEditorRef | null }>({});
   
-  // Test Session State
-  const [testMessages, setTestMessages] = useState<{role: string, content: string}[]>([]);
-  const [testInput, setTestInput] = useState('');
-  const [isTesting, setIsTesting] = useState(false);
+
   
   // Debug State
   // const [debugInfo, setDebugInfo] = useState<string>('');
@@ -761,24 +759,30 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
   const handleInsertVariable = (variable: string) => {
     if (!activeField || !textareaRefs.current[activeField]) return;
     
-    const textarea = textareaRefs.current[activeField];
-    const currentValue = textarea?.value || '';
-    // Replace the triggering '/' with the variable
-    const newValue = currentValue.substring(0, cursorIndex - 1) + variable + currentValue.substring(cursorIndex);
+    const fieldRef = textareaRefs.current[activeField];
     
-    if (activeField === 'systemPrompt') {
-        handleConfigChange('systemPrompt', newValue);
-    } else if (activeField === 'customPrompt') {
-        handleConfigChange('customPrompt', newValue);
-    } else if (activeField.startsWith('message-')) {
-        const index = parseInt(activeField.split('-')[1]);
-        handleUpdateMessage(index, 'content', newValue);
-    } else if (activeField.startsWith('param-desc-')) {
-        const index = parseInt(activeField.split('param-desc-')[1]);
-        const currentParams = [...(node.data.config?.parameters || [])];
-        if (currentParams[index]) {
-            currentParams[index] = { ...currentParams[index], description: newValue };
-            handleConfigChange('parameters', currentParams);
+    if (fieldRef && 'insertVariable' in fieldRef) {
+        (fieldRef as TiptapEditorRef).insertVariable(variable, cursorIndex);
+    } else {
+        const textarea = fieldRef as HTMLTextAreaElement;
+        const currentValue = textarea?.value || '';
+        // Replace the triggering '/' with the variable
+        const newValue = currentValue.substring(0, cursorIndex - 1) + variable + currentValue.substring(cursorIndex);
+        
+        if (activeField === 'systemPrompt') {
+            handleConfigChange('systemPrompt', newValue);
+        } else if (activeField === 'customPrompt') {
+            handleConfigChange('customPrompt', newValue);
+        } else if (activeField.startsWith('message-')) {
+            const index = parseInt(activeField.split('-')[1]);
+            handleUpdateMessage(index, 'content', newValue);
+        } else if (activeField.startsWith('param-desc-')) {
+            const index = parseInt(activeField.split('param-desc-')[1]);
+            const currentParams = [...(node.data.config?.parameters || [])];
+            if (currentParams[index]) {
+                currentParams[index] = { ...currentParams[index], description: newValue };
+                handleConfigChange('parameters', currentParams);
+            }
         }
     }
     
@@ -787,10 +791,13 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
     
     // Focus back and move cursor
     setTimeout(() => {
-        if (textarea) {
+        if (fieldRef && !('insertVariable' in fieldRef)) {
+            const textarea = fieldRef as HTMLTextAreaElement;
             textarea.focus();
             const newCursorPos = cursorIndex - 1 + variable.length;
             textarea.setSelectionRange(newCursorPos, newCursorPos);
+        } else if (fieldRef && 'focus' in fieldRef) {
+             (fieldRef as TiptapEditorRef).focus();
         }
     }, 0);
   };
@@ -868,6 +875,47 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
       }
   };
 
+  const handleEditorSlash = (field: string, rect: DOMRect, index: number) => {
+      // Calculate available space
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const menuHeight = 300; // Estimated max height
+      const placement = spaceBelow < menuHeight && rect.top > menuHeight ? 'top' : 'bottom';
+      
+      // Clamp horizontal position
+      const menuWidth = 260;
+      const left = Math.min(rect.left, window.innerWidth - menuWidth - 20);
+
+      const newPos = {
+          top: placement === 'bottom' ? rect.bottom : rect.top,
+          left: left,
+          placement
+      };
+
+      setVarMenuPos(newPos);
+      setCursorIndex(index);
+      setShowVarMenu(true);
+      setFilterText('');
+      setActiveField(field);
+  };
+
+  const handleEditorChange = (field: string, value: string, cursorPosition?: number) => {
+      if (field === 'systemPrompt') {
+          handleConfigChange('systemPrompt', value);
+      } else if (field === 'customPrompt') {
+          handleConfigChange('customPrompt', value);
+      }
+      
+      if (showVarMenu && activeField === field && cursorPosition !== undefined) {
+          const diff = cursorPosition - cursorIndex;
+          if (diff < 0) {
+              setShowVarMenu(false);
+          } else {
+               const potentialFilter = value.substring(cursorIndex, cursorPosition);
+               setFilterText(potentialFilter);
+          }
+      }
+  };
+  
   useEffect(() => {
     if (node && (node.type === 'intent' || node.type === 'llm' || node.type === 'parameter_extraction')) {
       workflowApi.getAllModels()
@@ -1091,52 +1139,10 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
     });
   };
 
-  const handleSendTestMessage = async () => {
-    if (!testInput.trim()) return;
-    
-    const userMsg = { role: 'user', content: testInput };
-    setTestMessages(prev => [...prev, userMsg]);
-    setTestInput('');
-    setIsTesting(true);
-    
-    // Simulate AI response with tool usage if applicable
-    setTimeout(() => {
-        const config = node.data.config || {};
-        const selectedTools = tools.filter(t => (config.tools || []).includes(t.id));
-        
-        let responseContent = "This is a simulated response.";
-        const toolCalls: any[] = [];
 
-        // Simple simulation logic
-        if (userMsg.content.includes('weather') && selectedTools.some(t => t.name.includes('weather'))) {
-            toolCalls.push({
-                tool: 'get_weather',
-                params: { city: 'Beijing' },
-                result: { temp: 25, condition: 'Sunny' }
-            });
-            responseContent = "The weather in Beijing is sunny with a temperature of 25°C.";
-        } else if (userMsg.content.includes('email') && selectedTools.some(t => t.name.includes('email'))) {
-             toolCalls.push({
-                tool: 'send_email',
-                params: { to: 'user@example.com', subject: 'Test' },
-                result: { status: 'sent' }
-            });
-            responseContent = "I've sent the email successfully.";
-        }
-
-        const aiMsg = { 
-            role: 'assistant', 
-            content: responseContent,
-            toolCalls: toolCalls.length > 0 ? toolCalls : undefined
-        };
-        
-        setTestMessages(prev => [...prev, aiMsg]);
-        setIsTesting(false);
-    }, 1500);
-  };
 
   return (
-    <div className="absolute top-4 right-4 w-[450px] bg-white rounded-xl shadow-xl border border-gray-200 z-20 flex flex-col max-h-[calc(100vh-32px)] overflow-hidden animate-in slide-in-from-right-5 duration-200">
+    <div className="absolute top-4 right-4 w-[600px] bg-white rounded-xl shadow-xl border border-gray-200 z-20 flex flex-col max-h-[calc(100vh-32px)] overflow-hidden animate-in slide-in-from-right-5 duration-200">
       <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
         <div className="flex flex-col">
             <div className="flex items-center gap-2">
@@ -1155,8 +1161,8 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
           <input 
             type="text" 
             value={node.data.label || ''} 
-            disabled
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-500 cursor-not-allowed"
+            onChange={(e) => handleChange('label', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
@@ -1191,14 +1197,13 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
               <label className="block text-xs font-medium text-gray-500 mb-1">System Prompt</label>
               
               <div className="relative">
-                <textarea 
+                <TiptapEditor
                     ref={el => textareaRefs.current['customPrompt'] = el}
                     value={node.data.config?.customPrompt || ''} 
-                    onChange={(e) => handleTextareaInput(e, 'customPrompt')}
-                    onKeyDown={handleKeyDown}
-                    rows={6}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-mono"
+                    onChange={(val, selection) => handleEditorChange('customPrompt', val, selection)}
+                    onSlash={(rect, index) => handleEditorSlash('customPrompt', rect, index)}
                     placeholder="Enter system prompt for intent classification. Type '/' to insert variable..."
+                    className="min-h-[150px]"
                 />
               </div>
             </div>
@@ -1583,14 +1588,13 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
               <label className="block text-xs font-medium text-gray-500 mb-1">System Prompt</label>
               
               <div className="relative">
-                <textarea 
+                <TiptapEditor
                     ref={el => textareaRefs.current['systemPrompt'] = el}
                     value={node.data.config?.systemPrompt || ''} 
-                    onChange={(e) => handleTextareaInput(e, 'systemPrompt')}
-                    onKeyDown={handleKeyDown}
-                    rows={6}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-mono"
+                    onChange={(val, selection) => handleEditorChange('systemPrompt', val, selection)}
+                    onSlash={(rect, index) => handleEditorSlash('systemPrompt', rect, index)}
                     placeholder="Enter system prompt. Type '/' to insert variable..."
+                    className="min-h-[150px]"
                 />
               </div>
             </div>
@@ -1722,66 +1726,7 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
                 />
             </div>
 
-            {/* Test Session Section */}
-            <div className="mt-4 border-t border-gray-100 pt-4">
-                <label className="block text-xs font-medium text-gray-500 mb-2">Test Session</label>
-                <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden flex flex-col h-64">
-                    <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
-                        {testMessages.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center text-gray-400 text-xs gap-2 opacity-60">
-                                <Bot size={24} />
-                                <span>Start a conversation to test</span>
-                            </div>
-                        ) : (
-                            testMessages.map((msg, idx) => (
-                                <div key={idx} className={`flex flex-col gap-1 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                                    <div className={`max-w-[85%] px-3 py-2 rounded-lg text-xs ${
-                                        msg.role === 'user' 
-                                            ? 'bg-blue-600 text-white rounded-br-none' 
-                                            : 'bg-white border border-gray-200 text-gray-700 rounded-bl-none shadow-sm'
-                                    }`}>
-                                        {msg.content}
-                                    </div>
-                                    {/* Tool Calls Display */}
-                                    {(msg as any).toolCalls && (msg as any).toolCalls.map((tc: any, i: number) => (
-                                        <div key={i} className="max-w-[85%] bg-gray-100 border border-gray-200 rounded-lg p-2 text-[10px] font-mono text-gray-600 w-full">
-                                            <div className="flex items-center gap-1 text-blue-600 font-bold mb-1">
-                                                <Settings size={10} />
-                                                Tool Call: {tc.tool}
-                                            </div>
-                                            <div className="mb-1">Args: {JSON.stringify(tc.params)}</div>
-                                            <div className="text-green-600">Result: {JSON.stringify(tc.result)}</div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ))
-                        )}
-                        {isTesting && (
-                            <div className="flex items-center gap-2 text-gray-400 text-xs ml-1">
-                                <Loader2 size={12} className="animate-spin" />
-                                <span>AI is thinking...</span>
-                            </div>
-                        )}
-                    </div>
-                    <div className="p-2 bg-white border-t border-gray-200 flex gap-2">
-                        <input 
-                            type="text" 
-                            value={testInput}
-                            onChange={(e) => setTestInput(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSendTestMessage()}
-                            placeholder="Type a message..."
-                            className="flex-1 px-3 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
-                        <button 
-                            onClick={handleSendTestMessage}
-                            disabled={isTesting || !testInput.trim()}
-                            className="bg-blue-600 text-white p-1.5 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                            <ChevronRight size={14} />
-                        </button>
-                    </div>
-                </div>
-            </div>
+
 
 
 
@@ -2456,6 +2401,7 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
             onClose={() => setShowTestDialog(false)}
             workflowId={workflowId}
             workflowName={workflowName}
+            nodes={nodes}
         />
       </div>
     </div>

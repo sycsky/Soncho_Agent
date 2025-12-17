@@ -3,10 +3,13 @@ import { X, Send, Trash2, Play, Bot, User, AlertCircle, Clock, CheckCircle2, Rot
 import workflowTestService from '../services/workflowTestService';
 import { TestMessage, WorkflowTestSessionDto } from '../types/workflowTest';
 
+import { Node } from '@xyflow/react';
+
 interface WorkflowTestDialogProps {
   isOpen: boolean;
   workflowId: string;
   workflowName?: string;
+  nodes?: Node[];
   onClose: () => void;
 }
 
@@ -14,6 +17,7 @@ export const WorkflowTestDialog: React.FC<WorkflowTestDialogProps> = ({
   isOpen,
   workflowId, 
   workflowName,
+  nodes = [],
   onClose 
 }) => {
   const [testSessionId, setTestSessionId] = useState<string | null>(null);
@@ -183,7 +187,9 @@ export const WorkflowTestDialog: React.FC<WorkflowTestDialogProps> = ({
                           <div className="flex items-center gap-2">
                             <div className={`w-1.5 h-1.5 rounded-full ${node.success ? 'bg-green-500' : 'bg-red-500'}`}></div>
                             <span className="text-xs font-medium text-gray-700">{node.nodeType}</span>
-                            <span className="text-[10px] text-gray-400 font-mono">({node.nodeId})</span>
+                            <span className="text-[10px] text-gray-400 font-mono">
+                              ({nodes.find(n => n.id === node.nodeId)?.data?.label as string || node.nodeId})
+                            </span>
                           </div>
                           <span className="text-[10px] text-gray-400">{node.durationMs}ms</span>
                         </div>
