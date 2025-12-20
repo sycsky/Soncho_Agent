@@ -30,6 +30,7 @@ import { AiTool } from '../types/aiTool';
 import { CreateWorkflowDialog } from './settings/CreateWorkflowDialog';
 import { WorkflowTestDialog } from './WorkflowTestDialog';
 import { WorkflowGeneratorDialog } from './WorkflowGeneratorDialog';
+import { SystemPromptEnhancer } from './SystemPromptEnhancer';
 import TiptapEditor, { TiptapEditorRef } from './TiptapEditor';
 
 // Helper hook to resolve model name from ID if display name is missing
@@ -1140,7 +1141,14 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">System Prompt</label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-xs font-medium text-gray-500">System Prompt</label>
+                <SystemPromptEnhancer 
+                    nodeType="intent" 
+                    userInput={node.data.config?.customPrompt || ''}
+                    onEnhanced={(val) => handleEditorChange('customPrompt', val)}
+                />
+              </div>
               
               <div className="relative">
                 <TiptapEditor
@@ -1301,7 +1309,14 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">System Prompt</label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-xs font-medium text-gray-500">System Prompt</label>
+                  <SystemPromptEnhancer 
+                      nodeType="imageTextSplit"
+                      userInput={node.data.config?.systemPrompt || ''}
+                      onEnhanced={(val) => handleEditorChange('systemPrompt', val)}
+                  />
+                </div>
                 <div className="relative">
                   <TiptapEditor
                       ref={el => textareaRefs.current['systemPrompt'] = el}
@@ -1347,7 +1362,14 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">System Prompt</label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-xs font-medium text-gray-500">System Prompt</label>
+                  <SystemPromptEnhancer 
+                      nodeType="setSessionMetadata"
+                      userInput={node.data.config?.systemPrompt || ''}
+                      onEnhanced={(val) => handleEditorChange('systemPrompt', val)}
+                  />
+                </div>
                 <div className="relative">
                   <TiptapEditor
                       ref={el => textareaRefs.current['systemPrompt'] = el}
@@ -1471,7 +1493,14 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">System Prompt</label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-xs font-medium text-gray-500">System Prompt</label>
+                  <SystemPromptEnhancer 
+                      nodeType="parameter_extraction"
+                      userInput={node.data.config?.systemPrompt || ''}
+                      onEnhanced={(val) => handleEditorChange('systemPrompt', val)}
+                  />
+                </div>
                 <div className="relative">
                   <TiptapEditor
                       ref={el => textareaRefs.current['systemPrompt'] = el}
@@ -1586,7 +1615,15 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">System Prompt</label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-xs font-medium text-gray-500">System Prompt</label>
+                <SystemPromptEnhancer 
+                    nodeType="llm"
+                    toolIds={node.data.config?.tools}
+                    userInput={node.data.config?.systemPrompt || ''}
+                    onEnhanced={(val) => handleEditorChange('systemPrompt', val)}
+                />
+              </div>
               
               <div className="relative">
                 <TiptapEditor

@@ -230,5 +230,17 @@ export const workflowApi = {
       headers: getHeaders(),
     });
     return handleResponse<{ success: boolean; message: string }>(response);
+  },
+
+  enhanceSystemPrompt: async (data: { nodeType: string; toolIds?: string[]; userInput: string }): Promise<{ systemPrompt: string }> => {
+    // The user specified /api/system-prompt/enhance, which might not be under /api/v1
+    // We'll try to follow the convention. If BASE_URL ends with /, we remove it or handle it.
+    // BASE_URL is likely the host.
+    const response = await fetch(`${BASE_URL}/api/system-prompt/enhance`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<{ systemPrompt: string }>(response);
   }
 };
