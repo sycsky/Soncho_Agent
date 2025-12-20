@@ -20,7 +20,7 @@ import {
   EdgeProps
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Play, GitBranch, Database, Bot, MessageSquare, GripHorizontal, Plus, Trash2, X, MoreHorizontal, ArrowLeft, Calendar, User, Search, Filter, Save, Loader2, Square, Settings, ChevronRight, Star, Power, CheckCircle, Edit2, Headphones, Hammer, ListFilter } from 'lucide-react';
+import { Play, GitBranch, Database, Bot, MessageSquare, GripHorizontal, Plus, Trash2, X, MoreHorizontal, ArrowLeft, Calendar, User, Search, Filter, Save, Loader2, Square, Settings, ChevronRight, Star, Power, CheckCircle, Edit2, Headphones, Hammer, ListFilter, Split, Image, Tags, Wand2 } from 'lucide-react';
 import { workflowApi } from '../services/workflowApi';
 import knowledgeBaseApi from '../services/knowledgeBaseApi';
 import aiToolApi from '../services/aiToolApi';
@@ -29,7 +29,51 @@ import { KnowledgeBase } from '../types';
 import { AiTool } from '../types/aiTool';
 import { CreateWorkflowDialog } from './settings/CreateWorkflowDialog';
 import { WorkflowTestDialog } from './WorkflowTestDialog';
+import { WorkflowGeneratorDialog } from './WorkflowGeneratorDialog';
 import TiptapEditor, { TiptapEditorRef } from './TiptapEditor';
+
+// Helper hook to resolve model name from ID if display name is missing
+const useModelName = (modelId?: string, modelDisplayName?: string) => {
+  const [displayName, setDisplayName] = useState(modelDisplayName || modelId || 'Select Model');
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const resolveName = async () => {
+      const needsResolution = modelId && (!modelDisplayName || modelDisplayName === modelId);
+      
+      if (needsResolution) {
+        try {
+           // Check simple cache first
+           if ((window as any).__modelCache?.[modelId!]) {
+               if (isMounted) setDisplayName((window as any).__modelCache[modelId!]);
+               return;
+           }
+
+           const models = await workflowApi.getEnabledModels();
+           const found = models.find((m: any) => m.id === modelId);
+           
+           if (found && isMounted) {
+             setDisplayName(found.name);
+             // Update cache
+             if (!(window as any).__modelCache) (window as any).__modelCache = {};
+             (window as any).__modelCache[modelId!] = found.name;
+           }
+        } catch (err) {
+          console.error('Failed to resolve model name', err);
+        }
+      } else {
+         if (isMounted) setDisplayName(modelDisplayName || modelId || 'Select Model');
+      }
+    };
+
+    resolveName();
+
+    return () => { isMounted = false; };
+  }, [modelId, modelDisplayName]);
+
+  return displayName;
+};
 
 // Custom Edge Component with Delete Button
 const CustomEdge = ({
@@ -151,7 +195,7 @@ const StartNode = ({ id, data }: NodeProps) => {
         <div className="bg-blue-100 p-1 rounded-lg text-blue-600">
           <Play size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">Start</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Start'}</span>
       </div>
       <div className="p-4">
         <div className="text-xs text-gray-500">Workflow Entry Point</div>
@@ -164,7 +208,7 @@ const StartNode = ({ id, data }: NodeProps) => {
 const IntentNode = ({ id, data }: NodeProps) => {
   const intents = (data.config as any)?.intents || [];
   const config = data.config as any;
-  const modelDisplay = config?.modelDisplayName || config?.model || 'Select Model';
+  const modelDisplay = useModelName(config?.model, config?.modelDisplayName);
 
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[280px] group hover:border-green-300 transition-colors relative">
@@ -173,7 +217,7 @@ const IntentNode = ({ id, data }: NodeProps) => {
         <div className="bg-green-100 p-1 rounded-lg text-green-600">
           <GitBranch size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">Intent Recognition</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Intent Recognition'}</span>
       </div>
       <div className="p-3 bg-gray-50 border-b border-gray-100">
         <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
@@ -219,7 +263,7 @@ const KnowledgeNode = ({ id, data }: NodeProps) => {
         <div className="bg-orange-100 p-1 rounded-lg text-orange-600">
           <Database size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">Knowledge Retrieval</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Knowledge Retrieval'}</span>
       </div>
       
       <div className="p-3 bg-gray-50 border-b border-gray-100">
@@ -259,7 +303,7 @@ const KnowledgeNode = ({ id, data }: NodeProps) => {
 
 const LLMNode = ({ id, data }: NodeProps) => {
   const config = data.config as any;
-  const modelDisplay = config?.modelDisplayName || config?.model || 'Select Model';
+  const modelDisplay = useModelName(config?.model, config?.modelDisplayName);
   
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[240px] group hover:border-indigo-300 transition-colors relative">
@@ -268,7 +312,7 @@ const LLMNode = ({ id, data }: NodeProps) => {
         <div className="bg-indigo-100 p-1 rounded-lg text-indigo-600">
           <Bot size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">LLM Generation</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'LLM Generation'}</span>
       </div>
       <div className="p-3 bg-gray-50 border-b border-gray-100">
         <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
@@ -293,7 +337,7 @@ const ReplyNode = ({ id, data }: NodeProps) => {
         <div className="bg-blue-100 p-1 rounded-lg text-blue-600">
           <MessageSquare size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">Direct Reply</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Direct Reply'}</span>
       </div>
       <div className="p-3 bg-gray-50 border-b border-gray-100">
          <div className="text-[10px] uppercase font-bold text-gray-400 mb-1">Response Source</div>
@@ -319,7 +363,7 @@ const EndNode = ({ id, data }: NodeProps) => {
         <div className="bg-red-100 p-1 rounded-lg text-red-600">
           <Square size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">End</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'End'}</span>
       </div>
       <div className="p-4">
         <div className="text-xs text-gray-500">Workflow Exit Point</div>
@@ -337,7 +381,7 @@ const TransferNode = ({ id, data }: NodeProps) => {
         <div className="bg-pink-100 p-1 rounded-lg text-pink-600">
           <Headphones size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">Transfer to Human</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Transfer to Human'}</span>
       </div>
       <div className="p-4">
         <div className="text-xs text-gray-500">Transfer conversation to human agent</div>
@@ -358,7 +402,7 @@ const AgentNode = ({ id, data }: NodeProps) => {
         <div className="bg-purple-100 p-1 rounded-lg text-purple-600">
           <Bot size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">Agent</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Agent'}</span>
       </div>
       <div className="p-3 bg-gray-50 border-b border-gray-100">
         <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
@@ -383,7 +427,7 @@ const AgentEndNode = ({ id, data }: NodeProps) => {
         <div className="bg-gray-200 p-1 rounded-lg text-gray-600">
           <Square size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">Agent End</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Agent End'}</span>
       </div>
       <div className="p-4">
         <div className="text-xs text-gray-500">Agent Execution End</div>
@@ -401,7 +445,7 @@ const AgentUpdateNode = ({ id, data }: NodeProps) => {
         <div className="bg-yellow-100 p-1 rounded-lg text-yellow-600">
           <Edit2 size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">Agent Update</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Agent Update'}</span>
       </div>
       <div className="p-4">
         <div className="text-xs text-gray-500">Update Agent State</div>
@@ -423,7 +467,7 @@ const ToolNode = ({ id, data }: NodeProps) => {
         <div className="bg-orange-100 p-1 rounded-lg text-orange-600">
           <Hammer size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">Tool Execution</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Tool Execution'}</span>
       </div>
       <div className="p-3 bg-gray-50 border-b border-gray-100">
         <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
@@ -449,74 +493,8 @@ const ToolNode = ({ id, data }: NodeProps) => {
   );
 };
 
-const ParameterExtractionNode = ({ id, data }: NodeProps) => {
-  const config = data.config as any;
-  const toolName = config?.toolName || 'Select Tool';
-  const modelDisplay = config?.modelDisplayName || config?.model || 'Select Model';
 
-  return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[280px] group hover:border-violet-300 transition-colors relative">
-      <NodeMenu nodeId={id} />
-      <div className="bg-violet-50 px-4 py-2 rounded-t-xl border-b border-violet-100 flex items-center gap-2">
-        <div className="bg-violet-100 p-1 rounded-lg text-violet-600">
-          <ListFilter size={14} />
-        </div>
-        <span className="font-semibold text-gray-700 text-sm">Param Extraction</span>
-      </div>
-      <div className="p-3 bg-gray-50 border-b border-gray-100 space-y-2">
-        <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
-          <Hammer size={12} />
-          <span>{toolName}</span>
-        </div>
-        <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
-          <Bot size={12} />
-          <span>{modelDisplay}</span>
-        </div>
-      </div>
-      <div className="flex flex-col">
-        <div className="flex justify-between items-center py-2 px-4 border-b border-gray-100 relative hover:bg-gray-50">
-           <span className="text-xs font-medium text-gray-600">Success</span>
-           <Handle type="source" position={Position.Right} id="success" className="!bg-violet-500 !right-[-6px]" style={{top: '50%'}} />
-        </div>
-        <div className="flex justify-between items-center py-2 px-4 relative hover:bg-gray-50">
-           <span className="text-xs font-medium text-gray-600">Missing Params</span>
-           <Handle type="source" position={Position.Right} id="fail" className="!bg-red-400 !right-[-6px]" style={{top: '50%'}} />
-        </div>
-      </div>
-      <div className="p-3 bg-gray-50 rounded-b-xl text-[10px] text-gray-400 leading-relaxed border-t border-gray-100">
-        Extract parameters for tool execution.
-      </div>
-      <Handle type="target" position={Position.Left} className="!bg-gray-400" />
-    </div>
-  );
-};
 
-const KnowledgeSearchNode = ({ id, data }: NodeProps) => {
-  const config = data.config as any || {};
-  const kbName = config.selectedKnowledgeBase?.name || 'No KB selected';
-  
-  return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[240px] group hover:border-cyan-300 transition-colors relative">
-      <NodeMenu nodeId={id} />
-      <div className="bg-cyan-50 px-4 py-2 rounded-t-xl border-b border-cyan-100 flex items-center gap-2">
-        <div className="bg-cyan-100 p-1 rounded-lg text-cyan-600">
-          <Search size={14} />
-        </div>
-        <span className="font-semibold text-gray-700 text-sm">Knowledge Base Search</span>
-      </div>
-      
-      <div className="p-4">
-        <div className="text-xs text-gray-500 mb-1">Target Knowledge Base</div>
-        <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 px-3 py-2 rounded-lg">
-           <Database size={14} className="text-cyan-500"/>
-           <span className="text-sm font-medium text-gray-700 truncate">{kbName}</span>
-        </div>
-      </div>
-      <Handle type="target" position={Position.Left} className="!bg-gray-400" />
-      <Handle type="source" position={Position.Right} className="!bg-cyan-500" />
-    </div>
-  );
-};
 
 // Helper to get caret coordinates for textarea
 const getCaretCoordinates = (element: HTMLTextAreaElement, position: number) => {
@@ -726,14 +704,7 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
                     group: 'KNOWLEDGE',
                     type: 'String'
                 });
-            } else if (n.type === 'kb_search') {
-                vars.push({ 
-                    id: `${n.id}.result`, 
-                    label: `${n.data.label || 'Search'}.result`, 
-                    value: `{{${n.data.label || 'Search'}.result}}`,
-                    group: 'KNOWLEDGE',
-                    type: 'String'
-                });
+
             } else if (n.type === 'llm') {
                 vars.push({ 
                     id: `${n.id}.text`, 
@@ -776,13 +747,7 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
         } else if (activeField.startsWith('message-')) {
             const index = parseInt(activeField.split('-')[1]);
             handleUpdateMessage(index, 'content', newValue);
-        } else if (activeField.startsWith('param-desc-')) {
-            const index = parseInt(activeField.split('param-desc-')[1]);
-            const currentParams = [...(node.data.config?.parameters || [])];
-            if (currentParams[index]) {
-                currentParams[index] = { ...currentParams[index], description: newValue };
-                handleConfigChange('parameters', currentParams);
-            }
+
         }
     }
     
@@ -865,13 +830,7 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
       } else if (field.startsWith('message-')) {
           const index = parseInt(field.split('-')[1]);
           handleUpdateMessage(index, 'content', val);
-      } else if (field.startsWith('param-desc-')) {
-          const index = parseInt(field.split('param-desc-')[1]);
-          const currentParams = [...(node.data.config?.parameters || [])];
-          if (currentParams[index]) {
-              currentParams[index] = { ...currentParams[index], description: val };
-              handleConfigChange('parameters', currentParams);
-          }
+
       }
   };
 
@@ -917,7 +876,7 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
   };
   
   useEffect(() => {
-    if (node && (node.type === 'intent' || node.type === 'llm' || node.type === 'parameter_extraction')) {
+    if (node && (node.type === 'intent' || node.type === 'llm' || node.type === 'imageTextSplit' || node.type === 'setSessionMetadata')) {
       workflowApi.getAllModels()
         .then(data => {
             const enabledModels = data.filter((m: LlmModel) => m.enabled);
@@ -926,13 +885,13 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
         .catch(err => console.error('Failed to fetch models', err));
     }
 
-    if (node && (node.type === 'llm' || node.type === 'tool' || node.type === 'parameter_extraction')) {
+    if (node && (node.type === 'llm' || node.type === 'tool')) {
         aiToolApi.getTools()
             .then(data => setTools(data))
             .catch(err => console.error('Failed to fetch tools', err));
     }
     
-    if (node && (node.type === 'knowledge' || node.type === 'kb_search')) {
+    if (node && node.type === 'knowledge') {
       knowledgeBaseApi.getKnowledgeBases(true)
         .then(data => {
             setKnowledgeBases(data);
@@ -969,20 +928,7 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
                          }
                      }
                 }
-            } else if (node.type === 'kb_search') {
-               const config = node.data.config || {};
-               if (config.knowledgeBaseId && !config.selectedKnowledgeBase) {
-                   const kb = data.find(k => k.id === config.knowledgeBaseId);
-                   if (kb) {
-                       onChange({
-                           ...node.data,
-                           config: {
-                               ...config,
-                               selectedKnowledgeBase: { id: kb.id, name: kb.name }
-                           }
-                       });
-                   }
-               }
+
             }
         })
         .catch(err => console.error('Failed to fetch knowledge bases', err));
@@ -1322,43 +1268,22 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
           </div>
         )}
 
-        {node.type === 'parameter_extraction' && (
+
+
+        {node.type === 'imageTextSplit' && (
            <div className="space-y-4">
-              {/* Tool Selection */}
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Bind Tool</label>
-                <select 
-                  value={node.data.config?.toolId || ''}
-                  onChange={(e) => {
-                      const selectedId = e.target.value;
-                      const selectedTool = tools.find(t => t.id === selectedId);
-                      onChange({
-                          ...node.data,
-                          config: {
-                              ...node.data.config,
-                              toolId: selectedId,
-                              toolName: selectedTool?.displayName || ''
-                          }
-                      });
-                  }}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="" disabled>Select a tool to bind</option>
-                  {tools.map(tool => (
-                    <option key={tool.id} value={tool.id}>{tool.displayName}</option>
-                  ))}
-                </select>
+              <div className="p-4 bg-teal-50 rounded-lg border border-teal-100 mb-4">
+                 <p className="text-xs text-teal-800">
+                   Splits image and text content into structured JSON using an AI model.
+                 </p>
               </div>
 
-              {/* Model Selection */}
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Extraction Model</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Model</label>
                 <select 
-                  value={node.data.config?.modelId || ''}
-                  onChange={(e) => {
-                      handleConfigChange('modelId', e.target.value);
-                  }}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={node.data.config?.modelId || node.data.config?.model || ''}
+                  onChange={(e) => handleConfigChange('modelId', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                 >
                   <option value="" disabled>Select a model</option>
                   {llmModels.length > 0 ? (
@@ -1366,110 +1291,209 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
                         <option key={model.id} value={model.id}>{model.name} ({model.provider})</option>
                       ))
                     ) : (
-                      <option value="" disabled>No models available</option>
+                      <>
+                        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                        <option value="gpt-4">gpt-4</option>
+                        <option value="claude-3-opus">claude-3-opus</option>
+                      </>
                     )}
                 </select>
               </div>
 
-              {/* System Prompt */}
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">System Prompt</label>
                 <div className="relative">
-                  <textarea 
+                  <TiptapEditor
                       ref={el => textareaRefs.current['systemPrompt'] = el}
                       value={node.data.config?.systemPrompt || ''} 
-                      onChange={(e) => handleTextareaInput(e, 'systemPrompt')}
-                      onKeyDown={handleKeyDown}
-                      rows={4}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-mono"
-                      placeholder="Instruction for parameter extraction..."
+                      onChange={(val, selection) => handleEditorChange('systemPrompt', val, selection)}
+                      onSlash={(rect, index) => handleEditorSlash('systemPrompt', rect, index)}
+                      placeholder="Enter system prompt for image-text splitting..."
+                      className="min-h-[150px]"
+                  />
+                </div>
+              </div>
+           </div>
+        )}
+
+        {node.type === 'setSessionMetadata' && (
+           <div className="space-y-4">
+              <div className="p-4 bg-fuchsia-50 rounded-lg border border-fuchsia-100 mb-4">
+                 <p className="text-xs text-fuchsia-800">
+                   Extracts information from context and sets session metadata fields.
+                 </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Model</label>
+                <select 
+                  value={node.data.config?.modelId || node.data.config?.model || ''}
+                  onChange={(e) => handleConfigChange('modelId', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
+                >
+                  <option value="" disabled>Select a model</option>
+                  {llmModels.length > 0 ? (
+                      llmModels.map(model => (
+                        <option key={model.id} value={model.id}>{model.name} ({model.provider})</option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                        <option value="gpt-4">gpt-4</option>
+                        <option value="claude-3-opus">claude-3-opus</option>
+                      </>
+                    )}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">System Prompt</label>
+                <div className="relative">
+                  <TiptapEditor
+                      ref={el => textareaRefs.current['systemPrompt'] = el}
+                      value={node.data.config?.systemPrompt || ''} 
+                      onChange={(val, selection) => handleEditorChange('systemPrompt', val, selection)}
+                      onSlash={(rect, index) => handleEditorSlash('systemPrompt', rect, index)}
+                      placeholder="Enter system prompt for metadata extraction..."
+                      className="min-h-[150px]"
                   />
                 </div>
               </div>
 
-              {/* History Configuration */}
-              <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
-                <label className="flex items-center gap-2 text-xs font-medium text-gray-700 cursor-pointer">
-                    <input 
-                        type="checkbox"
-                        checked={node.data.config?.useHistory || false}
-                        onChange={(e) => handleConfigChange('useHistory', e.target.checked)}
-                        className="rounded text-blue-600 focus:ring-blue-500"
-                    />
-                    Read Conversation History
-                </label>
-                
-                {node.data.config?.useHistory && (
-                    <div className="mt-3 pl-6 border-l-2 border-blue-100 animate-in fade-in slide-in-from-top-1 duration-200">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">History Message Count</label>
-                        <input 
-                            type="number"
-                            min="1"
-                            max="50"
-                            value={node.data.config?.readCount || 10}
-                            onChange={(e) => handleConfigChange('readCount', parseInt(e.target.value))}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                            placeholder="Number of messages to read"
-                        />
-                    </div>
-                )}
-              </div>
-              
-              {/* Conversation History Config */}
-              <div>
-                 <label className="block text-xs font-medium text-gray-500 mb-2">Conversation History</label>
-                 <div className="space-y-3">
-                    {(node.data.config?.messages || []).map((msg: any, index: number) => (
-                        <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
-                            <div className="bg-gray-50 px-3 py-2 border-b border-gray-200 flex justify-between items-center">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs font-bold text-gray-700 uppercase">{msg.role}</span>
-                                    <button 
-                                        onClick={() => handleUpdateMessage(index, 'role', msg.role === 'user' ? 'assistant' : 'user')}
-                                        className="text-[10px] text-blue-600 hover:underline"
-                                    >
-                                        Switch Role
-                                    </button>
-                                </div>
-                                <button 
-                                    onClick={() => handleDeleteMessage(index)}
-                                    className="text-gray-400 hover:text-red-500 transition-colors"
-                                >
-                                    <Trash2 size={12} />
-                                </button>
-                            </div>
-                            <div className="relative">
-                                <textarea
-                                    ref={el => textareaRefs.current[`message-${index}`] = el}
-                                    value={msg.content}
-                                    onChange={(e) => handleTextareaInput(e, `message-${index}`)}
-                                    onKeyDown={handleKeyDown}
-                                    rows={3}
-                                    className="w-full px-3 py-2 text-sm focus:outline-none resize-none block border-none"
-                                    placeholder={`Enter ${msg.role} message. Type '/' to insert variable...`}
-                                />
-                            </div>
-                        </div>
-                    ))}
-                 </div>
-                 <button 
-                    onClick={handleAddMessage}
-                    className="w-full mt-2 py-2 border border-dashed border-gray-300 rounded-lg text-xs text-gray-500 hover:bg-gray-50 hover:border-gray-400 transition-colors flex items-center justify-center gap-1"
-                 >
-                    <Plus size={12} /> Add Message
-                 </button>
-              </div>
-
-              {/* Parameter Definition */}
               <div>
                  <div className="flex justify-between items-center mb-2">
-                    <label className="block text-xs font-medium text-gray-500">Extraction Parameters</label>
+                    <label className="block text-xs font-medium text-gray-500">Mappings (Extracted -&gt; Metadata)</label>
+                    <button 
+                        onClick={() => {
+                            const currentMappings = (node.data.config?.mappings && !Array.isArray(node.data.config?.mappings)) ? node.data.config.mappings : {};
+                            let newKey = "source_field";
+                            let counter = 1;
+                            while (newKey in currentMappings) {
+                                newKey = `source_field_${counter}`;
+                                counter++;
+                            }
+                            handleConfigChange('mappings', { ...currentMappings, [newKey]: "" });
+                        }}
+                        className="text-xs text-fuchsia-600 hover:text-fuchsia-700 font-medium flex items-center gap-1"
+                    >
+                        <Plus size={12} /> Add Mapping
+                    </button>
+                 </div>
+                 
+                 <div className="space-y-3">
+                    {Object.entries((node.data.config?.mappings && !Array.isArray(node.data.config?.mappings)) ? node.data.config.mappings : {}).map(([source, target], index) => (
+                        <div key={index} className="flex items-center gap-2">
+                            <input 
+                                type="text" 
+                                value={source}
+                                onChange={(e) => {
+                                    const newKey = e.target.value;
+                                    const oldKey = source;
+                                    if (newKey === oldKey) return;
+                                    
+                                    const currentMappings = (node.data.config?.mappings && !Array.isArray(node.data.config?.mappings)) ? node.data.config.mappings : {};
+                                    // Preserve order by reconstructing
+                                    const newMappings: Record<string, string> = {};
+                                    Object.keys(currentMappings).forEach(k => {
+                                        if (k === oldKey) {
+                                            newMappings[newKey] = currentMappings[oldKey];
+                                        } else {
+                                            newMappings[k] = currentMappings[k];
+                                        }
+                                    });
+                                    handleConfigChange('mappings', newMappings);
+                                }}
+                                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
+                                placeholder="Source Field"
+                            />
+                            <ArrowLeft size={14} className="text-gray-400 rotate-180" />
+                            <input 
+                                type="text" 
+                                value={target as string}
+                                onChange={(e) => {
+                                    const currentMappings = { ...((node.data.config?.mappings && !Array.isArray(node.data.config?.mappings)) ? node.data.config.mappings : {}) };
+                                    currentMappings[source] = e.target.value;
+                                    handleConfigChange('mappings', currentMappings);
+                                }}
+                                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
+                                placeholder="Metadata Field"
+                            />
+                            <button 
+                                onClick={() => {
+                                    const currentMappings = { ...((node.data.config?.mappings && !Array.isArray(node.data.config?.mappings)) ? node.data.config.mappings : {}) };
+                                    delete currentMappings[source];
+                                    handleConfigChange('mappings', currentMappings);
+                                }}
+                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                                <Trash2 size={14} />
+                            </button>
+                        </div>
+                    ))}
+                    {Object.keys((node.data.config?.mappings && !Array.isArray(node.data.config?.mappings)) ? node.data.config.mappings : {}).length === 0 && (
+                        <div className="text-center py-4 bg-gray-50 rounded-lg border border-dashed border-gray-200 text-xs text-gray-400">
+                            No mappings defined
+                        </div>
+                    )}
+                 </div>
+              </div>
+           </div>
+        )}
+
+        {node.type === 'parameter_extraction' && (
+           <div className="space-y-4">
+              <div className="p-4 bg-violet-50 rounded-lg border border-violet-100 mb-4">
+                 <p className="text-xs text-violet-800">
+                   Extracts structured parameters from user input using an AI model.
+                 </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Model</label>
+                <select 
+                  value={node.data.config?.modelId || node.data.config?.model || ''}
+                  onChange={(e) => handleConfigChange('modelId', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                >
+                  <option value="" disabled>Select a model</option>
+                  {llmModels.length > 0 ? (
+                      llmModels.map(model => (
+                        <option key={model.id} value={model.id}>{model.name} ({model.provider})</option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                        <option value="gpt-4">gpt-4</option>
+                        <option value="claude-3-opus">claude-3-opus</option>
+                      </>
+                    )}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">System Prompt</label>
+                <div className="relative">
+                  <TiptapEditor
+                      ref={el => textareaRefs.current['systemPrompt'] = el}
+                      value={node.data.config?.systemPrompt || ''} 
+                      onChange={(val, selection) => handleEditorChange('systemPrompt', val, selection)}
+                      onSlash={(rect, index) => handleEditorSlash('systemPrompt', rect, index)}
+                      placeholder="Enter system prompt for parameter extraction..."
+                      className="min-h-[150px]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                 <div className="flex justify-between items-center mb-2">
+                    <label className="block text-xs font-medium text-gray-500">Parameters</label>
                     <button 
                         onClick={() => {
                             const currentParams = node.data.config?.parameters || [];
-                            handleConfigChange('parameters', [...currentParams, { name: '', description: '', required: true, type: 'string' }]);
+                            const newParam = { name: `param_${currentParams.length + 1}`, type: 'string', description: '' };
+                            handleConfigChange('parameters', [...currentParams, newParam]);
                         }}
-                        className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                        className="text-xs text-violet-600 hover:text-violet-700 font-medium flex items-center gap-1"
                     >
                         <Plus size={12} /> Add Parameter
                     </button>
@@ -1477,82 +1501,59 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
                  
                  <div className="space-y-3">
                     {(node.data.config?.parameters || []).map((param: any, index: number) => (
-                        <div key={index} className="bg-white border border-gray-200 rounded-lg p-3 space-y-2 relative group">
-                            <button 
-                                onClick={() => {
-                                    const newParams = [...(node.data.config?.parameters || [])];
-                                    newParams.splice(index, 1);
-                                    handleConfigChange('parameters', newParams);
-                                }}
-                                className="absolute top-2 right-2 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                                <X size={14} />
-                            </button>
-                            
-                            <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label className="block text-[10px] text-gray-400 mb-1">Name</label>
-                                    <input 
-                                        type="text"
-                                        value={param.name}
-                                        onChange={(e) => {
-                                            const newParams = [...(node.data.config?.parameters || [])];
-                                            newParams[index] = { ...newParams[index], name: e.target.value };
-                                            handleConfigChange('parameters', newParams);
-                                        }}
-                                        className="w-full px-2 py-1 border border-gray-200 rounded text-xs focus:outline-none focus:border-blue-500"
-                                        placeholder="param_name"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] text-gray-400 mb-1">Type</label>
-                                    <select
-                                        value={param.type}
-                                        onChange={(e) => {
-                                            const newParams = [...(node.data.config?.parameters || [])];
-                                            newParams[index] = { ...newParams[index], type: e.target.value };
-                                            handleConfigChange('parameters', newParams);
-                                        }}
-                                        className="w-full px-2 py-1 border border-gray-200 rounded text-xs focus:outline-none focus:border-blue-500"
-                                    >
-                                        <option value="string">String</option>
-                                        <option value="number">Number</option>
-                                        <option value="boolean">Boolean</option>
-                                        <option value="array">Array</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <label className="block text-[10px] text-gray-400 mb-1">Description</label>
-                                <textarea 
-                                    ref={el => textareaRefs.current[`param-desc-${index}`] = el}
-                                    value={param.description}
-                                    onChange={(e) => handleTextareaInput(e, `param-desc-${index}`)}
-                                    onKeyDown={handleKeyDown}
-                                    rows={2}
-                                    className="w-full px-2 py-1 border border-gray-200 rounded text-xs focus:outline-none focus:border-blue-500 resize-none"
-                                    placeholder="Description for extraction. Type '/' to insert variable..."
-                                />
-                            </div>
-                            
-                            <label className="flex items-center gap-2 cursor-pointer">
+                        <div key={index} className="flex flex-col gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            <div className="flex items-center gap-2">
                                 <input 
-                                    type="checkbox"
-                                    checked={param.required}
+                                    type="text" 
+                                    value={param.name}
                                     onChange={(e) => {
                                         const newParams = [...(node.data.config?.parameters || [])];
-                                        newParams[index] = { ...newParams[index], required: e.target.checked };
+                                        newParams[index] = { ...newParams[index], name: e.target.value };
                                         handleConfigChange('parameters', newParams);
                                     }}
-                                    className="rounded text-blue-600 w-3 h-3"
+                                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                                    placeholder="Parameter Name"
                                 />
-                                <span className="text-[10px] text-gray-500">Required</span>
-                            </label>
+                                <select
+                                    value={param.type}
+                                    onChange={(e) => {
+                                        const newParams = [...(node.data.config?.parameters || [])];
+                                        newParams[index] = { ...newParams[index], type: e.target.value };
+                                        handleConfigChange('parameters', newParams);
+                                    }}
+                                    className="w-24 px-2 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                                >
+                                    <option value="string">String</option>
+                                    <option value="number">Number</option>
+                                    <option value="boolean">Boolean</option>
+                                    <option value="array">Array</option>
+                                    <option value="object">Object</option>
+                                </select>
+                                <button 
+                                    onClick={() => {
+                                        const newParams = (node.data.config?.parameters || []).filter((_: any, i: number) => i !== index);
+                                        handleConfigChange('parameters', newParams);
+                                    }}
+                                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                >
+                                    <Trash2 size={14} />
+                                </button>
+                            </div>
+                            <input 
+                                type="text" 
+                                value={param.description || ''}
+                                onChange={(e) => {
+                                    const newParams = [...(node.data.config?.parameters || [])];
+                                    newParams[index] = { ...newParams[index], description: e.target.value };
+                                    handleConfigChange('parameters', newParams);
+                                }}
+                                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white"
+                                placeholder="Description (optional)"
+                            />
                         </div>
                     ))}
-                    {(node.data.config?.parameters || []).length === 0 && (
-                        <div className="text-center py-3 bg-gray-50 rounded-lg border border-dashed border-gray-200 text-xs text-gray-400">
+                    {(!node.data.config?.parameters || node.data.config.parameters.length === 0) && (
+                        <div className="text-center py-4 bg-gray-50 rounded-lg border border-dashed border-gray-200 text-xs text-gray-400">
                             No parameters defined
                         </div>
                     )}
@@ -1758,43 +1759,7 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
           </div>
         )}
         
-        {node.type === 'kb_search' && (
-           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-2">Select Knowledge Base</label>
-            <select 
-                value={node.data.config?.knowledgeBaseId || ''} 
-                onChange={(e) => {
-                    const kbId = e.target.value;
-                    const kb = knowledgeBases.find(k => k.id === kbId);
-                    const config = node.data.config || {};
-                    onChange({
-                        ...node.data,
-                        config: {
-                            ...config,
-                            knowledgeBaseId: kbId,
-                            selectedKnowledgeBase: kb ? { id: kb.id, name: kb.name } : undefined
-                        }
-                    });
-                }}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
-            >
-                <option value="">Select a knowledge base...</option>
-                {knowledgeBases.map(kb => (
-                    <option key={kb.id} value={kb.id}>{kb.name}</option>
-                ))}
-            </select>
 
-            <label className="block text-xs font-medium text-gray-500 mb-1">Query Source</label>
-            <select 
-                value={node.data.config?.querySource || 'userMessage'}
-                onChange={(e) => handleConfigChange('querySource', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-                <option value="userMessage">User Message</option>
-                <option value="lastOutput">Last Node Output</option>
-            </select>
-           </div>
-        )}
         
         {node.type === 'knowledge' && (
            <div>
@@ -1956,12 +1921,116 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
   );
 };
 
+const ImageTextSplitNode = ({ id, data }: NodeProps) => {
+  const config = data.config as any;
+  const modelDisplay = useModelName(config?.model, config?.modelDisplayName);
+
+  return (
+    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[240px] group hover:border-teal-300 transition-colors relative">
+      <NodeMenu nodeId={id} />
+      <div className="bg-teal-50 px-4 py-2 rounded-t-xl border-b border-teal-100 flex items-center gap-2">
+        <div className="bg-teal-100 p-1 rounded-lg text-teal-600">
+          <Split size={14} />
+        </div>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Image-Text Split'}</span>
+      </div>
+      <div className="p-3 bg-gray-50 border-b border-gray-100">
+        <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
+          <Bot size={12} />
+          <span>{modelDisplay}</span>
+        </div>
+      </div>
+      <div className="p-4">
+        <div className="text-xs text-gray-500">
+          Splits context into structured JSON
+        </div>
+      </div>
+      <Handle type="target" position={Position.Left} className="!bg-gray-400" />
+      <Handle type="source" position={Position.Right} className="!bg-teal-500" />
+    </div>
+  );
+};
+
+const SetSessionMetadataNode = ({ id, data }: NodeProps) => {
+  const config = data.config as any;
+  const modelDisplay = useModelName(config?.model, config?.modelDisplayName);
+
+  return (
+    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[240px] group hover:border-fuchsia-300 transition-colors relative">
+      <NodeMenu nodeId={id} />
+      <div className="bg-fuchsia-50 px-4 py-2 rounded-t-xl border-b border-fuchsia-100 flex items-center gap-2">
+        <div className="bg-fuchsia-100 p-1 rounded-lg text-fuchsia-600">
+          <Tags size={14} />
+        </div>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Set Metadata'}</span>
+      </div>
+      <div className="p-3 bg-gray-50 border-b border-gray-100">
+        <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
+          <Bot size={12} />
+          <span>{modelDisplay}</span>
+        </div>
+      </div>
+      <div className="p-4">
+        <div className="text-xs text-gray-500">
+          Extract and set session metadata
+        </div>
+      </div>
+      <Handle type="target" position={Position.Left} className="!bg-gray-400" />
+      <Handle type="source" position={Position.Right} className="!bg-fuchsia-500" />
+    </div>
+  );
+};
+
+const ParameterExtractionNode = ({ id, data }: NodeProps) => {
+  const config = data.config as any;
+  const modelDisplay = useModelName(config?.model, config?.modelDisplayName);
+  const parameters = config?.parameters || [];
+
+  return (
+    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[240px] group hover:border-violet-300 transition-colors relative">
+      <NodeMenu nodeId={id} />
+      <div className="bg-violet-50 px-4 py-2 rounded-t-xl border-b border-violet-100 flex items-center gap-2">
+        <div className="bg-violet-100 p-1 rounded-lg text-violet-600">
+          <ListFilter size={14} />
+        </div>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Param Extraction'}</span>
+      </div>
+      <div className="p-3 bg-gray-50 border-b border-gray-100">
+        <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
+          <Bot size={12} />
+          <span>{modelDisplay}</span>
+        </div>
+      </div>
+      <div className="p-4">
+        <div className="text-xs text-gray-500 mb-2">Extract structured parameters</div>
+        {parameters.length > 0 ? (
+            <div className="space-y-1">
+                {parameters.slice(0, 3).map((param: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between text-[10px] bg-gray-50 px-2 py-1 rounded">
+                        <span className="font-medium text-gray-600 truncate max-w-[120px]">{param.name}</span>
+                        <span className="text-gray-400">{param.type}</span>
+                    </div>
+                ))}
+                {parameters.length > 3 && (
+                    <div className="text-[10px] text-gray-400 pl-1">+ {parameters.length - 3} more</div>
+                )}
+            </div>
+        ) : (
+            <div className="text-[10px] text-gray-400 italic">No parameters configured</div>
+        )}
+      </div>
+      <Handle type="target" position={Position.Left} className="!bg-gray-400" />
+      <Handle type="source" position={Position.Right} className="!bg-violet-500" />
+    </div>
+  );
+};
+
 const nodeTypes = {
   start: StartNode,
   end: EndNode,
   intent: IntentNode,
   knowledge: KnowledgeNode,
-  kb_search: KnowledgeSearchNode,
+
   llm: LLMNode,
   reply: ReplyNode,
   human_transfer: TransferNode,
@@ -1969,6 +2038,9 @@ const nodeTypes = {
   agent_end: AgentEndNode,
   agent_update: AgentUpdateNode,
   tool: ToolNode,
+
+  imageTextSplit: ImageTextSplitNode,
+  setSessionMetadata: SetSessionMetadataNode,
   parameter_extraction: ParameterExtractionNode,
 };
 
@@ -2034,14 +2106,7 @@ const Sidebar = () => {
           <span className="text-sm font-medium text-gray-700">Knowledge Retrieval</span>
         </div>
 
-        <div 
-          className="flex items-center gap-3 p-3 bg-cyan-50 border border-cyan-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'kb_search', 'Knowledge Base Search')}
-          draggable
-        >
-          <div className="bg-cyan-100 p-1.5 rounded text-cyan-600"><Search size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Knowledge Base Search</span>
-        </div>
+
 
         <div 
           className="flex items-center gap-3 p-3 bg-indigo-50 border border-indigo-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
@@ -2106,6 +2171,26 @@ const Sidebar = () => {
           <span className="text-sm font-medium text-gray-700">Tool Execution</span>
         </div>
 
+
+
+        <div 
+          className="flex items-center gap-3 p-3 bg-teal-50 border border-teal-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
+          onDragStart={(event) => onDragStart(event, 'imageTextSplit', 'Image-Text Split')}
+          draggable
+        >
+          <div className="bg-teal-100 p-1.5 rounded text-teal-600"><Split size={16}/></div>
+          <span className="text-sm font-medium text-gray-700">Image-Text Split</span>
+        </div>
+
+        <div 
+          className="flex items-center gap-3 p-3 bg-fuchsia-50 border border-fuchsia-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
+          onDragStart={(event) => onDragStart(event, 'setSessionMetadata', 'Set Metadata')}
+          draggable
+        >
+          <div className="bg-fuchsia-100 p-1.5 rounded text-fuchsia-600"><Tags size={16}/></div>
+          <span className="text-sm font-medium text-gray-700">Set Metadata</span>
+        </div>
+
         <div 
           className="flex items-center gap-3 p-3 bg-violet-50 border border-violet-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
           onDragStart={(event) => onDragStart(event, 'parameter_extraction', 'Param Extraction')}
@@ -2132,7 +2217,80 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
   const [workflowCategoryIds, setWorkflowCategoryIds] = useState<string[]>([]);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showTestDialog, setShowTestDialog] = useState(false);
+  const [showGeneratorDialog, setShowGeneratorDialog] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+
+  const handleGenerateWorkflow = async (prompt: string, modelId: string) => {
+    try {
+      const currentNodes = getNodes();
+      const currentEdges = getEdges();
+      
+      const result = await workflowApi.generateWorkflow({
+        prompt,
+        modelId,
+        existingNodesJson: currentNodes.length > 0 ? JSON.stringify(currentNodes) : undefined,
+        existingEdgesJson: currentEdges.length > 0 ? JSON.stringify(currentEdges) : undefined
+      });
+      
+      if (result.nodesJson && result.edgesJson) {
+        let newNodes = JSON.parse(result.nodesJson);
+        const newEdges = JSON.parse(result.edgesJson);
+        
+        // Fetch enabled models to populate model names if missing
+        try {
+            const models = await workflowApi.getEnabledModels();
+            
+            newNodes = newNodes.map((node: any) => {
+                const config = node.data?.config || {};
+                
+                // Check if node needs model name resolution
+                // Normalize 'modelId' to 'model' if present
+                let targetModelId = config.model || config.modelId;
+                
+                if (targetModelId) {
+                    const modelInfo = models.find((m: any) => m.id === targetModelId);
+                    if (modelInfo) {
+                        return {
+                            ...node,
+                            data: {
+                                ...node.data,
+                                config: {
+                                    ...config,
+                                    model: targetModelId, // Ensure standard field 'model' is set
+                                    modelDisplayName: modelInfo.name
+                                }
+                            }
+                        };
+                    } else {
+                        // If model not found but we have an ID, ensure 'model' field is set
+                        return {
+                             ...node,
+                             data: {
+                                 ...node.data,
+                                 config: {
+                                     ...config,
+                                     model: targetModelId
+                                 }
+                             }
+                        };
+                    }
+                }
+                
+                return node;
+            });
+        } catch (err) {
+            console.error('Failed to resolve model names for generated workflow', err);
+            // Continue with nodes as-is if fetching fails
+        }
+        
+        setNodes(newNodes);
+        setEdges(newEdges);
+      }
+    } catch (error) {
+      console.error('Failed to generate workflow:', error);
+      throw error;
+    }
+  };
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: any) => {
     setSelectedNodeId(node.id);
@@ -2193,12 +2351,48 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
     loadWorkflow();
   }, [workflowId, setNodes, setEdges]);
 
+  const enforceGpt5Temperature = (nodes: any[]) => {
+      let hasChanges = false;
+      const updatedNodes = nodes.map(node => {
+        const modelName = node.data.config?.modelDisplayName || node.data.config?.modelDisplayName;
+        const temperature = node.data.config?.temperature ?? 0.7; // Default to 0.7 if undefined
+
+        // Check if model exists and contains 'gpt-5' (case insensitive)
+        if (modelName && typeof modelName === 'string' && modelName.toLowerCase().includes('gpt-5')) {
+          // console.log('Found GPT-5 model:', modelName);
+          if (temperature < 1) {
+            hasChanges = true;
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                config: {
+                  ...node.data.config,
+                  temperature: 1
+                }
+              }
+            };
+          }
+        }
+        return node;
+      });
+      return { nodes: updatedNodes, hasChanges };
+  };
+
   const handleSaveSettings = async (name: string, description: string, categoryIds: string[]) => {
       try {
+          let currentNodes = getNodes();
+          const { nodes: updatedNodes, hasChanges } = enforceGpt5Temperature(currentNodes);
+          
+          if (hasChanges) {
+              setNodes(updatedNodes);
+              currentNodes = updatedNodes;
+          }
+
           await workflowApi.updateWorkflow(workflowId, {
               name,
               description,
-              nodesJson: JSON.stringify(getNodes()),
+              nodesJson: JSON.stringify(currentNodes),
               edgesJson: JSON.stringify(getEdges()),
               categoryIds
           });
@@ -2215,8 +2409,15 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
   const onSave = async () => {
     try {
       setSaving(true);
-      const currentNodes = getNodes();
+      let currentNodes = getNodes();
       const currentEdges = getEdges();
+      
+      const { nodes: updatedNodes, hasChanges } = enforceGpt5Temperature(currentNodes);
+      
+      if (hasChanges) {
+        setNodes(updatedNodes);
+        currentNodes = updatedNodes;
+      }
       
       // Filter out edges that are connected to non-existent nodes
       const nodeIds = new Set(currentNodes.map(n => n.id));
@@ -2325,6 +2526,13 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
             </div>
             <div className="h-6 w-px bg-gray-200 mx-2"></div>
             <button 
+              onClick={() => setShowGeneratorDialog(true)}
+              className="p-1.5 hover:bg-purple-50 rounded-lg text-purple-600 hover:text-purple-700 transition-colors"
+              title="Generate Workflow"
+            >
+              <Wand2 size={20} />
+            </button>
+            <button 
               onClick={() => setShowTestDialog(true)}
               className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-800 transition-colors"
               title="Test Workflow"
@@ -2402,6 +2610,12 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
             workflowId={workflowId}
             workflowName={workflowName}
             nodes={nodes}
+        />
+        
+        <WorkflowGeneratorDialog 
+            isOpen={showGeneratorDialog}
+            onClose={() => setShowGeneratorDialog(false)}
+            onGenerate={handleGenerateWorkflow}
         />
       </div>
     </div>

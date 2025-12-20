@@ -102,3 +102,16 @@ export interface CreateWorkflowRequest {
 }
 
 export interface UpdateWorkflowRequest extends CreateWorkflowRequest {}
+
+export interface GenerateWorkflowRequest {
+  prompt: string;
+  modelId: string;
+  existingNodesJson?: string;
+  existingEdgesJson?: string;
+}
+
+export interface GeneratedWorkflow {
+  nodesJson: string;
+  edgesJson: string;
+  fullJson?: string;
+}

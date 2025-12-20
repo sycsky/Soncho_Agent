@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { SessionCategory } from '../types';
 import sessionCategoryService, { CreateCategoryRequest, UpdateCategoryRequest } from '../services/sessionCategoryService';
-import { Plus, Edit, Trash2, X } from 'lucide-react';
+import { Plus, Edit, Trash2, X, Copy } from 'lucide-react';
 
 const CategoryForm: React.FC<{
   category?: SessionCategory;
@@ -102,6 +102,10 @@ export const CategoryView: React.FC = () => {
     } catch (e) {}
   };
 
+  const handleCopyId = (id: string) => {
+    navigator.clipboard.writeText(id);
+  };
+
   const handleDeleteCategory = async (id: string) => {
     if (!window.confirm('确定删除该分类吗？')) return;
     try {
@@ -145,6 +149,7 @@ export const CategoryView: React.FC = () => {
                 <td className="py-4 px-6 text-gray-600">{cat.color || '-'}</td>
                 <td className="py-4 px-6 text-gray-600">{cat.enabled ? '是' : '否'}</td>
                 <td className="py-4 px-6 text-right">
+                  <button onClick={() => handleCopyId(cat.id)} className="text-gray-500 hover:text-gray-700 text-sm font-medium mr-4" title="复制ID"><Copy size={16} /></button>
                   <button onClick={() => setEditingCategory(cat)} className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-4"><Edit size={16} /></button>
                   <button onClick={() => handleDeleteCategory(cat.id)} className="text-red-600 hover:text-red-800 text-sm font-medium"><Trash2 size={16} /></button>
                 </td>

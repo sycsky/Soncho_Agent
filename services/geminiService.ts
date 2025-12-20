@@ -9,7 +9,7 @@ export const generateAIResponse = async (
   knowledgeBaseContext: string // New parameter for dynamic knowledge
 ): Promise<string> => {
   try {
-    const model = 'gemini-2.5-flash';
+    const model = 'gemini-2.0-flash-exp';
 
     const systemInstruction = `
       You are an advanced customer support AI for "NexusHub", a fictional tech ecosystem company.
@@ -63,7 +63,7 @@ export const generateChatSummary = async (
   conversationHistory: { role: string; content: string }[]
 ): Promise<string> => {
   try {
-    const model = 'gemini-2.5-flash';
+    const model = 'gemini-2.0-flash-exp';
     
     // Filter out internal system prompts, keep user/agent/model exchange
     const historyText = conversationHistory
@@ -98,7 +98,7 @@ export const generateChatSummary = async (
 
 export const rewriteMessage = async (draft: string): Promise<string> => {
   try {
-    const model = 'gemini-2.5-flash';
+    const model = 'gemini-2.0-flash-exp';
     const prompt = `
       Rewrite the following draft customer support message to be professional, empathetic, and clear.
       Keep the core meaning but improve the tone significantly.
@@ -123,7 +123,7 @@ export const rewriteMessage = async (draft: string): Promise<string> => {
 export const analyzeSentiment = async (lastUserMessage: string): Promise<{ score: number; label: string }> => {
   try {
     // Determine sentiment score from 0 (Angry) to 100 (Happy)
-    const model = 'gemini-2.5-flash';
+    const model = 'gemini-2.0-flash-exp';
     const prompt = `
       Analyze the sentiment of this customer message: "${lastUserMessage}"
       
@@ -152,7 +152,7 @@ export const suggestUserTags = async (
   userContext: string
 ): Promise<string[]> => {
   try {
-    const model = 'gemini-2.5-flash';
+    const model = 'gemini-2.0-flash-exp';
     const prompt = `
       Analyze the following customer conversation history and user profile details.
       Identify 3-5 key characteristics, needs, or statuses that should be tagged.

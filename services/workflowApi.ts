@@ -1,4 +1,4 @@
-import { AiWorkflow, CreateWorkflowRequest, UpdateWorkflowRequest, LlmModel, WorkflowCategory, LlmProvider } from '../types/workflow';
+import { AiWorkflow, CreateWorkflowRequest, UpdateWorkflowRequest, LlmModel, WorkflowCategory, LlmProvider, GenerateWorkflowRequest, GeneratedWorkflow } from '../types/workflow';
 import { BASE_URL } from '../config';
 
 const API_BASE = `${BASE_URL}/api/v1`;
@@ -128,6 +128,15 @@ export const workflowApi = {
       body: JSON.stringify(data),
     });
     return handleResponse<{ success: boolean; el: string; error: string | null }>(response);
+  },
+
+  generateWorkflow: async (data: GenerateWorkflowRequest): Promise<GeneratedWorkflow> => {
+    const response = await fetch(`${API_BASE}/workflow-generator/generate`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<GeneratedWorkflow>(response);
   },
 
   // Category Management
