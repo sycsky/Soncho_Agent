@@ -20,7 +20,7 @@ import {
   EdgeProps
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Play, GitBranch, Database, Bot, MessageSquare, GripHorizontal, Plus, Trash2, X, MoreHorizontal, ArrowLeft, Calendar, User, Search, Filter, Save, Loader2, Square, Settings, ChevronRight, Star, Power, CheckCircle, Edit2, Headphones, Hammer, ListFilter, Split, Image, Tags, Wand2 } from 'lucide-react';
+import { Play, GitBranch, Database, Bot, MessageSquare, GripHorizontal, Plus, Trash2, X, MoreHorizontal, ArrowLeft, ArrowRight, Calendar, User, Search, Filter, Save, Loader2, Square, Settings, ChevronRight, Star, Power, CheckCircle, Edit2, Headphones, Hammer, ListFilter, Split, Image, Tags, Wand2, Layout } from 'lucide-react';
 import { workflowApi } from '../services/workflowApi';
 import knowledgeBaseApi from '../services/knowledgeBaseApi';
 import aiToolApi from '../services/aiToolApi';
@@ -32,6 +32,7 @@ import { WorkflowTestDialog } from './WorkflowTestDialog';
 import { WorkflowGeneratorDialog } from './WorkflowGeneratorDialog';
 import { SystemPromptEnhancer } from './SystemPromptEnhancer';
 import TiptapEditor, { TiptapEditorRef } from './TiptapEditor';
+import { getLayoutedElements } from '../utils/layout';
 
 // Helper hook to resolve model name from ID if display name is missing
 const useModelName = (modelId?: string, modelDisplayName?: string) => {
@@ -188,9 +189,9 @@ const NodeMenu = ({ nodeId }: { nodeId: string }) => {
 };
 
 // Custom Node Components (Keep existing ones)
-const StartNode = ({ id, data }: NodeProps) => {
+const StartNode = ({ id, data, selected }: NodeProps) => {
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[200px] group hover:border-blue-300 transition-colors relative">
+    <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[200px] group hover:border-blue-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
       <NodeMenu nodeId={id} />
       <div className="bg-blue-50 px-4 py-2 rounded-t-xl border-b border-blue-100 flex items-center gap-2">
         <div className="bg-blue-100 p-1 rounded-lg text-blue-600">
@@ -206,13 +207,13 @@ const StartNode = ({ id, data }: NodeProps) => {
   );
 };
 
-const IntentNode = ({ id, data }: NodeProps) => {
+const IntentNode = ({ id, data, selected }: NodeProps) => {
   const intents = (data.config as any)?.intents || [];
   const config = data.config as any;
   const modelDisplay = useModelName(config?.modelId || config?.model, config?.modelDisplayName);
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[280px] group hover:border-green-300 transition-colors relative">
+    <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[280px] group hover:border-green-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
       <NodeMenu nodeId={id} />
       <div className="bg-green-50 px-4 py-2 rounded-t-xl border-b border-green-100 flex items-center gap-2">
         <div className="bg-green-100 p-1 rounded-lg text-green-600">
@@ -252,13 +253,13 @@ const IntentNode = ({ id, data }: NodeProps) => {
   );
 };
 
-const KnowledgeNode = ({ id, data }: NodeProps) => {
+const KnowledgeNode = ({ id, data, selected }: NodeProps) => {
   const config = data.config as any || {};
   const selectedKBs = config.selectedKnowledgeBases || [];
   const kbIds = config.knowledgeBaseIds || (config.knowledgeBaseId ? [config.knowledgeBaseId] : []);
   
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[240px] group hover:border-orange-300 transition-colors relative">
+    <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[240px] group hover:border-orange-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
       <NodeMenu nodeId={id} />
       <div className="bg-orange-50 px-4 py-2 rounded-t-xl border-b border-orange-100 flex items-center gap-2">
         <div className="bg-orange-100 p-1 rounded-lg text-orange-600">
@@ -302,12 +303,12 @@ const KnowledgeNode = ({ id, data }: NodeProps) => {
   );
 };
 
-const LLMNode = ({ id, data }: NodeProps) => {
+const LLMNode = ({ id, data, selected }: NodeProps) => {
   const config = data.config as any;
   const modelDisplay = useModelName(config?.modelId || config?.model, config?.modelDisplayName);
   
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[240px] group hover:border-indigo-300 transition-colors relative">
+    <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[240px] group hover:border-indigo-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
       <NodeMenu nodeId={id} />
       <div className="bg-indigo-50 px-4 py-2 rounded-t-xl border-b border-indigo-100 flex items-center gap-2">
         <div className="bg-indigo-100 p-1 rounded-lg text-indigo-600">
@@ -330,9 +331,9 @@ const LLMNode = ({ id, data }: NodeProps) => {
   );
 };
 
-const ReplyNode = ({ id, data }: NodeProps) => {
+const ReplyNode = ({ id, data, selected }: NodeProps) => {
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[240px] group hover:border-blue-300 transition-colors relative">
+    <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[240px] group hover:border-blue-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
       <NodeMenu nodeId={id} />
       <div className="bg-blue-50 px-4 py-2 rounded-t-xl border-b border-blue-100 flex items-center gap-2">
         <div className="bg-blue-100 p-1 rounded-lg text-blue-600">
@@ -356,9 +357,9 @@ const ReplyNode = ({ id, data }: NodeProps) => {
   );
 };
 
-const EndNode = ({ id, data }: NodeProps) => {
+const EndNode = ({ id, data, selected }: NodeProps) => {
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[200px] group hover:border-red-300 transition-colors relative">
+    <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[200px] group hover:border-red-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
       <NodeMenu nodeId={id} />
       <div className="bg-red-50 px-4 py-2 rounded-t-xl border-b border-red-100 flex items-center gap-2">
         <div className="bg-red-100 p-1 rounded-lg text-red-600">
@@ -374,9 +375,9 @@ const EndNode = ({ id, data }: NodeProps) => {
   );
 };
 
-const TransferNode = ({ id, data }: NodeProps) => {
+const TransferNode = ({ id, data, selected }: NodeProps) => {
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[200px] group hover:border-pink-300 transition-colors relative">
+    <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[200px] group hover:border-pink-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
       <NodeMenu nodeId={id} />
       <div className="bg-pink-50 px-4 py-2 rounded-t-xl border-b border-pink-100 flex items-center gap-2">
         <div className="bg-pink-100 p-1 rounded-lg text-pink-600">
@@ -392,12 +393,12 @@ const TransferNode = ({ id, data }: NodeProps) => {
   );
 };
 
-const AgentNode = ({ id, data }: NodeProps) => {
+const AgentNode = ({ id, data, selected }: NodeProps) => {
   const config = data.config as any;
   const workflowName = config?.workflowName || 'Select Workflow';
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[240px] group hover:border-purple-300 transition-colors relative">
+    <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[240px] group hover:border-purple-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
       <NodeMenu nodeId={id} />
       <div className="bg-purple-50 px-4 py-2 rounded-t-xl border-b border-purple-100 flex items-center gap-2">
         <div className="bg-purple-100 p-1 rounded-lg text-purple-600">
@@ -420,9 +421,9 @@ const AgentNode = ({ id, data }: NodeProps) => {
   );
 };
 
-const AgentEndNode = ({ id, data }: NodeProps) => {
+const AgentEndNode = ({ id, data, selected }: NodeProps) => {
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[200px] group hover:border-gray-400 transition-colors relative">
+    <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[200px] group hover:border-gray-400 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
       <NodeMenu nodeId={id} />
       <div className="bg-gray-100 px-4 py-2 rounded-t-xl border-b border-gray-200 flex items-center gap-2">
         <div className="bg-gray-200 p-1 rounded-lg text-gray-600">
@@ -438,9 +439,9 @@ const AgentEndNode = ({ id, data }: NodeProps) => {
   );
 };
 
-const AgentUpdateNode = ({ id, data }: NodeProps) => {
+const AgentUpdateNode = ({ id, data, selected }: NodeProps) => {
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[200px] group hover:border-yellow-300 transition-colors relative">
+    <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[200px] group hover:border-yellow-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
       <NodeMenu nodeId={id} />
       <div className="bg-yellow-50 px-4 py-2 rounded-t-xl border-b border-yellow-100 flex items-center gap-2">
         <div className="bg-yellow-100 p-1 rounded-lg text-yellow-600">
@@ -457,12 +458,12 @@ const AgentUpdateNode = ({ id, data }: NodeProps) => {
   );
 };
 
-const ToolNode = ({ id, data }: NodeProps) => {
+const ToolNode = ({ id, data, selected }: NodeProps) => {
   const config = data.config as any;
   const toolName = config?.toolName || 'Select Tool';
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[240px] group hover:border-orange-300 transition-colors relative">
+    <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[240px] group hover:border-orange-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
       <NodeMenu nodeId={id} />
       <div className="bg-orange-50 px-4 py-2 rounded-t-xl border-b border-orange-100 flex items-center gap-2">
         <div className="bg-orange-100 p-1 rounded-lg text-orange-600">
@@ -646,7 +647,7 @@ const ToolSelectionDialog = ({
     );
 };
 
-const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId }: { node: NodeProps | any, nodes?: NodeProps[] | any[], onChange: (data: any) => void, onClose: () => void, currentWorkflowId?: string }) => {
+const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, currentWorkflowId }: { node: NodeProps | any, nodes?: NodeProps[] | any[], edges?: Edge[] | any[], onChange: (data: any) => void, onClose: () => void, currentWorkflowId?: string }) => {
   const [llmModels, setLlmModels] = useState<LlmModel[]>([]);
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
   const [workflows, setWorkflows] = useState<AiWorkflow[]>([]);
@@ -658,6 +659,63 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
   const [filterText, setFilterText] = useState('');
   const [activeField, setActiveField] = useState<string | null>(null);
   const textareaRefs = useRef<{ [key: string]: HTMLTextAreaElement | HTMLInputElement | TiptapEditorRef | null }>({});
+  
+  const { setCenter, zoomTo, setNodes } = useReactFlow();
+
+  // Helper to find next nodes and their info
+  const nextNodesInfo = React.useMemo(() => {
+    if (!node || !edges || !nodes) return [];
+    
+    const outgoingEdges = edges.filter((e: any) => e.source === node.id);
+    
+    // Group by source handle
+    const groupedEdges: Record<string, any[]> = {};
+    
+    outgoingEdges.forEach((edge: any) => {
+        const handleId = edge.sourceHandle || 'default';
+        if (!groupedEdges[handleId]) groupedEdges[handleId] = [];
+        groupedEdges[handleId].push(edge);
+    });
+    
+    return Object.entries(groupedEdges).map(([handleId, edges]) => {
+        const targets = edges.map((edge: any) => {
+            const targetNode = nodes.find((n: any) => n.id === edge.target);
+            return targetNode;
+        }).filter(Boolean);
+
+        // Resolve handle label
+        let handleLabel = handleId;
+        if (node.type === 'intent' && handleId !== 'default') {
+            const intent = node.data.config?.intents?.find((i: any) => i.id === handleId);
+            if (intent) {
+                handleLabel = intent.label;
+            }
+        }
+        
+        return {
+            handleId,
+            handleLabel,
+            targets
+        };
+    });
+  }, [node, edges, nodes]);
+
+  const handleNavigateToNode = (targetNode: any) => {
+    if (targetNode && targetNode.position) {
+        // Calculate center position including node width/height offset
+        // Assuming default node width ~250px and height ~100px if not available
+        const x = targetNode.position.x + (targetNode.width ? targetNode.width / 2 : 125);
+        const y = targetNode.position.y + (targetNode.height ? targetNode.height / 2 : 50);
+        
+        setCenter(x, y, { zoom: 1, duration: 800 });
+        
+        // Highlight the target node without selecting it in the property panel
+        setNodes((nds) => nds.map((n) => ({
+            ...n,
+            selected: n.id === targetNode.id
+        })));
+    }
+  };
   
 
   
@@ -1893,6 +1951,72 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
             </select>
           </div>
         )}
+
+        {/* Next Node Info */}
+        <div className="mt-4 pt-4 border-t border-gray-100">
+            <label className="block text-xs font-bold text-gray-700 mb-3 flex items-center gap-1.5">
+                <GitBranch size={14} className="text-gray-400" />
+                Next Step
+            </label>
+            {nextNodesInfo.length === 0 ? (
+                <div className="text-xs text-gray-400 italic bg-gray-50 p-3 rounded-lg border border-dashed border-gray-200 text-center">
+                    No connected nodes
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {nextNodesInfo.map((info) => (
+                        <div key={info.handleId} className="space-y-2">
+                            {(node.type === 'intent' || node.type === 'tool') && info.handleId !== 'default' && (
+                                <div className="text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md w-fit border border-blue-100 shadow-sm flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                    {node.type === 'intent' ? info.handleLabel : `Exit: ${info.handleLabel}`}
+                                </div>
+                            )}
+                            {info.targets.map((target: any) => (
+                                <button
+                                    key={target.id} 
+                                    onClick={() => handleNavigateToNode(target)}
+                                    className="w-full flex items-center gap-3 p-3 bg-white hover:bg-gray-50 rounded-xl border border-gray-200 hover:border-blue-300 shadow-sm hover:shadow-md transition-all group text-left"
+                                >
+                                    <div className={`
+                                        p-2 rounded-lg flex-shrink-0 transition-colors
+                                        ${target.type === 'start' ? 'bg-blue-100 text-blue-600' : ''}
+                                        ${target.type === 'end' ? 'bg-red-100 text-red-600' : ''}
+                                        ${target.type === 'intent' ? 'bg-green-100 text-green-600' : ''}
+                                        ${target.type === 'llm' ? 'bg-indigo-100 text-indigo-600' : ''}
+                                        ${target.type === 'tool' ? 'bg-orange-100 text-orange-600' : ''}
+                                        ${target.type === 'knowledge' ? 'bg-orange-100 text-orange-600' : ''}
+                                        ${!['start', 'end', 'intent', 'llm', 'tool', 'knowledge'].includes(target.type) ? 'bg-gray-100 text-gray-600' : ''}
+                                    `}>
+                                        {target.type === 'start' && <Play size={16}/>}
+                                        {target.type === 'end' && <Square size={16}/>}
+                                        {target.type === 'intent' && <GitBranch size={16}/>}
+                                        {target.type === 'llm' && <Bot size={16}/>}
+                                        {target.type === 'tool' && <Hammer size={16}/>}
+                                        {target.type === 'knowledge' && <Database size={16}/>}
+                                        {/* Fallback icon */}
+                                        {!['start', 'end', 'intent', 'llm', 'tool', 'knowledge'].includes(target.type) && <ArrowRight size={16}/>}
+                                    </div>
+                                    
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-sm font-semibold text-gray-700 truncate group-hover:text-blue-600 transition-colors">
+                                            {target.data?.label || target.type}
+                                        </div>
+                                        <div className="text-[10px] text-gray-400 truncate uppercase tracking-wider">
+                                            {target.type}
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="text-gray-300 group-hover:text-blue-400 transition-colors">
+                                        <ChevronRight size={16} />
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
       </div>
       
       {showVarMenu && typeof document !== 'undefined' && createPortal(
@@ -1958,12 +2082,12 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
   );
 };
 
-const ImageTextSplitNode = ({ id, data }: NodeProps) => {
+const ImageTextSplitNode = ({ id, data, selected }: NodeProps) => {
   const config = data.config as any;
   const modelDisplay = useModelName(config?.modelId || config?.model, config?.modelDisplayName);
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[240px] group hover:border-teal-300 transition-colors relative">
+    <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[240px] group hover:border-teal-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
       <NodeMenu nodeId={id} />
       <div className="bg-teal-50 px-4 py-2 rounded-t-xl border-b border-teal-100 flex items-center gap-2">
         <div className="bg-teal-100 p-1 rounded-lg text-teal-600">
@@ -1988,12 +2112,12 @@ const ImageTextSplitNode = ({ id, data }: NodeProps) => {
   );
 };
 
-const SetSessionMetadataNode = ({ id, data }: NodeProps) => {
+const SetSessionMetadataNode = ({ id, data, selected }: NodeProps) => {
   const config = data.config as any;
   const modelDisplay = useModelName(config?.modelId || config?.model, config?.modelDisplayName);
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[240px] group hover:border-fuchsia-300 transition-colors relative">
+    <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[240px] group hover:border-fuchsia-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
       <NodeMenu nodeId={id} />
       <div className="bg-fuchsia-50 px-4 py-2 rounded-t-xl border-b border-fuchsia-100 flex items-center gap-2">
         <div className="bg-fuchsia-100 p-1 rounded-lg text-fuchsia-600">
@@ -2018,13 +2142,13 @@ const SetSessionMetadataNode = ({ id, data }: NodeProps) => {
   );
 };
 
-const ParameterExtractionNode = ({ id, data }: NodeProps) => {
+const ParameterExtractionNode = ({ id, data, selected }: NodeProps) => {
   const config = data.config as any;
   const modelDisplay = useModelName(config?.modelId || config?.model, config?.modelDisplayName);
   const parameters = config?.parameters || [];
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[240px] group hover:border-violet-300 transition-colors relative">
+    <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[240px] group hover:border-violet-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
       <NodeMenu nodeId={id} />
       <div className="bg-violet-50 px-4 py-2 rounded-t-xl border-b border-violet-100 flex items-center gap-2">
         <div className="bg-violet-100 p-1 rounded-lg text-violet-600">
@@ -2483,6 +2607,17 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
     }
   };
 
+  const onLayout = useCallback(() => {
+    const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
+      nodes,
+      edges,
+      'LR'
+    );
+
+    setNodes([...layoutedNodes]);
+    setEdges([...layoutedEdges]);
+  }, [nodes, edges, setNodes, setEdges]);
+
   const onConnect = useCallback(
     (params: any) => setEdges((eds) => addEdge(params, eds)),
     [setEdges],
@@ -2570,6 +2705,13 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
               <Wand2 size={20} />
             </button>
             <button 
+              onClick={onLayout}
+              className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-800 transition-colors"
+              title="Auto Layout"
+            >
+              <Layout size={20} />
+            </button>
+            <button 
               onClick={() => setShowTestDialog(true)}
               className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-800 transition-colors"
               title="Test Workflow"
@@ -2622,6 +2764,7 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
             <PropertyPanel 
             node={selectedNode} 
             nodes={nodes}
+            edges={edges}
             onChange={onNodeDataChange} 
             onClose={() => setSelectedNodeId(null)}
             currentWorkflowId={workflowId} 
