@@ -208,7 +208,7 @@ const StartNode = ({ id, data }: NodeProps) => {
 const IntentNode = ({ id, data }: NodeProps) => {
   const intents = (data.config as any)?.intents || [];
   const config = data.config as any;
-  const modelDisplay = useModelName(config?.model, config?.modelDisplayName);
+  const modelDisplay = useModelName(config?.modelId || config?.model, config?.modelDisplayName);
 
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[280px] group hover:border-green-300 transition-colors relative">
@@ -303,7 +303,7 @@ const KnowledgeNode = ({ id, data }: NodeProps) => {
 
 const LLMNode = ({ id, data }: NodeProps) => {
   const config = data.config as any;
-  const modelDisplay = useModelName(config?.model, config?.modelDisplayName);
+  const modelDisplay = useModelName(config?.modelId || config?.model, config?.modelDisplayName);
   
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[240px] group hover:border-indigo-300 transition-colors relative">
@@ -1923,7 +1923,7 @@ const PropertyPanel = ({ node, nodes = [], onChange, onClose, currentWorkflowId 
 
 const ImageTextSplitNode = ({ id, data }: NodeProps) => {
   const config = data.config as any;
-  const modelDisplay = useModelName(config?.model, config?.modelDisplayName);
+  const modelDisplay = useModelName(config?.modelId || config?.model, config?.modelDisplayName);
 
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[240px] group hover:border-teal-300 transition-colors relative">
@@ -1953,7 +1953,7 @@ const ImageTextSplitNode = ({ id, data }: NodeProps) => {
 
 const SetSessionMetadataNode = ({ id, data }: NodeProps) => {
   const config = data.config as any;
-  const modelDisplay = useModelName(config?.model, config?.modelDisplayName);
+  const modelDisplay = useModelName(config?.modelId || config?.model, config?.modelDisplayName);
 
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-0 min-w-[240px] group hover:border-fuchsia-300 transition-colors relative">
@@ -1983,7 +1983,7 @@ const SetSessionMetadataNode = ({ id, data }: NodeProps) => {
 
 const ParameterExtractionNode = ({ id, data }: NodeProps) => {
   const config = data.config as any;
-  const modelDisplay = useModelName(config?.model, config?.modelDisplayName);
+  const modelDisplay = useModelName(config?.modelId || config?.model, config?.modelDisplayName);
   const parameters = config?.parameters || [];
 
   return (
