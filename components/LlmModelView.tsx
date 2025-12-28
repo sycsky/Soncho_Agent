@@ -146,6 +146,16 @@ export const LlmModelView: React.FC = () => {
               />
             </div>
             <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Code</label>
+              <input 
+                type="text" 
+                value={currentModel.code || ''} 
+                onChange={e => setCurrentModel({...currentModel, code: e.target.value})}
+                placeholder="e.g. gpt4-turbo"
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+            <div>
               <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Provider</label>
               <select 
                 value={currentModel.provider || ''} 
@@ -186,7 +196,7 @@ export const LlmModelView: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Model Code/ID</label>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Model Name (API ID)</label>
               <input 
                 type="text" 
                 value={currentModel.modelName || ''} 
@@ -331,7 +341,7 @@ export const LlmModelView: React.FC = () => {
             </button>
             <button 
               onClick={handleSave}
-              disabled={!currentModel.name || !currentModel.provider || !currentModel.modelName}
+              disabled={!currentModel.name || !currentModel.code || !currentModel.provider || !currentModel.modelName}
               className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
             >
               <Save size={16} /> Save Model

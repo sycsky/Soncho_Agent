@@ -72,7 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <div className="w-16 bg-gray-900 flex flex-col items-center py-6 gap-8 z-20 shadow-xl shrink-0 transition-all duration-300">
+    <div className="w-16 h-full bg-gray-900 flex flex-col items-center py-6 gap-8 z-20 shadow-xl shrink-0 transition-all duration-300">
       <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-900/50">N</div>
       <nav className="flex flex-col gap-6 w-full">
         <button onClick={() => setActiveView('INBOX')} className={`p-3 mx-auto rounded-xl transition-all ${activeView === 'INBOX' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`} title="会话"><MessageCircle size={24} /></button>

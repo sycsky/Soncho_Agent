@@ -309,7 +309,7 @@ export const ChatList: React.FC<ChatListProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white border-r border-gray-200 w-80 shrink-0 select-none">
+    <div className="flex flex-col h-full bg-white border-r border-gray-200 w-full shrink-0 select-none">
       {/* Header */}
       <div className="p-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center min-h-[68px]">
         {isSearching ? (
@@ -362,7 +362,7 @@ export const ChatList: React.FC<ChatListProps> = ({
         <GroupModal mode="edit" group={showEditModal.group} onClose={() => setShowEditModal(null)} />
       )}
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
+      <div className="flex-1 overflow-y-auto custom-scrollbar pb-20 lg:pb-0">
          {/* GROUPS SECTION */}
          {groups.map(group => {
              // Filter sessions for this group AND search query

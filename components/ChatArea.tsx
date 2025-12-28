@@ -7,7 +7,7 @@ import fileService from '../services/fileService';
 import { 
   Send, Paperclip, Smile, Bot, User, CheckCircle, X, 
   Eye, EyeOff, Wand2, Loader2, Sparkles, ArrowRightLeft, 
-  Maximize2, Minimize2, Check, Languages, Globe, ClipboardCheck,
+  Maximize2, Minimize2, Check, Languages, Globe, ClipboardCheck, ArrowLeft,
   FileText as FileTextIcon
 } from 'lucide-react';
 import { DEFAULT_AVATAR } from '../constants';
@@ -29,6 +29,8 @@ interface ChatAreaProps {
   sentiment: { score: number; label: string };
   isAnalyzingSentiment: boolean;
   currentAgentLanguage?: string;
+  onBack?: () => void;
+  onShowProfile?: () => void;
 }
 
 const EMOJIS = ['😀', '😂', '😍', '😭', '😡', '👍', '👎', '🎉', '🔥', '❤️', '👀', '✅', '❌', '👋', '🙏', '💯'];
@@ -68,7 +70,9 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   onMagicRewrite,
   sentiment,
   isAnalyzingSentiment,
-  currentAgentLanguage = 'en'
+  currentAgentLanguage = 'en',
+  onBack,
+  onShowProfile
 }) => {
   const [inputText, setInputText] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -269,8 +273,13 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   return (
     <div className="flex-1 flex flex-col bg-white h-full relative">
       {/* Header */}
-      <div className="h-16 border-b border-gray-200 flex justify-between items-center px-6 bg-white shrink-0 z-10">
-          <div className="flex items-center gap-4">
+      <div className="h-16 border-b border-gray-200 flex justify-between items-center px-4 lg:px-6 bg-white shrink-0 z-10">
+          <div className="flex items-center gap-3 lg:gap-4">
+            {onBack && (
+              <button onClick={onBack} className="lg:hidden p-2 -ml-2 text-gray-500 hover:text-gray-700 rounded-lg active:bg-gray-100">
+                 <ArrowLeft size={20} />
+              </button>
+            )}
             {!isZenMode ? (
               <div>
                   <h2 className="font-bold text-gray-800">{session.user?.name || 'Unknown User'}</h2>

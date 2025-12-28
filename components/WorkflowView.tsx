@@ -20,7 +20,7 @@ import {
   EdgeProps
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Play, GitBranch, Database, Bot, MessageSquare, GripHorizontal, Plus, Trash2, X, MoreHorizontal, ArrowLeft, ArrowRight, Calendar, User, Search, Filter, Save, Loader2, Square, Settings, ChevronRight, Star, Power, CheckCircle, Edit2, Headphones, Hammer, ListFilter, Split, Image, Tags, Wand2, Layout } from 'lucide-react';
+import { Play, GitBranch, Database, Bot, MessageSquare, GripHorizontal, Plus, Trash2, X, MoreHorizontal, ArrowLeft, ArrowRight, Calendar, User, Search, Filter, Save, Loader2, Square, Settings, ChevronRight, Star, Power, CheckCircle, Edit2, Headphones, Hammer, ListFilter, Split, Image, Tags, Wand2, Layout, Braces } from 'lucide-react';
 import { workflowApi } from '../services/workflowApi';
 import knowledgeBaseApi from '../services/knowledgeBaseApi';
 import aiToolApi from '../services/aiToolApi';
@@ -1649,6 +1649,40 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
            </div>
         )}
 
+        {node.type === 'variable' && (
+           <div className="space-y-4">
+              <div className="p-4 bg-cyan-50 rounded-lg border border-cyan-100 mb-4">
+                 <p className="text-xs text-cyan-800">
+                   Sets a workflow variable from a source field.
+                 </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Variable Name</label>
+                <input 
+                  type="text" 
+                  value={node.data.config?.variableName || ''}
+                  onChange={(e) => handleConfigChange('variableName', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  placeholder="e.g. user_id"
+                />
+                <p className="text-[10px] text-gray-400 mt-1">The name of the variable to set.</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Source Field</label>
+                <input 
+                  type="text" 
+                  value={node.data.config?.sourceField || ''}
+                  onChange={(e) => handleConfigChange('sourceField', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  placeholder="e.g. {{LLM.text}}"
+                />
+                <p className="text-[10px] text-gray-400 mt-1">The value or variable reference to assign.</p>
+              </div>
+           </div>
+        )}
+
         {node.type === 'llm' && (
           <>
              <div>
@@ -2186,11 +2220,43 @@ const ParameterExtractionNode = ({ id, data, selected }: NodeProps) => {
   );
 };
 
+const VariableNode = ({ id, data, selected }: NodeProps) => {
+  const config = data.config as any;
+  const variableName = config?.variableName || '';
+  const sourceField = config?.sourceField || '';
+
+  return (
+    <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[200px] group hover:border-cyan-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
+      <NodeMenu nodeId={id} />
+      <div className="bg-cyan-50 px-4 py-2 rounded-t-xl border-b border-cyan-100 flex items-center gap-2">
+        <div className="bg-cyan-100 p-1 rounded-lg text-cyan-600">
+          <Braces size={14} />
+        </div>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Variable Setting'}</span>
+      </div>
+      <div className="p-4">
+        {variableName ? (
+           <div className="flex flex-col gap-1">
+             <div className="text-xs text-gray-500">Variable: <span className="font-medium text-gray-700">{variableName}</span></div>
+             {sourceField && <div className="text-xs text-gray-500">Source: <span className="font-medium text-gray-700">{sourceField}</span></div>}
+           </div>
+        ) : (
+           <div className="text-xs text-gray-500">Set workflow variable</div>
+        )}
+      </div>
+      <Handle type="target" position={Position.Left} className="!bg-gray-400" />
+      <Handle type="source" position={Position.Right} className="!bg-cyan-500" />
+    </div>
+  );
+};
+
 const nodeTypes = {
   start: StartNode,
   end: EndNode,
   intent: IntentNode,
   knowledge: KnowledgeNode,
+
+  variable: VariableNode,
 
   llm: LLMNode,
   reply: ReplyNode,
@@ -2359,6 +2425,15 @@ const Sidebar = () => {
         >
           <div className="bg-violet-100 p-1.5 rounded text-violet-600"><ListFilter size={16}/></div>
           <span className="text-sm font-medium text-gray-700">Param Extraction</span>
+        </div>
+
+        <div 
+          className="flex items-center gap-3 p-3 bg-cyan-50 border border-cyan-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
+          onDragStart={(event) => onDragStart(event, 'variable', 'Variable Setting')}
+          draggable
+        >
+          <div className="bg-cyan-100 p-1.5 rounded text-cyan-600"><Braces size={16}/></div>
+          <span className="text-sm font-medium text-gray-700">Variable Setting</span>
         </div>
       </div>
     </div>

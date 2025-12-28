@@ -12,6 +12,7 @@ import { ChatList } from './components/ChatList';
 import { UserProfilePanel } from './components/UserProfilePanel';
 import { LoginScreen } from './components/LoginScreen';
 import { Sidebar } from './components/Sidebar';
+import { MobileNav } from './components/MobileNav';
 import { ChatArea } from './components/ChatArea';
 import { TeamView } from './components/TeamView';
 import { CustomerView } from './components/CustomerView';
@@ -87,6 +88,7 @@ function App() {
   const [isAnalyzingSentiment, setIsAnalyzingSentiment] = useState(false);
   const [isGeneratingTags, setIsGeneratingTags] = useState(false);
   const [currentAgentLanguage, setCurrentAgentLanguage] = useState<string>(localStorage.getItem('agent_language') || 'en');
+  const [showMobileProfile, setShowMobileProfile] = useState(false);
 
   useEffect(() => {
     if (currentUser?.language) {
@@ -648,7 +650,7 @@ function App() {
         attachments: backendMsg.attachments || [],
         mentions: backendMsg.mentionAgentIds || [],
         translationData: backendMsg.translationData
-      }));
+      })).reverse();
       
       setSessions(prev => prev.map(s => 
         s.id === sessionId ? { ...s, messages } : s
@@ -1102,34 +1104,38 @@ function App() {
   
   return (
     <div className="h-screen w-full flex bg-gray-100 font-sans text-gray-900 overflow-hidden">
-      {/* Sidebar */}
-      <Sidebar 
-        activeView={activeView} 
-        setActiveView={setActiveView}
-        currentUser={currentUser}
-        currentUserStatus={currentUserStatus}
-        showProfileMenu={showProfileMenu}
-        setShowProfileMenu={setShowProfileMenu}
-        handleStatusChange={handleStatusChange}
-        handleLogout={handleLogout}
-        onLanguageChange={handleLanguageChange}
-      />
+      {/* Sidebar (Desktop) */}
+      <div className="hidden lg:block h-full shrink-0">
+        <Sidebar 
+          activeView={activeView} 
+          setActiveView={setActiveView}
+          currentUser={currentUser}
+          currentUserStatus={currentUserStatus}
+          showProfileMenu={showProfileMenu}
+          setShowProfileMenu={setShowProfileMenu}
+          handleStatusChange={handleStatusChange}
+          handleLogout={handleLogout}
+          onLanguageChange={handleLanguageChange}
+        />
+      </div>
       
       {activeView === 'INBOX' ? (
         <>
-          <ChatList 
-            sessions={sessions}
-            activeSessionId={activeSessionId}
-            onSelectSession={handleSelectSession}
-            groups={chatGroups}
-            onCreateGroup={handleCreateGroup}
-            onDeleteGroup={handleDeleteGroup}
-            onMoveSession={handleMoveSession}
-            onRenameGroup={handleRenameGroup}
-            currentUserId={currentUser?.id || ''}
-          />
+          <div className={`${activeSessionId ? 'hidden lg:block' : 'w-full'} lg:w-80 lg:shrink-0 h-full overflow-hidden border-r border-gray-200 bg-white`}>
+            <ChatList 
+              sessions={sessions}
+              activeSessionId={activeSessionId}
+              onSelectSession={handleSelectSession}
+              groups={chatGroups}
+              onCreateGroup={handleCreateGroup}
+              onDeleteGroup={handleDeleteGroup}
+              onMoveSession={handleMoveSession}
+              onRenameGroup={handleRenameGroup}
+              currentUserId={currentUser?.id || ''}
+            />
+          </div>
           {activeSession ? (
-            <div className={`flex-1 flex transition-all duration-300 ${isZenMode ? 'mr-0' : 'mr-0 lg:mr-80'}`}>
+            <div className={`fixed inset-0 z-50 lg:static lg:z-auto flex-1 flex bg-white transition-all duration-300 ${isZenMode ? 'mr-0' : 'mr-0 lg:mr-80'}`}>
               <ChatArea 
                 session={activeSession}
                 agents={agents}
@@ -1146,10 +1152,12 @@ function App() {
                 sentiment={sentiment}
                 isAnalyzingSentiment={isAnalyzingSentiment}
                 currentAgentLanguage={currentAgentLanguage}
+                onBack={() => setActiveSessionId(null)}
+                onShowProfile={() => setShowMobileProfile(true)}
               />
             </div>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 text-gray-400">
+            <div className="hidden lg:flex flex-1 flex-col items-center justify-center bg-gray-50 text-gray-400">
                 <MessageCircle size={48} className="mb-4 opacity-50" />
                 <h2 className="text-xl font-semibold">No Conversation Selected</h2>
                 <p className="text-sm mt-2">Please choose a conversation from the list.</p>
@@ -1174,25 +1182,77 @@ function App() {
                 />
             </div>
           )}
+
+          {/* Mobile Profile Modal */}
+          {showMobileProfile && activeSession && (
+            <div className="fixed inset-0 z-[60] lg:hidden bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+               <div className="absolute right-0 top-0 h-full w-80 bg-white shadow-2xl animate-in slide-in-from-right duration-300 overflow-y-auto">
+                  <button 
+                    onClick={() => setShowMobileProfile(false)}
+                    className="absolute top-2 right-2 z-10 p-2 bg-white/80 rounded-full hover:bg-gray-100 shadow-sm border border-gray-100"
+                  >
+                    <X size={20} />
+                  </button>
+                  <UserProfilePanel
+                      user={activeSession.user}
+                      currentSession={activeSession}
+                      agents={agents}
+                      allQuickReplies={systemQuickReplies}
+                      agentId={currentUser?.id || ''}
+                      onUpdateTags={handleUpdateTags}
+                      onUpdateNotes={handleUpdateNotes}
+                      onQuickReply={(text) => {
+                        handleSendMessage(text, [], false, false, []);
+                        setShowMobileProfile(false);
+                      }}
+                      onAddSupportAgent={(agentId) => addSupportAgent(agentId)}
+                      onRemoveSupportAgent={(agentId) => removeSupportAgent(agentId)}
+                      onTransferChat={(agentId) => {
+                        handleTransferChat(agentId);
+                        setShowMobileProfile(false);
+                      }}
+                      categories={categories}
+                      canManageSessionAgents={canManageSessionAgents}
+                    />
+               </div>
+            </div>
+          )}
         </>
-      ) : activeView === 'TEAM' ? (
-        <TeamView agents={agents} roles={roles} onAddAgent={handleAddAgent} onUpdateAgent={handleUpdateAgent} getRoleName={getRoleName} />
-      ) : activeView === 'CUSTOMERS' ? (
-        <CustomerView />
-      ) : activeView === 'WORKFLOW' ? (
-        <WorkflowView />
-      ) : activeView === 'ANALYTICS' ? (
-        <AnalyticsView />
       ) : (
-        <SettingsView  
-            systemQuickReplies={systemQuickReplies} 
-            knowledgeBase={knowledgeBase} 
-            onAddSystemReply={handleAddSystemReply}
-            onDeleteSystemReply={onDeleteSystemReply}
-            onAddKnowledge={onAddKnowledge}
-            onDeleteKnowledge={onDeleteKnowledge}
-        />
+        <div className="flex-1 overflow-auto pb-20 lg:pb-0 w-full">
+          {activeView === 'TEAM' ? (
+            <TeamView agents={agents} roles={roles} onAddAgent={handleAddAgent} onUpdateAgent={handleUpdateAgent} getRoleName={getRoleName} />
+          ) : activeView === 'CUSTOMERS' ? (
+            <CustomerView />
+          ) : activeView === 'WORKFLOW' ? (
+            <WorkflowView />
+          ) : activeView === 'ANALYTICS' ? (
+            <AnalyticsView />
+          ) : (
+            <SettingsView  
+                systemQuickReplies={systemQuickReplies} 
+                knowledgeBase={knowledgeBase} 
+                onAddSystemReply={handleAddSystemReply}
+                onDeleteSystemReply={onDeleteSystemReply}
+                onAddKnowledge={onAddKnowledge}
+                onDeleteKnowledge={onDeleteKnowledge}
+            />
+          )}
+        </div>
       )}
+
+      {/* Mobile Navigation */}
+      <MobileNav 
+        activeView={activeView} 
+        setActiveView={setActiveView}
+        currentUser={currentUser}
+        currentUserStatus={currentUserStatus}
+        showProfileMenu={showProfileMenu}
+        setShowProfileMenu={setShowProfileMenu}
+        handleStatusChange={handleStatusChange}
+        handleLogout={handleLogout}
+        onLanguageChange={handleLanguageChange}
+      />
 
       {/* Global Notifications */}
       <div className="fixed top-4 right-4 z-[100] w-80 space-y-3">
