@@ -151,10 +151,28 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
     switch (type) {
       case 'WECHAT_OFFICIAL':
         return { appId: '', appSecret: '', token: '', encodingAESKey: '' };
+      case 'WECHAT_KF':
+        return { appId: '', appSecret: '', token: '', encodingAESKey: '' };
       case 'LINE_OFFICIAL':
         return { channelId: '', channelSecret: '', channelAccessToken: '' };
       case 'WHATSAPP_OFFICIAL':
         return { phoneNumberId: '', accessToken: '', businessAccountId: '', appId: '', appSecret: '' };
+      case 'FACEBOOK_MESSENGER':
+        return { appId: '', appSecret: '', accessToken: '' };
+      case 'TELEGRAM':
+        return { botToken: '' };
+      case 'INSTAGRAM':
+        return { appId: '', appSecret: '', accessToken: '' };
+      case 'TWITTER':
+        return { consumerKey: '', consumerSecret: '', accessToken: '', accessTokenSecret: '', bearerToken: '' };
+      case 'DOUYIN':
+        return { clientKey: '', clientSecret: '' };
+      case 'RED_BOOK':
+        return { appId: '', appSecret: '' };
+      case 'WEIBO':
+        return { appKey: '', appSecret: '', accessToken: '' };
+      case 'EMAIL':
+        return { smtpHost: '', smtpPort: 587, username: '', password: '', fromEmail: '', sslEnabled: true };
       default:
         return {};
     }
@@ -270,6 +288,53 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
               </div>
             )}
 
+            {channelType.value === 'WECHAT_KF' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-group">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">CorpID (AppID) *</label>
+                  <input
+                    type="text"
+                    value={formData.appId || ''}
+                    onChange={(e) => setFormData({ ...formData, appId: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    placeholder="ww..."
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Secret (应用密钥) *
+                  </label>
+                  <input
+                    type="password"
+                    value={formData.appSecret || ''}
+                    onChange={(e) => setFormData({ ...formData, appSecret: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    请在企业微信后台-应用管理-自建应用中查看
+                  </p>
+                </div>
+                <div className="form-group">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Token *</label>
+                  <input
+                    type="text"
+                    value={formData.token || ''}
+                    onChange={(e) => setFormData({ ...formData, token: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">EncodingAESKey</label>
+                  <input
+                    type="text"
+                    value={formData.encodingAESKey || ''}
+                    onChange={(e) => setFormData({ ...formData, encodingAESKey: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+              </div>
+            )}
+
             {channelType.value === 'LINE_OFFICIAL' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-group">
@@ -348,6 +413,276 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                     onChange={(e) => setFormData({ ...formData, appSecret: e.target.value })}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   />
+                </div>
+              </div>
+            )}
+
+            {channelType.value === 'FACEBOOK_MESSENGER' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-group">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">App ID *</label>
+                  <input
+                    type="text"
+                    value={formData.appId || ''}
+                    onChange={(e) => setFormData({ ...formData, appId: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">App Secret *</label>
+                  <input
+                    type="password"
+                    value={formData.appSecret || ''}
+                    onChange={(e) => setFormData({ ...formData, appSecret: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <div className="form-group md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Page Access Token *</label>
+                  <input
+                    type="password"
+                    value={formData.accessToken || ''}
+                    onChange={(e) => setFormData({ ...formData, accessToken: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+              </div>
+            )}
+
+            {channelType.value === 'TELEGRAM' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-group md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Bot Token *</label>
+                  <input
+                    type="password"
+                    value={formData.botToken || ''}
+                    onChange={(e) => setFormData({ ...formData, botToken: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
+                  />
+                </div>
+              </div>
+            )}
+
+            {channelType.value === 'INSTAGRAM' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-group">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Facebook App ID *</label>
+                  <input
+                    type="text"
+                    value={formData.appId || ''}
+                    onChange={(e) => setFormData({ ...formData, appId: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Facebook App Secret *</label>
+                  <input
+                    type="password"
+                    value={formData.appSecret || ''}
+                    onChange={(e) => setFormData({ ...formData, appSecret: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <div className="form-group md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Page Access Token *</label>
+                  <input
+                    type="password"
+                    value={formData.accessToken || ''}
+                    onChange={(e) => setFormData({ ...formData, accessToken: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+              </div>
+            )}
+
+            {channelType.value === 'TWITTER' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-group">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">API Key (Consumer Key) *</label>
+                  <input
+                    type="text"
+                    value={formData.consumerKey || ''}
+                    onChange={(e) => setFormData({ ...formData, consumerKey: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">API Secret (Consumer Secret) *</label>
+                  <input
+                    type="password"
+                    value={formData.consumerSecret || ''}
+                    onChange={(e) => setFormData({ ...formData, consumerSecret: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Access Token *</label>
+                  <input
+                    type="password"
+                    value={formData.accessToken || ''}
+                    onChange={(e) => setFormData({ ...formData, accessToken: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Access Token Secret *</label>
+                  <input
+                    type="password"
+                    value={formData.accessTokenSecret || ''}
+                    onChange={(e) => setFormData({ ...formData, accessTokenSecret: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <div className="form-group md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Bearer Token</label>
+                  <input
+                    type="password"
+                    value={formData.bearerToken || ''}
+                    onChange={(e) => setFormData({ ...formData, bearerToken: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+              </div>
+            )}
+
+            {channelType.value === 'DOUYIN' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-group">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Client Key *</label>
+                  <input
+                    type="text"
+                    value={formData.clientKey || ''}
+                    onChange={(e) => setFormData({ ...formData, clientKey: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Client Secret *</label>
+                  <input
+                    type="password"
+                    value={formData.clientSecret || ''}
+                    onChange={(e) => setFormData({ ...formData, clientSecret: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+              </div>
+            )}
+
+            {channelType.value === 'RED_BOOK' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-group">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">App ID *</label>
+                  <input
+                    type="text"
+                    value={formData.appId || ''}
+                    onChange={(e) => setFormData({ ...formData, appId: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">App Secret *</label>
+                  <input
+                    type="password"
+                    value={formData.appSecret || ''}
+                    onChange={(e) => setFormData({ ...formData, appSecret: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+              </div>
+            )}
+
+            {channelType.value === 'WEIBO' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-group">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">App Key *</label>
+                  <input
+                    type="text"
+                    value={formData.appKey || ''}
+                    onChange={(e) => setFormData({ ...formData, appKey: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">App Secret *</label>
+                  <input
+                    type="password"
+                    value={formData.appSecret || ''}
+                    onChange={(e) => setFormData({ ...formData, appSecret: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <div className="form-group md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Access Token *</label>
+                  <input
+                    type="password"
+                    value={formData.accessToken || ''}
+                    onChange={(e) => setFormData({ ...formData, accessToken: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+              </div>
+            )}
+
+            {channelType.value === 'EMAIL' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-group">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">SMTP Host *</label>
+                  <input
+                    type="text"
+                    value={formData.smtpHost || ''}
+                    onChange={(e) => setFormData({ ...formData, smtpHost: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    placeholder="smtp.gmail.com"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">SMTP Port *</label>
+                  <input
+                    type="number"
+                    value={formData.smtpPort || ''}
+                    onChange={(e) => setFormData({ ...formData, smtpPort: parseInt(e.target.value) })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    placeholder="587"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email / Username *</label>
+                  <input
+                    type="text"
+                    value={formData.username || ''}
+                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+                  <input
+                    type="password"
+                    value={formData.password || ''}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">From Email *</label>
+                  <input
+                    type="text"
+                    value={formData.fromEmail || ''}
+                    onChange={(e) => setFormData({ ...formData, fromEmail: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <div className="form-group flex items-center pt-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.sslEnabled ?? true}
+                      onChange={(e) => setFormData({ ...formData, sslEnabled: e.target.checked })}
+                      className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Enable SSL/TLS</span>
+                  </label>
                 </div>
               </div>
             )}
