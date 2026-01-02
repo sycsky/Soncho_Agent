@@ -168,6 +168,19 @@ export const ChatList: React.FC<ChatListProps> = ({
     setRenameValue('');
   };
 
+  const handleRenameSubmit = async (groupId: string) => {
+    const nextName = renameValue.trim();
+    if (!nextName) {
+      handleRenameCancelOrBlur();
+      return;
+    }
+    try {
+      await onRenameGroup(groupId, nextName);
+    } finally {
+      handleRenameCancelOrBlur();
+    }
+  };
+
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
     const now = new Date();

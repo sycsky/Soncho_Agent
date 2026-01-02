@@ -5,8 +5,8 @@ import { getSupportedLanguages, Language } from '../services/translationService'
 import { updateAgent } from '../services/adminService';
 
 interface MobileNavProps {
-  activeView: 'INBOX' | 'TEAM' | 'CUSTOMERS' | 'ANALYTICS' | 'SETTINGS' | 'WORKFLOW';
-  setActiveView: (view: 'INBOX' | 'TEAM' | 'CUSTOMERS' | 'ANALYTICS' | 'SETTINGS' | 'WORKFLOW') => void;
+  activeView: 'DASHBOARD' | 'INBOX' | 'TEAM' | 'CUSTOMERS' | 'ANALYTICS' | 'SETTINGS' | 'WORKFLOW';
+  setActiveView: (view: 'DASHBOARD' | 'INBOX' | 'TEAM' | 'CUSTOMERS' | 'ANALYTICS' | 'SETTINGS' | 'WORKFLOW') => void;
   currentUser: Agent;
   showProfileMenu: boolean;
   setShowProfileMenu: (show: boolean) => void;

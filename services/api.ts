@@ -19,17 +19,21 @@ const getToken = (): string | null => {
 
 // FIX: Add an interface for the API service to correctly type `this` and allow generic method calls.
 // Fix: Added `this: ApiService` to each method signature to ensure `this` is correctly typed.
+interface ApiRequestInit extends RequestInit {
+  data?: unknown;
+}
+
 interface ApiService {
-  request<T>(this: ApiService, endpoint: string, options?: RequestInit): Promise<T>;
-  get<T>(this: ApiService, endpoint: string, options?: RequestInit): Promise<T>;
-  post<T>(this: ApiService, endpoint: string, body: unknown, options?: RequestInit): Promise<T>;
-  put<T>(this: ApiService, endpoint: string, body: unknown, options?: RequestInit): Promise<T>;
-  delete<T>(this: ApiService, endpoint: string, options?: RequestInit): Promise<T>;
+  request<T>(this: ApiService, endpoint: string, options?: ApiRequestInit): Promise<T>;
+  get<T>(this: ApiService, endpoint: string, options?: ApiRequestInit): Promise<T>;
+  post<T>(this: ApiService, endpoint: string, body: unknown, options?: ApiRequestInit): Promise<T>;
+  put<T>(this: ApiService, endpoint: string, body: unknown, options?: ApiRequestInit): Promise<T>;
+  delete<T>(this: ApiService, endpoint: string, options?: ApiRequestInit): Promise<T>;
 }
 
 const api: ApiService = {
   // Fix: Added `this: ApiService` to match the interface and correctly type `this`.
-  async request<T>(this: ApiService, endpoint: string, options: RequestInit = {}): Promise<T> {
+  async request<T>(this: ApiService, endpoint: string, options: ApiRequestInit = {}): Promise<T> {
     const url = `${BASE_URL}/api/v1${endpoint}`;
     const token = getToken();
 
@@ -101,12 +105,12 @@ const api: ApiService = {
   },
 
   // Fix: Added `this: ApiService` to fix "Untyped function calls may not accept type arguments" error.
-  get<T>(this: ApiService, endpoint: string, options?: RequestInit): Promise<T> {
+  get<T>(this: ApiService, endpoint: string, options?: ApiRequestInit): Promise<T> {
     return this.request<T>(endpoint, { ...options, method: 'GET' });
   },
 
   // Fix: Added `this: ApiService` to fix "Untyped function calls may not accept type arguments" error.
-  post<T>(this: ApiService, endpoint: string, body: unknown, options?: RequestInit): Promise<T> {
+  post<T>(this: ApiService, endpoint: string, body: unknown, options?: ApiRequestInit): Promise<T> {
     const isFormData = body instanceof FormData;
     return this.request<T>(endpoint, {
       ...options,
@@ -116,7 +120,7 @@ const api: ApiService = {
   },
   
   // Fix: Added `this: ApiService` to fix "Untyped function calls may not accept type arguments" error.
-  put<T>(this: ApiService, endpoint: string, body: unknown, options?: RequestInit): Promise<T> {
+  put<T>(this: ApiService, endpoint: string, body: unknown, options?: ApiRequestInit): Promise<T> {
     const isFormData = body instanceof FormData;
     return this.request<T>(endpoint, {
       ...options,
@@ -126,7 +130,7 @@ const api: ApiService = {
   },
 
   // Fix: Added `this: ApiService` to fix "Untyped function calls may not accept type arguments" error.
-  delete<T>(this: ApiService, endpoint: string, options?: RequestInit): Promise<T> {
+  delete<T>(this: ApiService, endpoint: string, options?: ApiRequestInit): Promise<T> {
     // 如果options中包含data属性，将其作为请求体
     const config = { ...options, method: 'DELETE' };
     if (options?.data) {

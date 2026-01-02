@@ -171,6 +171,8 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
         return { appId: '', appSecret: '' };
       case 'WEIBO':
         return { appKey: '', appSecret: '', accessToken: '' };
+      case 'SHOPIFY':
+        return { shopDomain: '', accessToken: '', apiKey: '', apiSecret: '' };
       case 'EMAIL':
         return { smtpHost: '', smtpPort: 587, username: '', password: '', fromEmail: '', sslEnabled: true };
       default:
@@ -245,7 +247,54 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
       {isExpanded && (
         <div className="p-6">
           <div className="grid gap-6">
-            {/* Platform Specific Fields */}
+            {channelType.value === 'SHOPIFY' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-group">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Shop Domain *</label>
+                  <input
+                    type="text"
+                    value={formData.shopDomain || ''}
+                    onChange={(e) => setFormData({ ...formData, shopDomain: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    placeholder="my-store.myshopify.com"
+                  />
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    Your Shopify store domain (e.g. my-store.myshopify.com)
+                  </p>
+                </div>
+                <div className="form-group">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Access Token *</label>
+                  <input
+                    type="password"
+                    value={formData.accessToken || ''}
+                    onChange={(e) => setFormData({ ...formData, accessToken: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    Admin API Access Token from your custom app
+                  </p>
+                </div>
+                <div className="form-group">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+                  <input
+                    type="text"
+                    value={formData.apiKey || ''}
+                    onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">API Secret Key</label>
+                  <input
+                    type="password"
+                    value={formData.apiSecret || ''}
+                    onChange={(e) => setFormData({ ...formData, apiSecret: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+              </div>
+            )}
+
             {channelType.value === 'WECHAT_OFFICIAL' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-group">

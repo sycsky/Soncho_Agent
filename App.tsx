@@ -27,6 +27,14 @@ import {
   ClipboardCheck, Loader2, User, ArrowRight, Sparkles, MessageCircle, FileText
 } from 'lucide-react';
 
+import { ShopifyAppProvider } from './components/shopify/ShopifyAppProvider';
+import { ShopifyDashboard } from './components/shopify/ShopifyDashboard';
+import { ShopifyInstall } from './components/shopify/ShopifyInstall';
+import { ShopifyBilling } from './components/shopify/ShopifyBilling';
+import { checkShopifyAuth, exchangeShopifyForAgentSession, getShopifyLaunchParams, initiateShopifyInstall, saveShopifyLaunchParams } from './services/shopifyAuthService';
+import { checkSubscriptionStatus, verifySubscription } from './services/shopifyBillingService';
+import { Button } from '@shopify/polaris';
+
 // Type for the successful login response data
 interface LoginResponse {
   token: string;
@@ -53,6 +61,10 @@ const PERMISSION_DEFINITIONS = [
 function App() {
   const [loadingState, setLoadingState] = useState<'INITIALIZING' | 'LOADING' | 'READY' | 'ERROR'>('INITIALIZING');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isShopifyEmbedded, setIsShopifyEmbedded] = useState(false);
+  const [isShopifyAuthenticated, setIsShopifyAuthenticated] = useState(false);
+  const [isSubscriptionActive, setIsSubscriptionActive] = useState(false);
+  const [checkingSubscription, setCheckingSubscription] = useState(true);
   const [currentUser, setCurrentUser] = useState<Agent | null>(null);
 
   // ✅ 使用 ref 保存最新的 WebSocket 消息处理函数
@@ -79,7 +91,7 @@ function App() {
   const [categories, setCategories] = useState<SessionCategory[]>([]);
 
   // UI States
-  const [activeView, setActiveView] = useState<'INBOX' | 'TEAM' | 'CUSTOMERS' | 'ANALYTICS' | 'SETTINGS' | 'WORKFLOW'>('INBOX');
+  const [activeView, setActiveView] = useState<'DASHBOARD' | 'INBOX' | 'TEAM' | 'CUSTOMERS' | 'ANALYTICS' | 'SETTINGS' | 'WORKFLOW'>('INBOX');
   const [isZenMode, setIsZenMode] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -190,25 +202,15 @@ function App() {
           const sessionExists = prev.some(s => s.id === sessionId);
           
           if (sessionExists) {
-            // 会话已存在，更新消息
-            return prev.map(s => {
+            const mapped = prev.map(s => {
               if (s.id === sessionId) {
                 const isNewUnread = s.id !== activeSessionId;
                 const isOwned = s.primaryAgentId === (currentUser?.id || '');
                 const isMentioned = Array.isArray(newMessage.mentions) && (currentUser?.id ? newMessage.mentions.includes(currentUser.id) : false);
                 const isUserMessage = newMessage.sender === MessageSender.USER;
                 
-                // Only increment unread count if:
-                // 1. It's a user message AND the current agent owns the session
-                // 2. OR the current agent is explicitly mentioned in the message
                 const shouldIncrement = (isUserMessage && isOwned) || isMentioned;
-                
-                // If not active session:
-                // - If should increment -> count + 1
-                // - If should NOT increment -> keep existing count (DO NOT RESET TO 0)
                 const nextUnread = isNewUnread ? (shouldIncrement ? s.unreadCount + 1 : s.unreadCount) : 0;
-                
-                // Always update lastActive to ensure correct sorting within groups (Owned/Unowned)
                 const nextLastActive = newMessage.timestamp;
                 return {
                   ...s,
@@ -220,7 +222,6 @@ function App() {
               }
               return s;
             });
-            // ✅ Sort the list after updating to ensure correct order
             return sortByOwnershipAndLastActive(mapped);
           } else {
             // ✅ 检查是否已经调度过
@@ -249,7 +250,7 @@ function App() {
         if (sessionId === activeSessionId) {
           (async () => {
             try {
-              await api.post(`/read-records/sessions/${sessionId}/mark-read`);
+              await api.post(`/read-records/sessions/${sessionId}/mark-read`, {});
             } catch (error) {
               console.error('Failed to mark current session as read:', error);
             }
@@ -361,7 +362,7 @@ function App() {
 
       if (defaultSessionId) {
         try {
-          await api.post(`/read-records/sessions/${defaultSessionId}/mark-read`);
+          await api.post(`/read-records/sessions/${defaultSessionId}/mark-read`, {});
         } catch (error) {
           console.error('Failed to mark default session messages as read:', error);
         }
@@ -389,7 +390,115 @@ function App() {
       console.log('⏭️ 跳过重复初始化 (Strict Mode)');
       return;
     }
+    isInitialized.current = true;
     
+    const urlParams = new URLSearchParams(window.location.search);
+    const launchParams = getShopifyLaunchParams();
+    const shop = launchParams.shop;
+    const host = launchParams.host;
+    const tenantId = launchParams.tenantId;
+
+    if (shop) {
+      setIsShopifyEmbedded(true);
+      saveShopifyLaunchParams({ shop, host, tenantId });
+      
+      const confirmBilling = urlParams.get('confirm_billing');
+      const planId = urlParams.get('plan_id');
+      const chargeId = urlParams.get('charge_id');
+
+      if (!checkShopifyAuth(shop)) {
+        initiateShopifyInstall(shop);
+        return;
+      }
+
+      const ensureBackendAgentSession = async (): Promise<boolean> => {
+        const existingToken = localStorage.getItem('nexus_token');
+        const existingUserJson = localStorage.getItem('nexus_user');
+
+        if (existingToken && existingUserJson) {
+          try {
+            const loggedInUser: Agent = JSON.parse(existingUserJson);
+            setIsAuthenticated(true);
+            setCurrentUser(loggedInUser);
+            fetchBootstrapData(loggedInUser, existingToken);
+            return true;
+          } catch (e) {
+            localStorage.removeItem('nexus_token');
+            localStorage.removeItem('nexus_user');
+          }
+        }
+
+        try {
+          const session = await exchangeShopifyForAgentSession({
+            shop,
+            host: host || undefined,
+            tenantId: tenantId || undefined
+          });
+          localStorage.setItem('nexus_token', session.token);
+          localStorage.setItem('nexus_user', JSON.stringify(session.agent));
+          setIsAuthenticated(true);
+          setCurrentUser(session.agent);
+          fetchBootstrapData(session.agent, session.token);
+          return true;
+        } catch (e) {
+          console.error('Failed to establish agent session for Shopify store:', e);
+          return false;
+        }
+      };
+
+      const finalizeStartup = async () => {
+        setCheckingSubscription(true);
+
+        const hasAgentSession = await ensureBackendAgentSession();
+        if (!hasAgentSession) {
+          setIsShopifyAuthenticated(false);
+          setCheckingSubscription(false);
+          return;
+        }
+
+        setIsShopifyAuthenticated(true);
+
+        try {
+          const subStatus = await checkSubscriptionStatus(shop);
+          setIsSubscriptionActive(subStatus.active);
+        } catch (e) {
+          console.error('Failed to check subscription', e);
+          setIsSubscriptionActive(false);
+        } finally {
+          setCheckingSubscription(false);
+          setActiveView('DASHBOARD');
+        }
+      };
+
+      if (confirmBilling && chargeId && planId) {
+          // Verify billing then start
+          verifySubscription(shop, chargeId, planId).then(success => {
+             if (success) {
+                 window.history.replaceState({}, document.title, `/?shop=${shop}&is_embedded=1`);
+                 finalizeStartup();
+             } else {
+                 setCheckingSubscription(false);
+                 setIsShopifyAuthenticated(true); // Still auth'd, just failed billing
+             }
+          });
+      } else {
+        if (tenantId) {
+          const nextUrl = new URL(window.location.href);
+          nextUrl.searchParams.delete('tenantId');
+          nextUrl.searchParams.delete('tenant_id');
+          nextUrl.searchParams.set('shop', shop);
+          if (host) {
+            nextUrl.searchParams.set('host', host);
+          }
+          nextUrl.searchParams.set('is_embedded', '1');
+          window.history.replaceState({}, document.title, `${nextUrl.pathname}${nextUrl.search}`);
+        }
+        finalizeStartup();
+      }
+
+      return;
+    }
+
     const token = localStorage.getItem('nexus_token');
     const userJson = localStorage.getItem('nexus_user');
     if (token && userJson) {
@@ -461,7 +570,7 @@ function App() {
     
     try {
       // 调用后端 API 标记消息为已读
-      await api.post(`/read-records/sessions/${sessionId}/mark-read`);
+      await api.post(`/read-records/sessions/${sessionId}/mark-read`, {});
       
       // 如果会话的 user.notes 为空，从后端获取会话备注
       const session = sessions.find(s => s.id === sessionId);
@@ -598,7 +707,7 @@ function App() {
    */
   const handleMoveSession = async (sessionId: string, targetGroupId: string) => {
     try {
-      await api.post(`/session-groups/${targetGroupId}/sessions/${sessionId}`);
+      await api.post(`/session-groups/${targetGroupId}/sessions/${sessionId}`, {});
       
       // 更新本地状态
       setSessions(prev => prev.map(s => 
@@ -1086,24 +1195,179 @@ function App() {
     setIsGeneratingSummary(false);
   };
   
-  if (loadingState === 'INITIALIZING' || loadingState === 'LOADING') {
+  if (loadingState === 'INITIALIZING') {
     return (
-      <div className="h-screen w-full flex flex-col items-center justify-center bg-gray-100 text-gray-500 font-semibold">
-        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-2xl shadow-lg mb-4">N</div>
-        <div className="flex items-center gap-2">
-            <Loader2 size={16} className="animate-spin" />
-            <span>Loading Workspace...</span>
+      <div className="h-screen w-full flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4" />
+          <p className="text-gray-500">Initializing workspace...</p>
         </div>
       </div>
     );
   }
 
-  if (!isAuthenticated || loadingState === 'ERROR') {
+  // Shopify Embedded App View
+  if (isShopifyEmbedded) {
+    const { shop, host } = getShopifyLaunchParams();
+    const apiKey = import.meta.env.VITE_SHOPIFY_API_KEY; 
+    
+    if (!apiKey) {
+      return (
+        <div className="flex items-center justify-center h-screen bg-gray-50 text-red-600">
+          Error: Shopify API Key is missing in environment variables (VITE_SHOPIFY_API_KEY).
+        </div>
+      );
+    }
+
+    return (
+      <ShopifyAppProvider apiKey={apiKey} shopOrigin={shop || undefined} host={host || undefined}>
+        {!isShopifyAuthenticated ? (
+          <ShopifyInstall shop={shop || ''} />
+        ) : checkingSubscription ? (
+          <div className="h-screen w-full flex items-center justify-center bg-gray-50">
+             <div className="text-center">
+               <Loader2 className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4" />
+               <p className="text-gray-500">Verifying subscription...</p>
+             </div>
+          </div>
+        ) : !isSubscriptionActive ? (
+          <ShopifyBilling shop={shop || ''} />
+        ) : (
+          <>
+            {activeView === 'DASHBOARD' && (
+              <ShopifyDashboard 
+                onOpenChat={() => setActiveView('INBOX')}
+                onOpenSettings={() => setActiveView('SETTINGS')}
+                onOpenKnowledge={() => setActiveView('WORKFLOW')}
+              />
+            )}
+            
+            {activeView === 'INBOX' && (
+               <div className="h-screen w-full bg-gray-50 p-4 overflow-hidden">
+                 <div className="mx-auto max-w-6xl h-[82vh] bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+                   <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white">
+                     <div className="flex items-center gap-3">
+                       <Button
+                         onClick={() => {
+                           setActiveSessionId(null);
+                           setShowMobileProfile(false);
+                           setActiveView('DASHBOARD');
+                         }}
+                       >
+                         Back to Dashboard
+                       </Button>
+                       <div className="text-sm font-semibold text-gray-800">Inbox</div>
+                     </div>
+                   </div>
+
+                   <div className="flex-1 flex overflow-hidden">
+                     <div className="w-full lg:w-80 lg:shrink-0 h-full overflow-hidden border-r border-gray-200 bg-white">
+                       <ChatList 
+                         sessions={sessions}
+                         activeSessionId={activeSessionId}
+                         onSelectSession={handleSelectSession}
+                         groups={chatGroups}
+                         onCreateGroup={handleCreateGroup}
+                         onDeleteGroup={handleDeleteGroup}
+                         onMoveSession={handleMoveSession}
+                         onRenameGroup={handleRenameGroup}
+                         currentUserId={currentUser?.id || ''}
+                       />
+                     </div>
+
+                     {activeSession ? (
+                       <div className="flex-1 h-full overflow-hidden bg-white">
+                         <ChatArea 
+                           session={activeSession}
+                           agents={agents}
+                           systemQuickReplies={systemQuickReplies}
+                           isZenMode={isZenMode}
+                           setIsZenMode={setIsZenMode}
+                           isAiTyping={isAiTyping}
+                           onSendMessage={handleSendMessage}
+                           onResolve={() => setShowResolveModal(true)}
+                           onTransfer={() => setShowTransferModal(true)}
+                           onSummary={() => setShowSummaryModal(true)}
+                           onToggleStatus={toggleSessionStatus}
+                           onMagicRewrite={handleMagicRewrite}
+                           sentiment={sentiment}
+                           isAnalyzingSentiment={isAnalyzingSentiment}
+                           currentAgentLanguage={currentAgentLanguage}
+                           onBack={() => setActiveSessionId(null)}
+                           onShowProfile={() => setShowMobileProfile(true)}
+                         />
+                       </div>
+                     ) : (
+                       <div className="hidden lg:flex flex-1 flex-col items-center justify-center bg-gray-50 text-gray-400">
+                         <MessageCircle size={48} className="mb-4 opacity-50" />
+                         <h2 className="text-xl font-semibold">No Conversation Selected</h2>
+                         <p className="text-sm mt-2">Please choose a conversation from the list.</p>
+                       </div>
+                     )}
+
+                     {activeSession && !isZenMode && (
+                       <div className="hidden lg:block w-80 shrink-0 h-full overflow-hidden border-l border-gray-200 bg-white">
+                         <UserProfilePanel
+                           user={activeSession.user}
+                           currentSession={activeSession}
+                           agents={agents}
+                           allQuickReplies={systemQuickReplies}
+                           agentId={currentUser?.id || ''}
+                           onUpdateTags={handleUpdateTags}
+                           onUpdateNotes={handleUpdateNotes}
+                           onQuickReply={(text) => handleSendMessage(text, [], false, false, [])}
+                           onAddSupportAgent={(agentId) => addSupportAgent(agentId)}
+                           onRemoveSupportAgent={(agentId) => removeSupportAgent(agentId)}
+                           onTransferChat={(agentId) => handleTransferChat(agentId)}
+                           canManageSessionAgents={canManageSessionAgents}
+                         />
+                       </div>
+                     )}
+                   </div>
+                 </div>
+               </div>
+            )}
+    
+            {activeView === 'SETTINGS' && (
+               <div className="h-screen bg-gray-50 overflow-auto">
+                  <div className="p-4">
+                     <div className="mb-4">
+                        <Button onClick={() => setActiveView('DASHBOARD')}>Back to Dashboard</Button>
+                     </div>
+                     <SettingsView  
+                         systemQuickReplies={systemQuickReplies} 
+                         knowledgeBase={knowledgeBase} 
+                         onAddSystemReply={handleAddSystemReply}
+                         onDeleteSystemReply={onDeleteSystemReply}
+                         onAddKnowledge={onAddKnowledge}
+                         onDeleteKnowledge={onDeleteKnowledge}
+                     />
+                  </div>
+               </div>
+             )}
+     
+             {activeView === 'WORKFLOW' && (
+               <div className="h-screen bg-gray-50 overflow-auto">
+                  <div className="p-4">
+                     <div className="mb-4">
+                        <Button onClick={() => setActiveView('DASHBOARD')}>Back to Dashboard</Button>
+                     </div>
+                     <WorkflowView />
+                  </div>
+               </div>
+             )}
+          </>
+        )}
+      </ShopifyAppProvider>
+    );
+  }
+
+  if (!isAuthenticated) {
     return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
   }
-  
+
   return (
-    <div className="h-screen w-full flex bg-gray-100 font-sans text-gray-900 overflow-hidden">
+    <div className="flex h-screen bg-white overflow-hidden font-sans text-gray-900">
       {/* Sidebar (Desktop) */}
       <div className="hidden lg:block h-full shrink-0">
         <Sidebar 
@@ -1177,7 +1441,6 @@ function App() {
                   onAddSupportAgent={(agentId) => addSupportAgent(agentId)}
                   onRemoveSupportAgent={(agentId) => removeSupportAgent(agentId)}
                   onTransferChat={(agentId) => handleTransferChat(agentId)}
-                  categories={categories}
                   canManageSessionAgents={canManageSessionAgents}
                 />
             </div>
@@ -1211,7 +1474,6 @@ function App() {
                         handleTransferChat(agentId);
                         setShowMobileProfile(false);
                       }}
-                      categories={categories}
                       canManageSessionAgents={canManageSessionAgents}
                     />
                </div>
@@ -1221,7 +1483,7 @@ function App() {
       ) : (
         <div className="flex-1 overflow-auto pb-20 lg:pb-0 w-full">
           {activeView === 'TEAM' ? (
-            <TeamView agents={agents} roles={roles} onAddAgent={handleAddAgent} onUpdateAgent={handleUpdateAgent} getRoleName={getRoleName} />
+            <TeamView />
           ) : activeView === 'CUSTOMERS' ? (
             <CustomerView />
           ) : activeView === 'WORKFLOW' ? (

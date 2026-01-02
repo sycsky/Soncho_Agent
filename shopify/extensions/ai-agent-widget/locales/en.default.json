@@ -1,0 +1,31 @@
+{
+  "name": "AI Agent Widget",
+  "description": "Embed the AI Customer Service Agent on your store.",
+  "settings": {
+    "agent_id": {
+      "label": "Agent ID",
+      "info": "The unique identifier for your AI Agent."
+    },
+    "primary_color": {
+      "label": "Primary Color"
+    },
+    "position": {
+      "label": "Widget Position",
+      "options": {
+        "bottom_right": "Bottom Right",
+        "bottom_left": "Bottom Left"
+      }
+    },
+    "welcome_message": {
+      "label": "Welcome Message"
+    }
+  },
+  "ratings": {
+    "stars": {
+      "label": "Rating"
+    },
+    "home": {
+      "recommendationText": "Recommended"
+    }
+  }
+}

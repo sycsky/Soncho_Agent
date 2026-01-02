@@ -70,6 +70,7 @@ export interface ChatSession {
   groupId: string; // References ChatGroup.id
   primaryAgentId: string; // The main owner of the chat
   supportAgentIds: string[]; // Other agents in the group
+  agents?: SessionAgent[];
   categoryId?: string;
   category?: SessionCategory;
 }
@@ -112,6 +113,7 @@ export interface QuickReply {
   label: string;
   text: string;
   category: string;
+  system?: boolean;
 }
 
 // Deprecated: Use KnowledgeBase and KnowledgeDocument instead

@@ -1,0 +1,7 @@
+name = "AI Agent Widget"
+uid = "ab24461c-5b98-0047-db69-00784037f9ddcc2fbd40"
+type = "theme_app_extension"
+
+[theme]
+name = "AI Agent Widget"
+target = "body"

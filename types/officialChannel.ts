@@ -94,4 +94,11 @@ export interface EmailConfig {
   sslEnabled?: boolean;
 }
 
-export type ChannelConfigData = WechatOfficialConfig | LineOfficialConfig | WhatsappOfficialConfig | WechatKfConfig | FacebookMessengerConfig | TelegramConfig | InstagramConfig | TwitterConfig | DouyinConfig | RedBookConfig | WeiboConfig | EmailConfig | Record<string, any>;
+export interface ShopifyConfig {
+  shopDomain: string;
+  accessToken: string;
+  apiKey?: string;
+  apiSecret?: string;
+}
+
+export type ChannelConfigData = WechatOfficialConfig | LineOfficialConfig | WhatsappOfficialConfig | WechatKfConfig | FacebookMessengerConfig | TelegramConfig | InstagramConfig | TwitterConfig | DouyinConfig | RedBookConfig | WeiboConfig | EmailConfig | ShopifyConfig | Record<string, any>;

@@ -179,7 +179,9 @@ const TiptapEditor = forwardRef<TiptapEditorRef, TiptapEditorProps>(({
       }
     },
     onUpdate: ({ editor }) => {
-      onChange(editor.storage.markdown.getMarkdown(), editor.state.selection.from);
+      const markdownStorage = (editor.storage as any)?.markdown;
+      const nextValue = markdownStorage?.getMarkdown?.() ?? '';
+      onChange(nextValue, editor.state.selection.from);
     },
     onTransaction: () => {
         forceUpdate({});
@@ -190,7 +192,9 @@ const TiptapEditor = forwardRef<TiptapEditorRef, TiptapEditorProps>(({
   });
 
   useEffect(() => {
-    if (editor && value !== editor.storage.markdown.getMarkdown()) {
+    const markdownStorage = (editor?.storage as any)?.markdown;
+    const current = markdownStorage?.getMarkdown?.() ?? '';
+    if (editor && value !== current) {
        if (!editor.isFocused) {
          editor.commands.setContent(value);
        }
@@ -200,12 +204,16 @@ const TiptapEditor = forwardRef<TiptapEditorRef, TiptapEditorProps>(({
   useImperativeHandle(ref, () => ({
     insertContent: (text: string) => {
       editor?.chain().focus().insertContent(text).run();
-      onChange(editor?.storage.markdown.getMarkdown() || '', editor?.state.selection.from);
+      const markdownStorage = (editor?.storage as any)?.markdown;
+      const nextValue = markdownStorage?.getMarkdown?.() ?? '';
+      onChange(nextValue, editor?.state.selection.from);
     },
     insertVariable: (variable: string, slashIndex: number) => {
       // Delete from slashIndex - 1 (the slash) to current selection
       editor?.chain().focus().deleteRange({ from: slashIndex - 1, to: editor.state.selection.from }).insertContent(variable).run();
-      onChange(editor?.storage.markdown.getMarkdown() || '', editor?.state.selection.from);
+      const markdownStorage = (editor?.storage as any)?.markdown;
+      const nextValue = markdownStorage?.getMarkdown?.() ?? '';
+      onChange(nextValue, editor?.state.selection.from);
     },
     focus: () => {
       editor?.chain().focus().run();

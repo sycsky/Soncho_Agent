@@ -1,0 +1,102 @@
+{% schema %}
+{
+  "name": "AI Agent Widget",
+  "target": "body",
+  "stylesheet": "ai-agent-widget.css",
+  "settings": [
+     {
+      "type": "text",
+      "id": "api_base_url",
+      "label": "API Base URL",
+      "default": "https://colleague-wed-invest-afterwards.trycloudflare.com"
+    },
+    {
+      "type": "text",
+      "id": "ws_url",
+      "label": "WS URL (Optional)",
+      "default": "https://colleague-wed-invest-afterwards.trycloudflare.com/ws/chat"
+    },
+    {
+      "type": "select",
+      "id": "mode",
+      "label": "Widget Mode",
+      "options": [
+        { "value": "bubble", "label": "Bubble (Bottom Corner)" },
+        { "value": "search", "label": "Search (Center)" }
+      ],
+      "default": "bubble"
+    },
+    {
+      "type": "text",
+      "id": "user_name",
+      "label": "User Name (Optional)",
+      "default": "Guest"
+    },
+    {
+      "type": "text",
+      "id": "agent_id",
+      "label": "Agent ID",
+      "default": "default-agent"
+    },
+    {
+      "type": "color",
+      "id": "primary_color",
+      "label": "Primary Color",
+      "default": "#2563eb"
+    },
+    {
+      "type": "select",
+      "id": "position",
+      "label": "Widget Position",
+      "options": [
+        { "value": "bottom-right", "label": "Bottom Right" },
+        { "value": "bottom-left", "label": "Bottom Left" }
+      ],
+      "default": "bottom-right"
+    },
+    {
+      "type": "text",
+      "id": "welcome_message",
+      "label": "Welcome Message",
+      "default": "Hello! How can I help you today?"
+    }
+  ]
+}
+{% endschema %}
+
+<script>
+  window.AI_CHAT_CONFIG = Object.assign(window.AI_CHAT_CONFIG || {}, {
+    apiBaseUrl: {{ block.settings.api_base_url | json }},
+    wsUrl: {{ block.settings.ws_url | json }},
+    mode: {{ block.settings.mode | json }},
+    userName: {{ block.settings.user_name | json }},
+    agentId: {{ block.settings.agent_id | json }},
+    primaryColor: {{ block.settings.primary_color | json }},
+    position: {{ block.settings.position | json }},
+    welcomeMessage: {{ block.settings.welcome_message | json }},
+    shop: {{ shop.permanent_domain | json }}
+  });
+
+  (() => {
+    const scriptId = 'pms-chat-widget-script';
+    const existingScript = document.getElementById(scriptId);
+    if (existingScript) return;
+
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.src = 'https://pms.onesteppms.com/chat-widget.js';
+    script.async = true;
+    script.onload = () => {
+      const cfg = Object.assign({}, window.AI_CHAT_CONFIG);
+      if (cfg.apiBaseUrl === 'https://your-public-api-domain.com') cfg.apiBaseUrl = '';
+      if (cfg.wsUrl === 'auto') cfg.wsUrl = '';
+      if (window.ChatWidget && typeof window.ChatWidget.init === 'function') {
+        window.ChatWidget.init(cfg);
+      }
+      if (window.AIChatWidget && typeof window.AIChatWidget.init === 'function') {
+        window.AIChatWidget.init(cfg);
+      }
+    };
+    document.head.appendChild(script);
+  })();
+</script>

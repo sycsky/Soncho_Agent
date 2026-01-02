@@ -54,7 +54,8 @@ export const officialChannelApi = {
       { value: 'DOUYIN', label: '抖音' },
       { value: 'RED_BOOK', label: '小红书' },
       { value: 'WEIBO', label: '微博' },
-      { value: 'EMAIL', label: 'Email' }
+      { value: 'EMAIL', label: 'Email' },
+      { value: 'SHOPIFY', label: 'Shopify' }
     ];
 
     mockTypes.forEach(mockType => {

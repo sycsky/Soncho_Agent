@@ -135,7 +135,7 @@ export const TeamView: React.FC = () => {
         </button>
       </div>
 
-      {showAddForm && <AddAgentForm roles={roles.map(r => ({id: r.id, name: r.name, permissions: []}))} onClose={() => setShowAddForm(false)} onSubmit={handleAddAgent} />}
+      {showAddForm && <AddAgentForm roles={roles} onClose={() => setShowAddForm(false)} onSubmit={handleAddAgent} />}
       {editingAgent && <EditAgentForm agent={editingAgent} roles={roles} onClose={() => setEditingAgent(null)} onSubmit={handleUpdateAgent} />}
 
       <div className="mb-4 flex gap-4">
@@ -151,13 +151,13 @@ export const TeamView: React.FC = () => {
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase cursor-pointer" onClick={() => handleSort('name')}>
-                <div class="flex items-center gap-1">Agent <ArrowUpDown size={12} /></div>
+                <div className="flex items-center gap-1">Agent <ArrowUpDown size={12} /></div>
               </th>
               <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase cursor-pointer" onClick={() => handleSort('role')}>
-                <div class="flex items-center gap-1">Role <ArrowUpDown size={12} /></div>
+                <div className="flex items-center gap-1">Role <ArrowUpDown size={12} /></div>
               </th>
                <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase cursor-pointer" onClick={() => handleSort('status')}>
-                <div class="flex items-center gap-1">Status <ArrowUpDown size={12} /></div>
+                <div className="flex items-center gap-1">Status <ArrowUpDown size={12} /></div>
               </th>
               <th className="text-right py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Actions</th>
             </tr>
