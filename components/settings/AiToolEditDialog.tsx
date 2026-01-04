@@ -355,6 +355,17 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
                     />
                     <span className="font-medium">MCP Service</span>
                   </label>
+                  <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-colors ${formData.toolType === 'INTERNAL' ? 'bg-orange-50 border-orange-200 text-orange-700' : 'border-gray-200 hover:bg-gray-50'}`}>
+                    <input
+                      type="radio"
+                      name="toolType"
+                      value="INTERNAL"
+                      checked={formData.toolType === 'INTERNAL'}
+                      onChange={(e) => updateField('toolType', e.target.value)}
+                      className="hidden"
+                    />
+                    <span className="font-medium">Internal Tool</span>
+                  </label>
                 </div>
               </div>
             </section>
@@ -568,7 +579,45 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
               </section>
             )}
 
-            {/* Auth Config */}
+            {/* Internal Tool Config */}
+            {formData.toolType === 'INTERNAL' && (
+              <section className="space-y-4">
+                <h4 className="font-bold text-gray-800 border-b border-gray-100 pb-2">Internal Tool Configuration</h4>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Function Name (Internal)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.apiUrl}
+                    onChange={(e) => updateField('apiUrl', e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                    placeholder="e.g. system.getCurrentTime"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    The identifier for the internal function handler.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Parameter Mapping Template (Optional)
+                  </label>
+                  <textarea
+                    value={formData.apiBodyTemplate}
+                    onChange={(e) => updateField('apiBodyTemplate', e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm h-24"
+                    placeholder='{"arg1": "{{param1}}", "options": { "flag": "{{param2}}" }}'
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Transform the AI parameters into the internal function arguments. Defaults to direct mapping if empty.
+                  </p>
+                </div>
+              </section>
+            )}
+
+            {formData.toolType === 'API' && (
             <section className="space-y-4">
               <h4 className="font-bold text-gray-800 border-b border-gray-100 pb-2">Authentication</h4>
               
@@ -602,6 +651,7 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
                 </div>
               )}
             </section>
+            )}
 
             {/* Advanced Options */}
             <section className="space-y-4">

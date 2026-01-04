@@ -1,4 +1,4 @@
-export type AiToolType = 'API' | 'MCP';
+export type AiToolType = 'API' | 'MCP' | 'INTERNAL';
 export type AuthType = 'NONE' | 'API_KEY' | 'BEARER' | 'BASIC' | 'OAUTH2';
 export type FieldType = 
   | 'STRING' 

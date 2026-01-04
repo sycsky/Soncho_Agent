@@ -29,6 +29,20 @@ export interface Customer {
   active: boolean;
   createdAt: string;
   lastInteractionAt?: string;
+  roleCode?: string;
+  roleName?: string;
+}
+
+export interface CustomerRole {
+  code: string;
+  name: string;
+  description?: string;
+}
+
+export interface CreateRoleRequest {
+  code: string;
+  name: string;
+  description?: string;
 }
 
 export interface CustomerListParams {
@@ -210,6 +224,27 @@ class CustomerServiceAPI {
    */
   async deleteSessionNote(sessionId: string): Promise<void> {
     return api.delete<void>(`/chat/sessions/${sessionId}/note`);
+  }
+
+  /**
+   * 为客户分配特殊角色
+   */
+  async assignCustomerRole(customerId: string, roleCode: string): Promise<Customer> {
+    return api.post<Customer>(`/customers/${customerId}/role?roleCode=${encodeURIComponent(roleCode)}`, null);
+  }
+
+  /**
+   * 获取所有客户角色
+   */
+  async getCustomerRoles(): Promise<CustomerRole[]> {
+    return api.get<CustomerRole[]>('/customer-roles');
+  }
+
+  /**
+   * 创建客户角色
+   */
+  async createCustomerRole(request: CreateRoleRequest): Promise<CustomerRole> {
+    return api.post<CustomerRole>('/customer-roles', request);
   }
 }
 
