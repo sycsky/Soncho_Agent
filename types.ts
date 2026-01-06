@@ -185,3 +185,46 @@ export interface SessionAgent {
   avatar?: string;
   isPrimary: boolean;
 }
+
+// Scheduled Task Types
+export type ScheduleType = 'DAILY' | 'WEEKLY' | 'MONTHLY';
+export type TaskCustomerMode = 'SPECIFIC_CUSTOMER' | 'CUSTOMER_ROLE';
+
+export interface ScheduleConfig {
+  type: ScheduleType;
+  time: string; // HH:mm:ss
+  daysOfWeek?: number[]; // 1-7
+  daysOfMonth?: number[]; // 1-31
+}
+
+export interface ScheduledTask {
+  id: string;
+  name: string;
+  description?: string;
+  workflowId: string;
+  workflowName?: string;
+  
+  scheduleConfig: ScheduleConfig;
+  customerMode: TaskCustomerMode;
+  targetIds?: string[];
+  
+  initialInput?: string;
+  enabled: boolean;
+  cronExpression?: string;
+  
+  lastRunAt?: string;
+  nextRunAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SaveScheduledTaskRequest {
+  name: string;
+  description?: string;
+  workflowId: string;
+  scheduleConfig: ScheduleConfig;
+  customerMode: TaskCustomerMode;
+  targetIds?: string[];
+  initialInput?: string;
+  enabled?: boolean;
+}

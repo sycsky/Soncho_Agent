@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { QuickReply, KnowledgeEntry } from '../types';
-import { Settings, Shield, Database, Users, Bot, Wrench, Globe, MessageSquare, Calendar } from 'lucide-react';
+import { Settings, Shield, Database, Users, Bot, Wrench, Globe, MessageSquare, Calendar, Clock } from 'lucide-react';
 import { RoleView } from './RoleView';
 import { CategoryView } from './CategoryView';
 import { LlmModelView } from './LlmModelView';
@@ -9,6 +9,7 @@ import { AiToolsSettings } from './settings/AiToolsSettings';
 import { PlatformView } from './settings/PlatformView';
 import { OfficialChannelConfigView } from './settings/OfficialChannelConfig';
 import { EventSettings } from './settings/EventSettings';
+import ScheduledTaskSettings from './settings/ScheduledTaskSettings';
 
 interface SettingsViewProps {
   systemQuickReplies: QuickReply[];
@@ -24,7 +25,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onAddSystemReply,
   onDeleteSystemReply,
 }) => {
-  const [settingsTab, setSettingsTab] = useState<'QUICK_REPLIES' | 'KNOWLEDGE_BASE' | 'ROLES' | 'CATEGORIES' | 'LLM_MODELS' | 'AI_TOOLS' | 'EXTERNAL_PLATFORMS' | 'OFFICIAL_CHANNELS' | 'EVENTS'>('QUICK_REPLIES');
+  const [settingsTab, setSettingsTab] = useState<'QUICK_REPLIES' | 'KNOWLEDGE_BASE' | 'ROLES' | 'CATEGORIES' | 'LLM_MODELS' | 'AI_TOOLS' | 'EXTERNAL_PLATFORMS' | 'OFFICIAL_CHANNELS' | 'EVENTS' | 'SCHEDULED_TASKS'>('QUICK_REPLIES');
   
   // Form states
   const [newSysReplyLabel, setNewSysReplyLabel] = useState('');
@@ -59,6 +60,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
              <button onClick={() => setSettingsTab('EXTERNAL_PLATFORMS')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'EXTERNAL_PLATFORMS' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50'}`}><Globe size={18} />External Platforms</button>
              <button onClick={() => setSettingsTab('OFFICIAL_CHANNELS')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'OFFICIAL_CHANNELS' ? 'bg-green-50 text-green-700' : 'text-gray-600 hover:bg-gray-50'}`}><MessageSquare size={18} />Official Channels</button>
              <button onClick={() => setSettingsTab('EVENTS')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'EVENTS' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}><Calendar size={18} />Event Configuration</button>
+             <button onClick={() => setSettingsTab('SCHEDULED_TASKS')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'SCHEDULED_TASKS' ? 'bg-orange-50 text-orange-700' : 'text-gray-600 hover:bg-gray-50'}`}><Clock size={18} />Scheduled Tasks</button>
           </nav>
           <div className="p-4 border-t border-gray-100 text-xs text-gray-400 text-center">Version 1.3.0</div>
         </div>
@@ -113,6 +115,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               )}
               {settingsTab === 'EVENTS' && (
                 <EventSettings />
+              )}
+              {settingsTab === 'SCHEDULED_TASKS' && (
+                <ScheduledTaskSettings />
               )}
            </div>
         </div>

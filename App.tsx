@@ -24,7 +24,7 @@ import sessionService, { SessionSummaryPreview } from './services/sessionService
 import TransferDialog from './components/TransferDialog';
 import { 
   CheckCircle, Check, AlertCircle, Info, PartyPopper, Zap, Play, Pause, X,
-  ClipboardCheck, Loader2, User, ArrowRight, Sparkles, MessageCircle, FileText
+  ClipboardCheck, Loader2, User, ArrowRight, Sparkles, MessageCircle, FileText, Clock
 } from 'lucide-react';
 
 // Type for the successful login response data
@@ -40,6 +40,14 @@ interface BootstrapResponse {
   roles: Role[];
   quickReplies: QuickReply[];
   knowledgeBase: KnowledgeEntry[];
+}
+
+interface TransferNotification {
+  sessionId: string;
+  userName: string;
+  avatar?: string;
+  reason?: string;
+  timestamp: number;
 }
 
 const PERMISSION_DEFINITIONS = [
@@ -77,6 +85,7 @@ function App() {
   const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeEntry[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [categories, setCategories] = useState<SessionCategory[]>([]);
+  const [transferNotifications, setTransferNotifications] = useState<TransferNotification[]>([]);
 
   // UI States
   const [activeView, setActiveView] = useState<'INBOX' | 'TEAM' | 'CUSTOMERS' | 'ANALYTICS' | 'SETTINGS' | 'WORKFLOW'>('INBOX');
@@ -260,6 +269,21 @@ function App() {
       case 'sessionUpdated': {
         // Fix: Handle nested session object in payload if present
         const sessionData = (payload as any).session || payload;
+
+        // Check for Transfer to Human (Current Agent)
+        if (sessionData.status === 'HUMAN_HANDLING' && 
+            sessionData.primaryAgentId === currentUser?.id) {
+            setTransferNotifications(prev => {
+                if (prev.some(n => n.sessionId === sessionData.id)) return prev;
+                return [...prev, {
+                    sessionId: sessionData.id,
+                    userName: sessionData.customer?.name || 'Unknown User',
+                    avatar: sessionData.customer?.avatarUrl,
+                    reason: sessionData.lastMessage?.text || 'Transfer Request',
+                    timestamp: Date.now()
+                }];
+            });
+        }
         
         setSessions(prev => {
           const mapped = prev.map(s => {
@@ -311,7 +335,7 @@ function App() {
       default:
         console.warn('Unhandled WebSocket message event:', eventType);
     }
-  }, [activeSessionId]);
+  }, [activeSessionId, currentUser]);
 
   // ✅ 更新 ref 以保存最新的处理函数
   useEffect(() => {
@@ -682,7 +706,7 @@ function App() {
           ...s,
           status: (detail.status ?? s.status),
           lastActive: (detail.lastActive ?? s.lastActive),
-          unreadCount: (detail.unreadCount ?? s.unreadCount),
+          unreadCount: (sessionId === activeSessionId ? 0 : (detail.unreadCount ?? s.unreadCount)),
           groupId: (detail.groupId ?? s.groupId),
           primaryAgentId: (detail.primaryAgentId ?? s.primaryAgentId),
           supportAgentIds: Array.isArray(detail.supportAgentIds) ? detail.supportAgentIds : s.supportAgentIds,
@@ -1135,7 +1159,7 @@ function App() {
             />
           </div>
           {activeSession ? (
-            <div className={`fixed inset-0 z-50 lg:static lg:z-auto flex-1 flex bg-white transition-all duration-300 ${isZenMode ? 'mr-0' : 'mr-0 lg:mr-80'}`}>
+            <div className={`fixed inset-0 z-50 lg:static lg:z-auto flex-1 flex bg-white transition-all duration-300 ${isZenMode ? 'mr-0' : 'mr-0 min-[1550px]:mr-80'}`}>
               <ChatArea 
                 session={activeSession}
                 agents={agents}
@@ -1164,7 +1188,7 @@ function App() {
             </div>
           )}
           {activeSession && !isZenMode && (
-            <div className="fixed right-0 top-0 h-full w-80 transition-transform duration-300 translate-x-0 hidden lg:block">
+            <div className="fixed right-0 top-0 h-full w-80 transition-transform duration-300 translate-x-0 hidden min-[1550px]:block">
               <UserProfilePanel
                   user={activeSession.user}
                   currentSession={activeSession}
@@ -1185,7 +1209,7 @@ function App() {
 
           {/* Mobile Profile Modal */}
           {showMobileProfile && activeSession && (
-            <div className="fixed inset-0 z-[60] lg:hidden bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="fixed inset-0 z-[60] min-[1550px]:hidden bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
                <div className="absolute right-0 top-0 h-full w-80 bg-white shadow-2xl animate-in slide-in-from-right duration-300 overflow-y-auto">
                   <button 
                     onClick={() => setShowMobileProfile(false)}
@@ -1253,6 +1277,47 @@ function App() {
         handleLogout={handleLogout}
         onLanguageChange={handleLanguageChange}
       />
+
+      {/* Transfer Notifications */}
+      <div className="fixed top-20 right-4 z-[90] w-80 space-y-3 pointer-events-none">
+        {transferNotifications.map(n => (
+          <div key={n.sessionId} 
+               className="bg-white p-4 rounded-xl shadow-xl border-l-4 border-indigo-500 animate-in slide-in-from-right duration-300 flex flex-col gap-2 cursor-pointer hover:bg-indigo-50 transition-colors group relative pointer-events-auto"
+               onClick={() => {
+                 handleSelectSession(n.sessionId);
+                 setTransferNotifications(prev => prev.filter(item => item.sessionId !== n.sessionId));
+               }}
+          >
+            <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold shrink-0 overflow-hidden">
+                        {n.avatar ? <img src={n.avatar} className="w-full h-full object-cover"/> : (n.userName[0] || 'U')}
+                    </div>
+                    <div>
+                        <h4 className="font-bold text-gray-900">{n.userName}</h4>
+                        <span className="text-xs text-indigo-600 font-medium bg-indigo-50 px-2 py-0.5 rounded-full">Transfer Request</span>
+                    </div>
+                </div>
+                <button 
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setTransferNotifications(prev => prev.filter(item => item.sessionId !== n.sessionId));
+                    }}
+                    className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"
+                >
+                    <X size={16}/>
+                </button>
+            </div>
+            <p className="text-sm text-gray-600 line-clamp-2 pl-12">
+                {n.reason}
+            </p>
+            <div className="flex items-center gap-1 text-xs text-gray-400 pl-12">
+                <Clock size={12}/>
+                <span>{new Date(n.timestamp).toLocaleTimeString()}</span>
+            </div>
+          </div>
+        ))}
+      </div>
 
       {/* Global Notifications */}
       <div className="fixed top-4 right-4 z-[100] w-80 space-y-3">

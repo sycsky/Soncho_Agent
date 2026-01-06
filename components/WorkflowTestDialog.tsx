@@ -1,9 +1,58 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, Trash2, Play, Bot, User, AlertCircle, Clock, CheckCircle2, RotateCcw } from 'lucide-react';
+import { X, Send, Trash2, Play, Bot, User, AlertCircle, Clock, CheckCircle2, RotateCcw, ChevronDown, ChevronRight } from 'lucide-react';
 import workflowTestService from '../services/workflowTestService';
-import { TestMessage, WorkflowTestSessionDto } from '../types/workflowTest';
+import { TestMessage, WorkflowTestSessionDto, NodeDetail } from '../types/workflowTest';
 
 import { Node } from '@xyflow/react';
+
+const ExecutionPathItem = ({ node, nodes }: { node: NodeDetail, nodes: Node[] }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+    
+    return (
+        <div className="border-b border-gray-50 last:border-0">
+            <div 
+                className="px-3 py-2 flex items-center justify-between hover:bg-gray-50 transition-colors cursor-pointer group"
+                onClick={() => setIsExpanded(!isExpanded)}
+            >
+                <div className="flex items-center gap-2">
+                    <div className="text-gray-400 group-hover:text-gray-600 transition-colors">
+                        {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                    </div>
+                    <div className={`w-1.5 h-1.5 rounded-full ${node.success ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    <span className="text-xs font-medium text-gray-700">{node.nodeType}</span>
+                    <span className="text-[10px] text-gray-400 font-mono">
+                        ({nodes.find(n => n.id === node.nodeId)?.data?.label as string || node.nodeId})
+                    </span>
+                </div>
+                <span className="text-[10px] text-gray-400">{node.durationMs}ms</span>
+            </div>
+            
+            {isExpanded && (
+                <div className="bg-gray-50 px-3 py-2 text-xs font-mono space-y-2 border-t border-gray-100">
+                    {node.input && (
+                        <div>
+                            <div className="text-[10px] font-bold text-gray-500 uppercase mb-1">Input</div>
+                            <div className="bg-white p-2 rounded border border-gray-200 overflow-x-auto whitespace-pre-wrap max-h-40 overflow-y-auto custom-scrollbar">
+                                {typeof node.input === 'string' ? node.input : JSON.stringify(node.input, null, 2)}
+                            </div>
+                        </div>
+                    )}
+                    {node.output && (
+                        <div>
+                            <div className="text-[10px] font-bold text-gray-500 uppercase mb-1">Output</div>
+                            <div className="bg-white p-2 rounded border border-gray-200 overflow-x-auto whitespace-pre-wrap max-h-40 overflow-y-auto custom-scrollbar">
+                                {typeof node.output === 'string' ? node.output : JSON.stringify(node.output, null, 2)}
+                            </div>
+                        </div>
+                    )}
+                    {!node.input && !node.output && (
+                        <div className="text-gray-400 italic text-[10px]">No detailed data available</div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
 
 interface WorkflowTestDialogProps {
   isOpen: boolean;
@@ -183,16 +232,7 @@ export const WorkflowTestDialog: React.FC<WorkflowTestDialogProps> = ({
                     </div>
                     <div className="divide-y divide-gray-50">
                       {msg.meta.nodeDetails.map((node, idx) => (
-                        <div key={idx} className="px-3 py-2 flex items-center justify-between hover:bg-gray-50 transition-colors group">
-                          <div className="flex items-center gap-2">
-                            <div className={`w-1.5 h-1.5 rounded-full ${node.success ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                            <span className="text-xs font-medium text-gray-700">{node.nodeType}</span>
-                            <span className="text-[10px] text-gray-400 font-mono">
-                              ({nodes.find(n => n.id === node.nodeId)?.data?.label as string || node.nodeId})
-                            </span>
-                          </div>
-                          <span className="text-[10px] text-gray-400">{node.durationMs}ms</span>
-                        </div>
+                        <ExecutionPathItem key={idx} node={node} nodes={nodes} />
                       ))}
                     </div>
                   </div>
