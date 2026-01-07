@@ -20,7 +20,7 @@ import {
   EdgeProps
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Play, GitBranch, Database, Bot, MessageSquare, GripHorizontal, Plus, Trash2, X, MoreHorizontal, ArrowLeft, ArrowRight, Calendar, User, Search, Filter, Save, Loader2, Square, Settings, ChevronRight, Star, Power, CheckCircle, Edit2, Headphones, Hammer, ListFilter, Split, Image, Tags, Wand2, Layout, Braces, Copy } from 'lucide-react';
+import { Play, GitBranch, Database, Bot, MessageSquare, GripHorizontal, Plus, Trash2, X, MoreHorizontal, ArrowLeft, ArrowRight, Calendar, User, Search, Filter, Save, Loader2, Square, Settings, ChevronRight, Star, Power, CheckCircle, Edit2, Headphones, Hammer, ListFilter, Split, Image, Tags, Wand2, Layout, Braces, Copy, Languages } from 'lucide-react';
 import { workflowApi } from '../services/workflowApi';
 import knowledgeBaseApi from '../services/knowledgeBaseApi';
 import aiToolApi from '../services/aiToolApi';
@@ -416,6 +416,34 @@ const LLMNode = ({ id, data, selected }: NodeProps) => {
       </div>
       <Handle type="target" position={Position.Left} className="!bg-gray-400" />
       <Handle type="source" position={Position.Right} className="!bg-indigo-500" />
+    </div>
+  );
+};
+
+const TranslationNode = ({ id, data, selected }: NodeProps) => {
+  const config = data.config as any;
+  const modelDisplay = useModelName(config?.modelId || config?.model, config?.modelDisplayName);
+
+  return (
+    <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[240px] group hover:border-orange-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
+      <NodeMenu nodeId={id} />
+      <div className="bg-orange-50 px-4 py-2 rounded-t-xl border-b border-orange-100 flex items-center gap-2">
+        <div className="bg-orange-100 p-1 rounded-lg text-orange-600">
+          <Languages size={14} />
+        </div>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Translation'}</span>
+      </div>
+      <div className="p-3 bg-gray-50 border-b border-gray-100">
+        <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
+          <Bot size={12} />
+          <span>{modelDisplay}</span>
+        </div>
+      </div>
+      <div className="p-4">
+        <p className="text-xs text-gray-500">Translate text to target language</p>
+      </div>
+      <Handle type="target" position={Position.Left} className="!bg-gray-400" />
+      <Handle type="source" position={Position.Right} className="!bg-orange-500" />
     </div>
   );
 };
@@ -1047,6 +1075,8 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
           handleConfigChange('systemPrompt', value);
       } else if (field === 'customPrompt') {
           handleConfigChange('customPrompt', value);
+      } else if (field === 'targetText') {
+          handleConfigChange('targetText', value);
       }
       
       if (showVarMenu && activeField === field && cursorPosition !== undefined) {
@@ -1061,7 +1091,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
   };
   
   useEffect(() => {
-    if (node && (node.type === 'intent' || node.type === 'llm' || node.type === 'imageTextSplit' || node.type === 'setSessionMetadata')) {
+    if (node && (node.type === 'intent' || node.type === 'llm' || node.type === 'imageTextSplit' || node.type === 'setSessionMetadata' || node.type === 'translation')) {
       workflowApi.getAllModels()
         .then(data => {
             const enabledModels = data.filter((m: LlmModel) => m.enabled);
@@ -1461,6 +1491,89 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
         )}
 
 
+
+        {node.type === 'translation' && (
+           <div className="space-y-4">
+              <div className="p-4 bg-orange-50 rounded-lg border border-orange-100 mb-4">
+                 <p className="text-xs text-orange-800">
+                   Translates target text into a language inferred from conversation history.
+                 </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Model</label>
+                <select 
+                  value={node.data.config?.modelId || node.data.config?.model || ''}
+                  onChange={(e) => handleConfigChange('modelId', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="" disabled>Select a model</option>
+                  {llmModels.length > 0 ? (
+                      llmModels.map(model => (
+                        <option key={model.id} value={model.id}>{model.name} ({model.provider})</option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                        <option value="gpt-4">gpt-4</option>
+                        <option value="claude-3-opus">claude-3-opus</option>
+                      </>
+                    )}
+                </select>
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-xs font-medium text-gray-500">Additional Prompt</label>
+                  <SystemPromptEnhancer 
+                      nodeType="translation"
+                      userInput={node.data.config?.systemPrompt || ''}
+                      onEnhanced={(val) => handleEditorChange('systemPrompt', val)}
+                  />
+                </div>
+                <div className="relative">
+                  <TiptapEditor
+                      ref={el => textareaRefs.current['systemPrompt'] = el}
+                      value={node.data.config?.systemPrompt || ''} 
+                      onChange={(val, selection) => handleEditorChange('systemPrompt', val, selection)}
+                      onSlash={(rect, index) => handleEditorSlash('systemPrompt', rect, index)}
+                      placeholder="Enter additional instructions for translation..."
+                      className="min-h-[100px]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Target Text</label>
+                <div className="relative">
+                  <TiptapEditor
+                      ref={el => textareaRefs.current['targetText'] = el}
+                      value={node.data.config?.targetText || ''} 
+                      onChange={(val, selection) => handleEditorChange('targetText', val, selection)}
+                      onSlash={(rect, index) => handleEditorSlash('targetText', rect, index)}
+                      placeholder="Enter text to translate (supports variables)..."
+                      className="min-h-[100px]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">History Messages Count</label>
+                <input 
+                  type="number" 
+                  min="0"
+                  value={node.data.config?.historyCount ?? 0}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    handleConfigChange('historyCount', isNaN(val) ? 0 : Math.max(0, val));
+                  }}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  placeholder="0"
+                />
+                <p className="text-[10px] text-gray-400 mt-1">Number of historical messages to use for language inference</p>
+              </div>
+           </div>
+        )}
 
         {node.type === 'imageTextSplit' && (
            <div className="space-y-4">
@@ -2629,6 +2742,7 @@ const nodeTypes = {
   condition: ConditionNode,
 
   llm: LLMNode,
+  translation: TranslationNode,
   reply: ReplyNode,
   human_transfer: TransferNode,
   agent: AgentNode,
@@ -2733,6 +2847,15 @@ const Sidebar = () => {
         >
           <div className="bg-indigo-100 p-1.5 rounded text-indigo-600"><Bot size={16}/></div>
           <span className="text-sm font-medium text-gray-700">LLM Generation</span>
+        </div>
+
+        <div 
+          className="flex items-center gap-3 p-3 bg-orange-50 border border-orange-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
+          onDragStart={(event) => onDragStart(event, 'translation', 'Translation')}
+          draggable
+        >
+          <div className="bg-orange-100 p-1.5 rounded text-orange-600"><Languages size={16}/></div>
+          <span className="text-sm font-medium text-gray-700">Translation</span>
         </div>
 
         <div 
