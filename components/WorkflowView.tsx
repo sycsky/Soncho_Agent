@@ -779,6 +779,20 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
             if (intent) {
                 handleLabel = intent.label;
             }
+        } else if (node.type === 'condition') {
+            if (handleId === 'else') {
+                handleLabel = 'ELSE';
+            } else {
+                const condition = node.data.config?.conditions?.find((c: any) => c.id === handleId);
+                if (condition) {
+                    const idx = (node.data.config?.conditions || []).indexOf(condition);
+                    const prefix = idx === 0 ? 'IF' : 'ELSE IF';
+                    // Truncate if too long
+                    const source = (condition.sourceValue || '?').substring(0, 15) + ((condition.sourceValue || '').length > 15 ? '...' : '');
+                    const val = (condition.inputValue || '').substring(0, 15) + ((condition.inputValue || '').length > 15 ? '...' : '');
+                    handleLabel = `${prefix}: ${source} ${condition.conditionType} ${val}`;
+                }
+            }
         }
         
         return {
@@ -786,6 +800,17 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
             handleLabel,
             targets
         };
+    }).sort((a, b) => {
+        if (node.type === 'condition') {
+            if (a.handleId === 'else') return 1;
+            if (b.handleId === 'else') return -1;
+            
+            const conditions = node.data.config?.conditions || [];
+            const indexA = conditions.findIndex((c: any) => c.id === a.handleId);
+            const indexB = conditions.findIndex((c: any) => c.id === b.handleId);
+            return indexA - indexB;
+        }
+        return 0;
     });
   }, [node, edges, nodes]);
 
@@ -2296,10 +2321,10 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                 <div className="space-y-4">
                     {nextNodesInfo.map((info) => (
                         <div key={info.handleId} className="space-y-2">
-                            {(node.type === 'intent' || node.type === 'tool') && info.handleId !== 'default' && (
+                            {(node.type === 'intent' || node.type === 'tool' || node.type === 'condition') && info.handleId !== 'default' && (
                                 <div className="text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md w-fit border border-blue-100 shadow-sm flex items-center gap-1.5">
                                     <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                                    {node.type === 'intent' ? info.handleLabel : `Exit: ${info.handleLabel}`}
+                                    {node.type === 'intent' || node.type === 'condition' ? info.handleLabel : `Exit: ${info.handleLabel}`}
                                 </div>
                             )}
                             {info.targets.map((target: any) => (
