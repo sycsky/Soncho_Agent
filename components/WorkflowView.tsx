@@ -20,7 +20,7 @@ import {
   EdgeProps
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Play, GitBranch, Database, Bot, MessageSquare, GripHorizontal, Plus, Trash2, X, MoreHorizontal, ArrowLeft, ArrowRight, Calendar, User, Search, Filter, Save, Loader2, Square, Settings, ChevronRight, Star, Power, CheckCircle, Edit2, Headphones, Hammer, ListFilter, Split, Image, Tags, Wand2, Layout, Braces } from 'lucide-react';
+import { Play, GitBranch, Database, Bot, MessageSquare, GripHorizontal, Plus, Trash2, X, MoreHorizontal, ArrowLeft, ArrowRight, Calendar, User, Search, Filter, Save, Loader2, Square, Settings, ChevronRight, Star, Power, CheckCircle, Edit2, Headphones, Hammer, ListFilter, Split, Image, Tags, Wand2, Layout, Braces, Copy, Languages } from 'lucide-react';
 import { workflowApi } from '../services/workflowApi';
 import knowledgeBaseApi from '../services/knowledgeBaseApi';
 import aiToolApi from '../services/aiToolApi';
@@ -75,6 +75,42 @@ const useModelName = (modelId?: string, modelDisplayName?: string) => {
   }, [modelId, modelDisplayName]);
 
   return displayName;
+};
+
+// Global cache for tools to avoid redundant fetching in nodes
+const toolCache: { data: AiTool[] | null; promise: Promise<AiTool[]> | null } = { data: null, promise: null };
+
+const useTools = () => {
+  const [tools, setTools] = useState<AiTool[]>(toolCache.data || []);
+
+  useEffect(() => {
+    let isMounted = true;
+    
+    const fetchTools = async () => {
+        if (toolCache.data) {
+            if (isMounted) setTools(toolCache.data);
+            return;
+        }
+
+        if (!toolCache.promise) {
+            toolCache.promise = aiToolApi.getTools();
+        }
+
+        try {
+            const data = await toolCache.promise;
+            toolCache.data = data;
+            if (isMounted) setTools(data);
+        } catch (err) {
+            console.error("Failed to fetch tools", err);
+        }
+    };
+
+    fetchTools();
+
+    return () => { isMounted = false; };
+  }, []);
+
+  return tools;
 };
 
 // Custom Edge Component with Delete Button
@@ -143,8 +179,32 @@ const CustomEdge = ({
 
 // Reusable Node Menu Component
 const NodeMenu = ({ nodeId }: { nodeId: string }) => {
-  const { deleteElements } = useReactFlow();
+  const { deleteElements, getNodes, setNodes } = useReactFlow();
   const [showMenu, setShowMenu] = useState(false);
+
+  const handleCopyNode = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const nodes = getNodes();
+    const node = nodes.find(n => n.id === nodeId);
+    if (!node) return;
+
+    const newNode = {
+      ...node,
+      id: `${node.type}-${Math.random().toString(36).substr(2, 9)}`,
+      position: {
+        x: node.position.x + 50,
+        y: node.position.y + 50,
+      },
+      selected: false,
+      data: {
+        ...node.data,
+        label: (node.data as any).label ? `${(node.data as any).label} (Copy)` : undefined
+      }
+    };
+    
+    setNodes([...nodes, newNode]);
+    setShowMenu(false);
+  };
 
   return (
     <div className="absolute -top-2 -right-2 z-50 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -161,6 +221,13 @@ const NodeMenu = ({ nodeId }: { nodeId: string }) => {
         
         {showMenu && (
           <div className="absolute top-full right-0 mt-1 w-32 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-50 overflow-hidden">
+            <button 
+              className="w-full text-left px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 flex items-center gap-2 transition-colors"
+              onClick={handleCopyNode}
+            >
+              <Copy size={12} />
+              <span>Copy Node</span>
+            </button>
             <button 
               className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
               onClick={(e) => {
@@ -306,6 +373,10 @@ const KnowledgeNode = ({ id, data, selected }: NodeProps) => {
 const LLMNode = ({ id, data, selected }: NodeProps) => {
   const config = data.config as any;
   const modelDisplay = useModelName(config?.modelId || config?.model, config?.modelDisplayName);
+  const tools = useTools();
+  
+  const boundToolIds = config?.tools || [];
+  const boundTools = tools.filter(t => boundToolIds.includes(t.id));
   
   return (
     <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[240px] group hover:border-indigo-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
@@ -322,11 +393,57 @@ const LLMNode = ({ id, data, selected }: NodeProps) => {
           <span>{modelDisplay}</span>
         </div>
       </div>
+      
+      {boundTools.length > 0 && (
+          <div className="px-3 py-2 bg-white border-b border-gray-100">
+             <div className="text-[10px] font-semibold text-gray-400 mb-1.5 uppercase tracking-wider flex items-center gap-1">
+                <Hammer size={10} />
+                Tools
+             </div>
+             <div className="flex flex-col gap-1.5">
+                {boundTools.map(tool => (
+                    <div key={tool.id} className="flex items-center gap-1.5 bg-indigo-50/50 border border-indigo-100 px-2 py-1 rounded text-xs text-gray-600">
+                        <div className="w-1 h-1 rounded-full bg-indigo-400"></div>
+                        <span className="truncate max-w-[180px] font-medium">{tool.displayName || tool.name}</span>
+                    </div>
+                ))}
+             </div>
+          </div>
+      )}
+
       <div className="p-4">
         <p className="text-xs text-gray-500">Generate answer based on context</p>
       </div>
       <Handle type="target" position={Position.Left} className="!bg-gray-400" />
       <Handle type="source" position={Position.Right} className="!bg-indigo-500" />
+    </div>
+  );
+};
+
+const TranslationNode = ({ id, data, selected }: NodeProps) => {
+  const config = data.config as any;
+  const modelDisplay = useModelName(config?.modelId || config?.model, config?.modelDisplayName);
+
+  return (
+    <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[240px] group hover:border-orange-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
+      <NodeMenu nodeId={id} />
+      <div className="bg-orange-50 px-4 py-2 rounded-t-xl border-b border-orange-100 flex items-center gap-2">
+        <div className="bg-orange-100 p-1 rounded-lg text-orange-600">
+          <Languages size={14} />
+        </div>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Translation'}</span>
+      </div>
+      <div className="p-3 bg-gray-50 border-b border-gray-100">
+        <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
+          <Bot size={12} />
+          <span>{modelDisplay}</span>
+        </div>
+      </div>
+      <div className="p-4">
+        <p className="text-xs text-gray-500">Translate text to target language</p>
+      </div>
+      <Handle type="target" position={Position.Left} className="!bg-gray-400" />
+      <Handle type="source" position={Position.Right} className="!bg-orange-500" />
     </div>
   );
 };
@@ -347,9 +464,9 @@ const ReplyNode = ({ id, data, selected }: NodeProps) => {
             {(data as any).source || 'LLM Output'}
          </div>
       </div>
-      {(data as any).text && (
+      {(data as any).config?.text && (
           <div className="p-4 bg-gray-50/50">
-            <p className="text-xs text-gray-500 italic">"{(data as any).text}"</p>
+            <p className="text-xs text-gray-500 italic">"{(data as any).config.text}"</p>
           </div>
       )}
       <Handle type="target" position={Position.Left} className="!bg-gray-400" />
@@ -690,6 +807,20 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
             if (intent) {
                 handleLabel = intent.label;
             }
+        } else if (node.type === 'condition') {
+            if (handleId === 'else') {
+                handleLabel = 'ELSE';
+            } else {
+                const condition = node.data.config?.conditions?.find((c: any) => c.id === handleId);
+                if (condition) {
+                    const idx = (node.data.config?.conditions || []).indexOf(condition);
+                    const prefix = idx === 0 ? 'IF' : 'ELSE IF';
+                    // Truncate if too long
+                    const source = (condition.sourceValue || '?').substring(0, 15) + ((condition.sourceValue || '').length > 15 ? '...' : '');
+                    const val = (condition.inputValue || '').substring(0, 15) + ((condition.inputValue || '').length > 15 ? '...' : '');
+                    handleLabel = `${prefix}: ${source} ${condition.conditionType} ${val}`;
+                }
+            }
         }
         
         return {
@@ -697,6 +828,17 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
             handleLabel,
             targets
         };
+    }).sort((a, b) => {
+        if (node.type === 'condition') {
+            if (a.handleId === 'else') return 1;
+            if (b.handleId === 'else') return -1;
+            
+            const conditions = node.data.config?.conditions || [];
+            const indexA = conditions.findIndex((c: any) => c.id === a.handleId);
+            const indexB = conditions.findIndex((c: any) => c.id === b.handleId);
+            return indexA - indexB;
+        }
+        return 0;
     });
   }, [node, edges, nodes]);
 
@@ -807,6 +949,18 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
             const index = parseInt(activeField.split('-')[1]);
             handleUpdateMessage(index, 'content', newValue);
 
+        } else if (activeField === 'sourceField') {
+            handleConfigChange('sourceField', newValue);
+        } else if (activeField.startsWith('condition_source_')) {
+            const id = activeField.replace('condition_source_', '');
+            const conditions = node.data.config?.conditions || [];
+            const newConditions = conditions.map((c: any) => c.id === id ? { ...c, sourceValue: newValue } : c);
+            handleConfigChange('conditions', newConditions);
+        } else if (activeField.startsWith('condition_input_')) {
+            const id = activeField.replace('condition_input_', '');
+            const conditions = node.data.config?.conditions || [];
+            const newConditions = conditions.map((c: any) => c.id === id ? { ...c, inputValue: newValue } : c);
+            handleConfigChange('conditions', newConditions);
         }
     }
     
@@ -921,6 +1075,8 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
           handleConfigChange('systemPrompt', value);
       } else if (field === 'customPrompt') {
           handleConfigChange('customPrompt', value);
+      } else if (field === 'targetText') {
+          handleConfigChange('targetText', value);
       }
       
       if (showVarMenu && activeField === field && cursorPosition !== undefined) {
@@ -935,7 +1091,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
   };
   
   useEffect(() => {
-    if (node && (node.type === 'intent' || node.type === 'llm' || node.type === 'imageTextSplit' || node.type === 'setSessionMetadata')) {
+    if (node && (node.type === 'intent' || node.type === 'llm' || node.type === 'imageTextSplit' || node.type === 'setSessionMetadata' || node.type === 'translation')) {
       workflowApi.getAllModels()
         .then(data => {
             const enabledModels = data.filter((m: LlmModel) => m.enabled);
@@ -1335,6 +1491,89 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
         )}
 
 
+
+        {node.type === 'translation' && (
+           <div className="space-y-4">
+              <div className="p-4 bg-orange-50 rounded-lg border border-orange-100 mb-4">
+                 <p className="text-xs text-orange-800">
+                   Translates target text into a language inferred from conversation history.
+                 </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Model</label>
+                <select 
+                  value={node.data.config?.modelId || node.data.config?.model || ''}
+                  onChange={(e) => handleConfigChange('modelId', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="" disabled>Select a model</option>
+                  {llmModels.length > 0 ? (
+                      llmModels.map(model => (
+                        <option key={model.id} value={model.id}>{model.name} ({model.provider})</option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                        <option value="gpt-4">gpt-4</option>
+                        <option value="claude-3-opus">claude-3-opus</option>
+                      </>
+                    )}
+                </select>
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-xs font-medium text-gray-500">Additional Prompt</label>
+                  <SystemPromptEnhancer 
+                      nodeType="translation"
+                      userInput={node.data.config?.systemPrompt || ''}
+                      onEnhanced={(val) => handleEditorChange('systemPrompt', val)}
+                  />
+                </div>
+                <div className="relative">
+                  <TiptapEditor
+                      ref={el => textareaRefs.current['systemPrompt'] = el}
+                      value={node.data.config?.systemPrompt || ''} 
+                      onChange={(val, selection) => handleEditorChange('systemPrompt', val, selection)}
+                      onSlash={(rect, index) => handleEditorSlash('systemPrompt', rect, index)}
+                      placeholder="Enter additional instructions for translation..."
+                      className="min-h-[100px]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Target Text</label>
+                <div className="relative">
+                  <TiptapEditor
+                      ref={el => textareaRefs.current['targetText'] = el}
+                      value={node.data.config?.targetText || ''} 
+                      onChange={(val, selection) => handleEditorChange('targetText', val, selection)}
+                      onSlash={(rect, index) => handleEditorSlash('targetText', rect, index)}
+                      placeholder="Enter text to translate (supports variables)..."
+                      className="min-h-[100px]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">History Messages Count</label>
+                <input 
+                  type="number" 
+                  min="0"
+                  value={node.data.config?.historyCount ?? 0}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    handleConfigChange('historyCount', isNaN(val) ? 0 : Math.max(0, val));
+                  }}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  placeholder="0"
+                />
+                <p className="text-[10px] text-gray-400 mt-1">Number of historical messages to use for language inference</p>
+              </div>
+           </div>
+        )}
 
         {node.type === 'imageTextSplit' && (
            <div className="space-y-4">
@@ -1879,8 +2118,8 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">Reply Text</label>
             <textarea 
-              value={node.data.text || ''} 
-              onChange={(e) => handleChange('text', e.target.value)}
+              value={node.data.config?.text || ''} 
+              onChange={(e) => handleConfigChange('text', e.target.value)}
               rows={3}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               placeholder="Enter reply text..."
@@ -1890,6 +2129,201 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
         
 
         
+        {node.type === 'variable' && (
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Variable Name</label>
+            <input 
+              type="text"
+              value={node.data.config?.variableName || ''}
+              onChange={(e) => handleConfigChange('variableName', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
+              placeholder="e.g. user_age"
+            />
+            
+            <label className="block text-xs font-medium text-gray-500 mb-1">Source Value</label>
+            <div className="relative">
+                <input 
+                  ref={el => textareaRefs.current['sourceField'] = el}
+                  type="text"
+                  value={node.data.config?.sourceField || ''}
+                  onChange={(e) => handleConfigChange('sourceField', e.target.value)}
+                  onFocus={() => setActiveField('sourceField')}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-8"
+                  placeholder="e.g. {{user.id}}"
+                />
+                <button 
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 p-1 rounded hover:bg-blue-50 transition-colors"
+                    onClick={(e) => {
+                        const input = textareaRefs.current['sourceField'];
+                        if (input) {
+                            const rect = input.getBoundingClientRect();
+                            setVarMenuPos({ top: rect.bottom + 5, left: rect.left, placement: 'bottom' });
+                            setActiveField('sourceField');
+                            setShowVarMenu(true);
+                            // When clicking button, assume we want to append if cursor is at 0/default
+                            if ((input as any).value && (input as any).selectionStart === 0) {
+                                setCursorIndex((input as any).value.length + 1);
+                            }
+                        }
+                    }}
+                >
+                    <Braces size={14} />
+                </button>
+            </div>
+          </div>
+        )}
+
+        {node.type === 'condition' && (
+          <div className="space-y-4">
+             <div className="flex justify-between items-center">
+                 <label className="block text-xs font-medium text-gray-500">Conditions</label>
+                 <button 
+                     onClick={() => {
+                        const conditions = node.data.config?.conditions || [];
+                        const newCondition = {
+                            id: Math.random().toString(36).substring(7),
+                            sourceValue: '',
+                            conditionType: 'contains',
+                            inputValue: ''
+                        };
+                        handleConfigChange('conditions', [...conditions, newCondition]);
+                     }}
+                     className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                 >
+                     <Plus size={12} /> Add Condition
+                 </button>
+             </div>
+             
+             <div className="space-y-3">
+                 {(node.data.config?.conditions || []).map((condition: any, idx: number) => (
+                     <div key={condition.id} className="p-3 bg-gray-50 border border-gray-200 rounded-lg relative group">
+                         <div className="flex justify-between items-center mb-2">
+                            <span className="text-xs font-bold text-gray-500 uppercase">{idx === 0 ? 'IF' : 'ELSE IF'}</span>
+                            <button 
+                                onClick={() => {
+                                    const conditions = node.data.config?.conditions || [];
+                                    handleConfigChange('conditions', conditions.filter((c: any) => c.id !== condition.id));
+                                }}
+                                className="text-gray-400 hover:text-red-500 p-1 rounded hover:bg-red-50 transition-colors"
+                            >
+                                <Trash2 size={14} />
+                            </button>
+                         </div>
+                         
+                         <div className="space-y-2">
+                             {/* Source Value */}
+                             <div className="relative">
+                                <input 
+                                  ref={el => textareaRefs.current[`condition_source_${condition.id}`] = el}
+                                  type="text"
+                                  value={condition.sourceValue || ''}
+                                  onChange={(e) => {
+                                      const conditions = node.data.config?.conditions || [];
+                                      const newConditions = conditions.map((c: any) => c.id === condition.id ? { ...c, sourceValue: e.target.value } : c);
+                                      handleConfigChange('conditions', newConditions);
+                                  }}
+                                  onFocus={() => setActiveField(`condition_source_${condition.id}`)}
+                                  className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 pr-7"
+                                  placeholder="Source Value"
+                                />
+                                <button 
+                                        className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 p-0.5 rounded hover:bg-blue-50 transition-colors"
+                                        onClick={(e) => {
+                                            const input = textareaRefs.current[`condition_source_${condition.id}`];
+                                            if (input) {
+                                                const rect = input.getBoundingClientRect();
+                                                setVarMenuPos({ top: rect.bottom + 5, left: rect.left, placement: 'bottom' });
+                                                setActiveField(`condition_source_${condition.id}`);
+                                                setShowVarMenu(true);
+                                                // When clicking button, assume we want to append if cursor is at 0/default
+                                                if ((input as any).value && (input as any).selectionStart === 0) {
+                                                    setCursorIndex((input as any).value.length + 1);
+                                                }
+                                            }
+                                        }}
+                                    >
+                                    <Braces size={12} />
+                                </button>
+                             </div>
+                             
+                             {/* Condition Type */}
+                             <select 
+                                value={condition.conditionType || 'contains'}
+                                onChange={(e) => {
+                                      const conditions = node.data.config?.conditions || [];
+                                      const newConditions = conditions.map((c: any) => c.id === condition.id ? { ...c, conditionType: e.target.value } : c);
+                                      handleConfigChange('conditions', newConditions);
+                                }}
+                                className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                             >
+                                <option value="contains">Contains</option>
+                                <option value="notContains">Not Contains</option>
+                                <option value="startsWith">Starts With</option>
+                                <option value="endsWith">Ends With</option>
+                                <option value="equals">Equals</option>
+                                <option value="notEquals">Not Equals</option>
+                                <option value="isEmpty">Is Empty</option>
+                                <option value="isNotEmpty">Is Not Empty</option>
+                                <option value="gt">Greater Than</option>
+                                <option value="lt">Less Than</option>
+                                <option value="gte">Greater Than or Equal</option>
+                                <option value="lte">Less Than or Equal</option>
+                             </select>
+                             
+                             {/* Input Value */}
+                             {!['isEmpty', 'isNotEmpty'].includes(condition.conditionType) && (
+                                 <div className="relative">
+                                    <input 
+                                      ref={el => textareaRefs.current[`condition_input_${condition.id}`] = el}
+                                      type="text"
+                                      value={condition.inputValue || ''}
+                                      onChange={(e) => {
+                                          const conditions = node.data.config?.conditions || [];
+                                          const newConditions = conditions.map((c: any) => c.id === condition.id ? { ...c, inputValue: e.target.value } : c);
+                                          handleConfigChange('conditions', newConditions);
+                                      }}
+                                      onFocus={() => setActiveField(`condition_input_${condition.id}`)}
+                                      className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 pr-7"
+                                      placeholder="Target Value"
+                                    />
+                                    <button 
+                                        className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 p-0.5 rounded hover:bg-blue-50 transition-colors"
+                                        onClick={(e) => {
+                                            const input = textareaRefs.current[`condition_input_${condition.id}`];
+                                            if (input) {
+                                                const rect = input.getBoundingClientRect();
+                                                setVarMenuPos({ top: rect.bottom + 5, left: rect.left, placement: 'bottom' });
+                                                setActiveField(`condition_input_${condition.id}`);
+                                                setShowVarMenu(true);
+                                                // When clicking button, assume we want to append if cursor is at 0/default
+                                                if ((input as any).value && (input as any).selectionStart === 0) {
+                                                    setCursorIndex((input as any).value.length + 1);
+                                                }
+                                            }
+                                        }}
+                                    >
+                                        <Braces size={12} />
+                                    </button>
+                                 </div>
+                             )}
+                         </div>
+                     </div>
+                 ))}
+                 
+                 {(node.data.config?.conditions || []).length === 0 && (
+                    <div className="text-center py-4 bg-gray-50 rounded-lg border border-dashed border-gray-200 text-xs text-gray-400">
+                        No conditions added
+                    </div>
+                 )}
+                 
+                 <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-between opacity-50 cursor-not-allowed">
+                     <span className="text-xs font-bold text-gray-500 uppercase">ELSE</span>
+                     <span className="text-xs text-gray-400 italic">Fallback branch</span>
+                 </div>
+             </div>
+          </div>
+        )}
+
         {node.type === 'knowledge' && (
            <div>
             <label className="block text-xs font-medium text-gray-500 mb-2">Knowledge Bases</label>
@@ -2000,10 +2434,10 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                 <div className="space-y-4">
                     {nextNodesInfo.map((info) => (
                         <div key={info.handleId} className="space-y-2">
-                            {(node.type === 'intent' || node.type === 'tool') && info.handleId !== 'default' && (
+                            {(node.type === 'intent' || node.type === 'tool' || node.type === 'condition') && info.handleId !== 'default' && (
                                 <div className="text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md w-fit border border-blue-100 shadow-sm flex items-center gap-1.5">
                                     <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                                    {node.type === 'intent' ? info.handleLabel : `Exit: ${info.handleLabel}`}
+                                    {node.type === 'intent' || node.type === 'condition' ? info.handleLabel : `Exit: ${info.handleLabel}`}
                                 </div>
                             )}
                             {info.targets.map((target: any) => (
@@ -2250,6 +2684,53 @@ const VariableNode = ({ id, data, selected }: NodeProps) => {
   );
 };
 
+const ConditionNode = ({ id, data, selected }: NodeProps) => {
+  const conditions = (data.config as any)?.conditions || [];
+
+  return (
+    <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[280px] group hover:border-teal-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
+      <NodeMenu nodeId={id} />
+      <div className="bg-teal-50 px-4 py-2 rounded-t-xl border-b border-teal-100 flex items-center gap-2">
+        <div className="bg-teal-100 p-1 rounded-lg text-teal-600">
+          <Split size={14} />
+        </div>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Condition Check'}</span>
+      </div>
+      
+      <div className="p-0">
+        <div className="flex flex-col">
+            {/* IF / ELSE IF Branches */}
+            {conditions.map((condition: any, index: number) => (
+                <div key={condition.id} className="px-4 py-3 border-b border-gray-100 flex justify-between items-center relative hover:bg-gray-50">
+                    <div className="flex flex-col overflow-hidden mr-2">
+                        <span className="text-xs font-bold text-gray-500 uppercase mb-0.5">
+                            {index === 0 ? 'IF' : 'ELSE IF'}
+                        </span>
+                        <div className="flex items-center gap-1 text-xs text-gray-700 truncate max-w-[180px]">
+                            <span className="font-mono bg-gray-100 px-1 rounded">{condition.sourceValue || '?'}</span>
+                            <span className="text-gray-400 font-bold text-[10px]">{condition.conditionType}</span>
+                            {!['isEmpty', 'isNotEmpty'].includes(condition.conditionType) && (
+                                <span className="font-mono bg-gray-100 px-1 rounded">{condition.inputValue || '?'}</span>
+                            )}
+                        </div>
+                    </div>
+                    <Handle type="source" position={Position.Right} id={condition.id} className="!bg-teal-500 !right-[-6px]" style={{top: '50%'}} />
+                </div>
+            ))}
+            
+            {/* ELSE Branch */}
+            <div className="px-4 py-3 flex justify-between items-center relative hover:bg-gray-50 bg-gray-50/50 rounded-b-xl">
+                <span className="text-xs font-bold text-gray-500 uppercase">ELSE</span>
+                <Handle type="source" position={Position.Right} id="else" className="!bg-gray-400 !right-[-6px]" style={{top: '50%'}} />
+            </div>
+        </div>
+      </div>
+      
+      <Handle type="target" position={Position.Left} className="!bg-gray-400" />
+    </div>
+  );
+};
+
 const nodeTypes = {
   start: StartNode,
   end: EndNode,
@@ -2258,7 +2739,10 @@ const nodeTypes = {
 
   variable: VariableNode,
 
+  condition: ConditionNode,
+
   llm: LLMNode,
+  translation: TranslationNode,
   reply: ReplyNode,
   human_transfer: TransferNode,
   agent: AgentNode,
@@ -2325,6 +2809,27 @@ const Sidebar = () => {
         </div>
 
         <div 
+          className="flex items-center gap-3 p-3 bg-teal-50 border border-teal-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
+          onDragStart={(event) => {
+            onDragStart(event, 'condition', 'Condition Check');
+             event.dataTransfer.setData('application/reactflow/config', JSON.stringify({
+              conditions: [
+                  {
+                    id: Math.random().toString(36).substring(7),
+                    sourceValue: '',
+                    conditionType: 'contains',
+                    inputValue: ''
+                  }
+              ]
+            }));
+          }}
+          draggable
+        >
+          <div className="bg-teal-100 p-1.5 rounded text-teal-600"><Split size={16}/></div>
+          <span className="text-sm font-medium text-gray-700">Condition Check</span>
+        </div>
+
+        <div 
           className="flex items-center gap-3 p-3 bg-orange-50 border border-orange-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
           onDragStart={(event) => onDragStart(event, 'knowledge', 'Knowledge Retrieval')}
           draggable
@@ -2342,6 +2847,15 @@ const Sidebar = () => {
         >
           <div className="bg-indigo-100 p-1.5 rounded text-indigo-600"><Bot size={16}/></div>
           <span className="text-sm font-medium text-gray-700">LLM Generation</span>
+        </div>
+
+        <div 
+          className="flex items-center gap-3 p-3 bg-orange-50 border border-orange-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
+          onDragStart={(event) => onDragStart(event, 'translation', 'Translation')}
+          draggable
+        >
+          <div className="bg-orange-100 p-1.5 rounded text-orange-600"><Languages size={16}/></div>
+          <span className="text-sm font-medium text-gray-700">Translation</span>
         </div>
 
         <div 
@@ -2748,66 +3262,68 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
     <div className="flex-1 h-full bg-gray-50 relative flex">
       <Sidebar />
       <div className="flex-1 h-full" ref={reactFlowWrapper}>
-        <div className="absolute top-4 left-[280px] z-10 bg-white/80 backdrop-blur p-2 rounded-lg border border-gray-200 shadow-sm flex items-center gap-3 max-w-[600px]">
+        <div className="absolute top-4 left-[280px] z-10 bg-white/80 backdrop-blur p-2 rounded-lg border border-gray-200 shadow-sm flex items-center gap-3 w-auto max-w-[calc(100vw-300px)]">
             <button 
               onClick={onBack}
-              className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-800 transition-colors"
+              className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-800 transition-colors flex-shrink-0"
             >
               <ArrowLeft size={20} />
             </button>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1 min-w-0 flex-1">
               <input 
                 type="text" 
                 value={workflowName}
                 onChange={(e) => setWorkflowName(e.target.value)}
-                className="font-bold text-gray-800 leading-tight bg-transparent border-none focus:ring-0 p-0 text-base"
+                className="font-bold text-gray-800 leading-tight bg-transparent border-none focus:ring-0 p-0 text-base truncate"
                 placeholder="Workflow Name"
               />
               <input 
                 type="text" 
                 value={workflowDescription}
                 onChange={(e) => setWorkflowDescription(e.target.value)}
-                className="text-xs text-gray-500 bg-transparent border-none focus:ring-0 p-0 w-64"
+                className="text-xs text-gray-500 bg-transparent border-none focus:ring-0 p-0 truncate"
                 placeholder="Add description..."
               />
             </div>
-            <div className="h-6 w-px bg-gray-200 mx-2"></div>
-            <button 
-              onClick={() => setShowGeneratorDialog(true)}
-              className="p-1.5 hover:bg-purple-50 rounded-lg text-purple-600 hover:text-purple-700 transition-colors"
-              title="Generate Workflow"
-            >
-              <Wand2 size={20} />
-            </button>
-            <button 
-              onClick={onLayout}
-              className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-800 transition-colors"
-              title="Auto Layout"
-            >
-              <Layout size={20} />
-            </button>
-            <button 
-              onClick={() => setShowTestDialog(true)}
-              className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-800 transition-colors"
-              title="Test Workflow"
-            >
-              <Play size={20} />
-            </button>
-            <button 
-              onClick={() => setIsSettingsOpen(true)}
-              className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-800 transition-colors"
-              title="Workflow Settings"
-            >
-              <Settings size={20} />
-            </button>
-            <button 
-              onClick={onSave}
-              disabled={saving}
-              className="flex items-center gap-2 bg-blue-600 text-white px-3 py-1.5 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-              <span>Save</span>
-            </button>
+            <div className="h-6 w-px bg-gray-200 mx-2 flex-shrink-0"></div>
+            <div className="flex items-center gap-1 flex-shrink-0">
+                <button 
+                  onClick={() => setShowGeneratorDialog(true)}
+                  className="p-1.5 hover:bg-purple-50 rounded-lg text-purple-600 hover:text-purple-700 transition-colors"
+                  title="Generate Workflow"
+                >
+                  <Wand2 size={20} />
+                </button>
+                <button 
+                  onClick={onLayout}
+                  className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-800 transition-colors"
+                  title="Auto Layout"
+                >
+                  <Layout size={20} />
+                </button>
+                <button 
+                  onClick={() => setShowTestDialog(true)}
+                  className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-800 transition-colors"
+                  title="Test Workflow"
+                >
+                  <Play size={20} />
+                </button>
+                <button 
+                  onClick={() => setIsSettingsOpen(true)}
+                  className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-800 transition-colors"
+                  title="Workflow Settings"
+                >
+                  <Settings size={20} />
+                </button>
+                <button 
+                  onClick={onSave}
+                  disabled={saving}
+                  className="flex items-center gap-2 bg-blue-600 text-white px-3 py-1.5 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ml-2"
+                >
+                  {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                  <span>Save</span>
+                </button>
+            </div>
         </div>
         <ReactFlow
           nodes={nodes}
@@ -2955,6 +3471,18 @@ const WorkflowList = ({ onSelect }: { onSelect: (id: string) => void }) => {
     }
   };
 
+  const handleCopy = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    try {
+      setLoading(true);
+      await workflowApi.copyWorkflow(id);
+      await loadWorkflows();
+    } catch (error) {
+      console.error('Failed to copy workflow:', error);
+      setLoading(false);
+    }
+  };
+
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (window.confirm('Are you sure you want to delete this workflow?')) {
@@ -3053,6 +3581,13 @@ const WorkflowList = ({ onSelect }: { onSelect: (id: string) => void }) => {
                     title={workflow.enabled ? "Disable" : "Enable"}
                   >
                     <Power size={16} />
+                  </button>
+                  <button 
+                    className="text-gray-400 hover:text-blue-600 p-1.5 hover:bg-blue-50 rounded transition-colors"
+                    onClick={(e) => handleCopy(e, workflow.id)}
+                    title="Copy Workflow"
+                  >
+                    <Copy size={16} />
                   </button>
                   <button 
                     className="text-gray-400 hover:text-blue-600 p-1.5 hover:bg-blue-50 rounded transition-colors"

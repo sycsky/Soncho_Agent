@@ -79,6 +79,14 @@ export const workflowApi = {
     return handleResponse<AiWorkflow>(response);
   },
 
+  copyWorkflow: async (id: string): Promise<AiWorkflow> => {
+    const response = await fetch(`${API_BASE}/ai-workflows/${id}/copy`, {
+      method: 'POST',
+      headers: getHeaders(),
+    });
+    return handleResponse<AiWorkflow>(response);
+  },
+
   updateWorkflow: async (id: string, data: UpdateWorkflowRequest): Promise<AiWorkflow> => {
     const response = await fetch(`${API_BASE}/ai-workflows/${id}`, {
       method: 'PUT',

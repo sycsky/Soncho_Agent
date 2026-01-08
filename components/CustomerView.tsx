@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import customerServiceAPI, { Customer, CustomerChannel, CreateCustomerRequest } from '../services/customerService';
+import customerServiceAPI, { Customer, CustomerChannel, CreateCustomerRequest, CustomerRole, CreateRoleRequest } from '../services/customerService';
 import notificationService from '../services/notificationService';
 import { 
   Users, 
@@ -20,23 +20,37 @@ import {
   ChevronLeft, 
   ChevronRight,
   MessageSquare,
-  SmartphoneNfc
+  SmartphoneNfc,
+  Shield,
+  Settings
 } from 'lucide-react';
 
 export const CustomerView: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [roles, setRoles] = useState<CustomerRole[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchName, setSearchName] = useState('');
   const [filterChannel, setFilterChannel] = useState<CustomerChannel | ''>('');
   const [filterActive, setFilterActive] = useState<boolean | ''>('');
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showRoleManager, setShowRoleManager] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
 
   useEffect(() => {
     loadCustomers();
+    loadRoles();
   }, [searchName, filterChannel, filterActive, currentPage]);
+
+  const loadRoles = async () => {
+    try {
+      const data = await customerServiceAPI.getCustomerRoles();
+      setRoles(data);
+    } catch (error) {
+      console.error('Failed to load roles:', error);
+    }
+  };
 
   const loadCustomers = async () => {
     try {
@@ -104,12 +118,20 @@ export const CustomerView: React.FC = () => {
         <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
           <Users className="text-blue-600" /> Customer Management
         </h2>
-        <button
-          onClick={() => setShowCreateForm(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium flex items-center gap-2 shadow-sm transition-colors"
-        >
-          <Plus size={16} /> Add Customer
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowRoleManager(true)}
+            className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 font-medium flex items-center gap-2 shadow-sm transition-colors"
+          >
+            <Settings size={16} /> Manage Roles
+          </button>
+          <button
+            onClick={() => setShowCreateForm(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium flex items-center gap-2 shadow-sm transition-colors"
+          >
+            <Plus size={16} /> Add Customer
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -174,6 +196,7 @@ export const CustomerView: React.FC = () => {
                   <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Channel</th>
                   <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Name</th>
                   <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Contact</th>
+                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Role</th>
                   <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Tags</th>
                   <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Status</th>
                   <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Last Interaction</th>
@@ -195,6 +218,16 @@ export const CustomerView: React.FC = () => {
                     <td className="py-4 px-6 font-medium text-gray-900">{customer.name}</td>
                     <td className="py-4 px-6 text-sm text-gray-600">
                       {customer.email || customer.phone || '-'}
+                    </td>
+                    <td className="py-4 px-6">
+                      {customer.roleName ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-xs border border-purple-100 font-medium">
+                          <Shield size={12} />
+                          {customer.roleName}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 text-xs">-</span>
+                      )}
                     </td>
                     <td className="py-4 px-6">
                       <div className="flex gap-1 flex-wrap">
@@ -287,6 +320,14 @@ export const CustomerView: React.FC = () => {
         </div>
       )}
 
+      {/* Role Manager Modal */}
+      <RoleManagementModal
+        isOpen={showRoleManager}
+        roles={roles}
+        onClose={() => setShowRoleManager(false)}
+        onRoleCreated={loadRoles}
+      />
+
       {/* Create Modal */}
       <CreateCustomerModal
         isOpen={showCreateForm}
@@ -298,6 +339,7 @@ export const CustomerView: React.FC = () => {
       {selectedCustomer && (
         <CustomerDetailModal
           customer={selectedCustomer}
+          roles={roles}
           onClose={() => setSelectedCustomer(null)}
           onUpdate={loadCustomers}
         />
@@ -402,11 +444,13 @@ const CreateCustomerModal: React.FC<{
 // Customer Detail Modal
 const CustomerDetailModal: React.FC<{
   customer: Customer;
+  roles: CustomerRole[];
   onClose: () => void;
   onUpdate: () => void;
-}> = ({ customer, onClose, onUpdate }) => {
+}> = ({ customer, roles, onClose, onUpdate }) => {
   const [notes, setNotes] = useState(customer.notes || '');
   const [tags, setTags] = useState(customer.tags.join(', '));
+  const [roleCode, setRoleCode] = useState(customer.roleCode || '');
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
@@ -416,6 +460,11 @@ const CustomerDetailModal: React.FC<{
         notes,
         tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
       });
+
+      if (roleCode !== (customer.roleCode || '')) {
+        await customerServiceAPI.assignCustomerRole(customer.id, roleCode);
+      }
+
       notificationService.success('Customer updated successfully');
       onUpdate();
       onClose();
@@ -471,6 +520,21 @@ const CustomerDetailModal: React.FC<{
             <div className="space-y-4">
                <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2 border-b pb-1">Edit Info</h4>
                <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                <select
+                  value={roleCode}
+                  onChange={(e) => setRoleCode(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+                >
+                  <option value="">No Special Role</option>
+                  {roles.map((role) => (
+                    <option key={role.code} value={role.code}>
+                      {role.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Tags (comma separated)</label>
                 <input 
                   value={tags} 
@@ -514,3 +578,146 @@ const CustomerDetailModal: React.FC<{
 };
 
 export default CustomerView;
+
+// Role Management Modal
+const RoleManagementModal: React.FC<{
+  isOpen: boolean;
+  roles: CustomerRole[];
+  onClose: () => void;
+  onRoleCreated: () => void;
+}> = ({ isOpen, roles, onClose, onRoleCreated }) => {
+  const [isCreating, setIsCreating] = useState(false);
+  const [formData, setFormData] = useState<CreateRoleRequest>({
+    code: '',
+    name: '',
+    description: '',
+  });
+  const [saving, setSaving] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setSaving(true);
+      await customerServiceAPI.createCustomerRole(formData);
+      notificationService.success('Role created successfully');
+      setFormData({ code: '', name: '', description: '' });
+      setIsCreating(false);
+      onRoleCreated();
+    } catch (error) {
+      console.error('Failed to create role:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
+        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+          <div className="flex items-center gap-3">
+            <div className="bg-purple-100 p-2 rounded-lg text-purple-600">
+              <Shield size={20} />
+            </div>
+            <h3 className="font-bold text-gray-800 text-lg">Customer Roles</h3>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6">
+          {isCreating ? (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="font-medium text-gray-800">New Role</h4>
+                <button 
+                  onClick={() => setIsCreating(false)}
+                  className="text-gray-500 hover:text-gray-700 text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Code <span className="text-red-500">*</span></label>
+                    <input
+                      required
+                      value={formData.code}
+                      onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono"
+                      placeholder="e.g. VIP_GOLD"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Unique identifier, uppercase recommended</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
+                    <input
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      placeholder="e.g. VIP Gold Customer"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <input
+                    value={formData.description || ''}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    placeholder="Role description..."
+                  />
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50"
+                  >
+                    {saving ? 'Creating...' : 'Create Role'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsCreating(true)}
+              className="w-full py-3 border-2 border-dashed border-gray-200 rounded-lg text-gray-500 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-all mb-4 flex items-center justify-center gap-2 font-medium"
+            >
+              <Plus size={18} /> Create New Role
+            </button>
+          )}
+
+          <div className="space-y-3">
+            {roles.length === 0 ? (
+              <div className="text-center text-gray-400 py-8">
+                No roles defined yet.
+              </div>
+            ) : (
+              roles.map((role) => (
+                <div key={role.code} className="bg-white border border-gray-100 rounded-lg p-4 shadow-sm flex justify-between items-center hover:shadow-md transition-shadow">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-semibold text-gray-800">{role.name}</span>
+                      <span className="text-xs font-mono bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded border border-gray-200">
+                        {role.code}
+                      </span>
+                    </div>
+                    {role.description && (
+                      <p className="text-sm text-gray-500">{role.description}</p>
+                    )}
+                  </div>
+                  {/* Future: Add Delete/Edit actions here if API supports it */}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
