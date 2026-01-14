@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { OfficialChannelConfig, ChannelTypeInfo } from '../../types/officialChannel';
 import { SessionCategory } from '../../types';
 import { officialChannelApi } from '../../services/officialChannelService';
@@ -6,6 +7,7 @@ import sessionCategoryService from '../../services/sessionCategoryService';
 import { Save, Trash2, Power, Copy, ExternalLink, MessageSquare } from 'lucide-react';
 
 export const OfficialChannelConfigView: React.FC = () => {
+  const { t } = useTranslation();
   const [configs, setConfigs] = useState<OfficialChannelConfig[]>([]);
   const [channelTypes, setChannelTypes] = useState<ChannelTypeInfo[]>([]);
   const [categories, setCategories] = useState<SessionCategory[]>([]);
@@ -44,10 +46,10 @@ export const OfficialChannelConfigView: React.FC = () => {
         categoryId: data.categoryId
       });
       await loadData(); // Reload to get updated data
-      alert('Configuration saved successfully');
+      alert(t('save_success'));
     } catch (error) {
       console.error('Failed to save config:', error);
-      alert('Failed to save configuration');
+      alert(t('save_failed'));
     }
   };
 
@@ -61,25 +63,25 @@ export const OfficialChannelConfigView: React.FC = () => {
   };
 
   const handleDelete = async (channelType: string) => {
-    if (!confirm('Are you sure you want to delete this configuration?')) return;
+    if (!confirm(t('delete_confirm'))) return;
     try {
       await officialChannelApi.deleteConfig(channelType);
       await loadData();
     } catch (error) {
       console.error('Failed to delete config:', error);
-      alert('Failed to delete configuration');
+      alert(t('delete_failed'));
     }
   };
 
   if (loading && channelTypes.length === 0) {
-    return <div className="p-8 text-center text-gray-500">Loading configurations...</div>;
+    return <div className="p-8 text-center text-gray-500">{t('loading_configurations')}</div>;
   }
 
   return (
     <div className="p-8 max-w-6xl mx-auto w-full animate-in fade-in duration-300">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-          <MessageSquare className="text-green-600" /> Official Channels
+          <MessageSquare className="text-green-600" /> {t('official_channels')}
         </h2>
       </div>
 
@@ -120,6 +122,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
   onToggle,
   onDelete
 }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<any>({});
   const [webhookSecret, setWebhookSecret] = useState('');
   const [remark, setRemark] = useState('');
@@ -214,13 +217,13 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-800">{channelType.label}</h3>
-            <p className="text-sm text-gray-500">{config ? (config.enabled ? 'Enabled' : 'Disabled') : 'Not Configured'}</p>
+            <p className="text-sm text-gray-500">{config ? (config.enabled ? t('enabled') : t('disabled')) : t('not_configured')}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           {config && (
             <div className="flex items-center gap-2 mr-4">
-              <span className="text-sm text-gray-600">Status:</span>
+              <span className="text-sm text-gray-600">{t('status')}:</span>
               <button
                 onClick={() => onToggle(channelType.value, !config.enabled)}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
@@ -239,7 +242,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
             onClick={() => setIsExpanded(!isExpanded)}
             className="text-gray-500 hover:text-gray-700 font-medium text-sm"
           >
-            {isExpanded ? 'Collapse' : 'Configure'}
+            {isExpanded ? t('collapse') : t('configure')}
           </button>
         </div>
       </div>
@@ -250,7 +253,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
             {channelType.value === 'SHOPIFY' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Shop Domain *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('shop_domain')} *</label>
                   <input
                     type="text"
                     value={formData.shopDomain || ''}
@@ -259,11 +262,11 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                     placeholder="my-store.myshopify.com"
                   />
                   <p className="text-[10px] text-gray-400 mt-1">
-                    Your Shopify store domain (e.g. my-store.myshopify.com)
+                    {t('shop_domain_hint')}
                   </p>
                 </div>
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Access Token *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('access_token')} *</label>
                   <input
                     type="password"
                     value={formData.accessToken || ''}
@@ -271,11 +274,11 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   />
                   <p className="text-[10px] text-gray-400 mt-1">
-                    Admin API Access Token from your custom app
+                    {t('access_token_hint')}
                   </p>
                 </div>
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('api_key')}</label>
                   <input
                     type="text"
                     value={formData.apiKey || ''}
@@ -284,7 +287,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                   />
                 </div>
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">API Secret Key</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('api_secret_key')}</label>
                   <input
                     type="password"
                     value={formData.apiSecret || ''}
@@ -298,7 +301,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
             {channelType.value === 'WECHAT_OFFICIAL' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">AppID *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('appid')} *</label>
                   <input
                     type="text"
                     value={formData.appId || ''}
@@ -308,7 +311,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                   />
                 </div>
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">AppSecret *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('appsecret')} *</label>
                   <input
                     type="password"
                     value={formData.appSecret || ''}
@@ -317,7 +320,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                   />
                 </div>
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Token *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('token')} *</label>
                   <input
                     type="text"
                     value={formData.token || ''}
@@ -326,7 +329,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                   />
                 </div>
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">EncodingAESKey</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('encoding_aes_key')}</label>
                   <input
                     type="text"
                     value={formData.encodingAESKey || ''}
@@ -340,7 +343,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
             {channelType.value === 'WECHAT_KF' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">CorpID (AppID) *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('corpid')} *</label>
                   <input
                     type="text"
                     value={formData.appId || ''}
@@ -351,7 +354,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                 </div>
                 <div className="form-group">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Secret (应用密钥) *
+                    {t('secret_wework')} *
                   </label>
                   <input
                     type="password"
@@ -360,11 +363,11 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   />
                   <p className="text-[10px] text-gray-400 mt-1">
-                    请在企业微信后台-应用管理-自建应用中查看
+                    {t('secret_wework_hint')}
                   </p>
                 </div>
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Token *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('token')} *</label>
                   <input
                     type="text"
                     value={formData.token || ''}
@@ -373,7 +376,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                   />
                 </div>
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">EncodingAESKey</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('encoding_aes_key')}</label>
                   <input
                     type="text"
                     value={formData.encodingAESKey || ''}
@@ -387,7 +390,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
             {channelType.value === 'LINE_OFFICIAL' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Channel ID *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('channel_id')} *</label>
                   <input
                     type="text"
                     value={formData.channelId || ''}
@@ -396,7 +399,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                   />
                 </div>
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Channel Secret *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('channel_secret')} *</label>
                   <input
                     type="password"
                     value={formData.channelSecret || ''}
@@ -405,7 +408,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                   />
                 </div>
                 <div className="form-group md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Channel Access Token *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('channel_access_token')} *</label>
                   <input
                     type="password"
                     value={formData.channelAccessToken || ''}
@@ -419,7 +422,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
             {channelType.value === 'WHATSAPP_OFFICIAL' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number ID *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('phone_number_id')} *</label>
                   <input
                     type="text"
                     value={formData.phoneNumberId || ''}
@@ -428,7 +431,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                   />
                 </div>
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Access Token *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('access_token')} *</label>
                   <input
                     type="password"
                     value={formData.accessToken || ''}
@@ -437,7 +440,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                   />
                 </div>
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Business Account ID</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('business_account_id')}</label>
                   <input
                     type="text"
                     value={formData.businessAccountId || ''}
@@ -446,7 +449,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                   />
                 </div>
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">App ID</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('appid')}</label>
                   <input
                     type="text"
                     value={formData.appId || ''}
@@ -455,7 +458,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                   />
                 </div>
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">App Secret</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('app_secret')}</label>
                   <input
                     type="password"
                     value={formData.appSecret || ''}
@@ -469,7 +472,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
             {channelType.value === 'FACEBOOK_MESSENGER' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">App ID *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('app_id')} *</label>
                   <input
                     type="text"
                     value={formData.appId || ''}
@@ -478,7 +481,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                   />
                 </div>
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">App Secret *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('app_secret')} *</label>
                   <input
                     type="password"
                     value={formData.appSecret || ''}
@@ -487,7 +490,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                   />
                 </div>
                 <div className="form-group md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Page Access Token *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('page_access_token')} *</label>
                   <input
                     type="password"
                     value={formData.accessToken || ''}
@@ -525,7 +528,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                   />
                 </div>
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Facebook App Secret *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Facebook {t('app_secret')} *</label>
                   <input
                     type="password"
                     value={formData.appSecret || ''}
@@ -534,7 +537,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                   />
                 </div>
                 <div className="form-group md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Page Access Token *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('page_access_token')} *</label>
                   <input
                     type="password"
                     value={formData.accessToken || ''}
@@ -548,7 +551,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
             {channelType.value === 'TWITTER' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">API Key (Consumer Key) *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('twitter_consumer_key')} *</label>
                   <input
                     type="text"
                     value={formData.consumerKey || ''}
@@ -557,7 +560,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                   />
                 </div>
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">API Secret (Consumer Secret) *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('twitter_consumer_secret')} *</label>
                   <input
                     type="password"
                     value={formData.consumerSecret || ''}
@@ -566,7 +569,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                   />
                 </div>
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Access Token *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('access_token')} *</label>
                   <input
                     type="password"
                     value={formData.accessToken || ''}
@@ -575,7 +578,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                   />
                 </div>
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Access Token Secret *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('access_token_secret')} *</label>
                   <input
                     type="password"
                     value={formData.accessTokenSecret || ''}
@@ -584,7 +587,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                   />
                 </div>
                 <div className="form-group md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Bearer Token</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('bearer_token')}</label>
                   <input
                     type="password"
                     value={formData.bearerToken || ''}
@@ -598,7 +601,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
             {channelType.value === 'DOUYIN' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Client Key *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('client_key')} *</label>
                   <input
                     type="text"
                     value={formData.clientKey || ''}
@@ -607,7 +610,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                   />
                 </div>
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Client Secret *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('client_secret')} *</label>
                   <input
                     type="password"
                     value={formData.clientSecret || ''}
@@ -621,7 +624,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
             {channelType.value === 'RED_BOOK' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">App ID *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('app_id')} *</label>
                   <input
                     type="text"
                     value={formData.appId || ''}
@@ -630,7 +633,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                   />
                 </div>
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">App Secret *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('app_secret')} *</label>
                   <input
                     type="password"
                     value={formData.appSecret || ''}
@@ -644,7 +647,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
             {channelType.value === 'WEIBO' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">App Key *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('app_key')} *</label>
                   <input
                     type="text"
                     value={formData.appKey || ''}
@@ -662,7 +665,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                   />
                 </div>
                 <div className="form-group md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Access Token *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('access_token')} *</label>
                   <input
                     type="password"
                     value={formData.accessToken || ''}
@@ -676,7 +679,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
             {channelType.value === 'EMAIL' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">SMTP Host *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('smtp_host')} *</label>
                   <input
                     type="text"
                     value={formData.smtpHost || ''}
@@ -686,7 +689,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                   />
                 </div>
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">SMTP Port *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('smtp_port')} *</label>
                   <input
                     type="number"
                     value={formData.smtpPort || ''}
@@ -696,7 +699,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                   />
                 </div>
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email / Username *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('email_username')} *</label>
                   <input
                     type="text"
                     value={formData.username || ''}
@@ -705,7 +708,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                   />
                 </div>
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('password')} *</label>
                   <input
                     type="password"
                     value={formData.password || ''}
@@ -714,7 +717,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                   />
                 </div>
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">From Email *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('from_email')} *</label>
                   <input
                     type="text"
                     value={formData.fromEmail || ''}
@@ -730,7 +733,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                       onChange={(e) => setFormData({ ...formData, sslEnabled: e.target.checked })}
                       className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                     />
-                    <span className="text-sm font-medium text-gray-700">Enable SSL/TLS</span>
+                    <span className="text-sm font-medium text-gray-700">{t('enable_ssl_tls')}</span>
                   </label>
                 </div>
               </div>
@@ -740,36 +743,36 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
             <div className="border-t border-gray-100 pt-4 mt-2">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Webhook Secret</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('webhook_secret')}</label>
                   <input
                     type="password"
                     value={webhookSecret}
                     onChange={(e) => setWebhookSecret(e.target.value)}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    placeholder="Optional verification secret"
+                    placeholder={t('optional_verification_secret')}
                   />
                 </div>
                 <div className="form-group">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Default Session Category</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('default_session_category')}</label>
                   <select
                     value={categoryId}
                     onChange={(e) => setCategoryId(e.target.value)}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
                   >
-                    <option value="">-- No Category --</option>
+                    <option value="">{t('no_category')}</option>
                     {categories.map(cat => (
                       <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))}
                   </select>
                 </div>
                 <div className="form-group md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Remark</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('remark')}</label>
                   <input
                     type="text"
                     value={remark}
                     onChange={(e) => setRemark(e.target.value)}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    placeholder="Note for this configuration"
+                    placeholder={t('note_placeholder')}
                   />
                 </div>
               </div>
@@ -777,7 +780,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
 
             {/* Webhook URL Display */}
             <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
-              <label className="block text-xs font-bold text-blue-700 uppercase mb-2">Webhook URL</label>
+              <label className="block text-xs font-bold text-blue-700 uppercase mb-2">{t('webhook_url_label')}</label>
               <div className="flex items-center gap-2">
                 <code className="flex-1 bg-white px-3 py-2 rounded border border-blue-200 text-sm font-mono text-gray-600 break-all">
                   {getWebhookUrl()}
@@ -785,13 +788,13 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                 <button
                   onClick={() => copyToClipboard(getWebhookUrl())}
                   className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
-                  title="Copy URL"
+                  title={t('copy_url')}
                 >
                   <Copy size={18} />
                 </button>
               </div>
               <p className="text-xs text-blue-600 mt-2">
-                Configure this URL in the {channelType.label} developer console to receive messages.
+                {t('configure_webhook_hint', { label: channelType.label })}
               </p>
             </div>
 
@@ -802,7 +805,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                   onClick={() => onDelete(channelType.value)}
                   className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium"
                 >
-                  <Trash2 size={16} /> Delete Config
+                  <Trash2 size={16} /> {t('delete_config')}
                 </button>
               )}
               <button
@@ -810,7 +813,7 @@ const ChannelConfigCard: React.FC<ChannelConfigCardProps> = ({
                 disabled={isSaving}
                 className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50"
               >
-                <Save size={16} /> {isSaving ? 'Saving...' : 'Save Configuration'}
+                <Save size={16} /> {isSaving ? t('saving') : t('save_configuration')}
               </button>
             </div>
           </div>

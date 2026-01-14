@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Loader2, Eye, EyeOff } from 'lucide-react';
 import { platformApi } from '../../services/platformApi';
 import { ExternalPlatform, PlatformTypeOption, AuthTypeOption, CreatePlatformRequest, UpdatePlatformRequest } from '../../types/platform';
@@ -118,7 +119,7 @@ export const CreatePlatformDialog: React.FC<CreatePlatformDialogProps> = ({
       onClose();
     } catch (error) {
       console.error('Failed to save platform:', error);
-      alert('Failed to save platform: ' + (error instanceof Error ? error.message : String(error)));
+      alert(t('failed_save_platform_prefix') + (error instanceof Error ? error.message : String(error)));
     } finally {
       setIsSubmitting(false);
     }
@@ -142,7 +143,7 @@ export const CreatePlatformDialog: React.FC<CreatePlatformDialogProps> = ({
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-100 shrink-0">
           <h3 className="text-xl font-bold text-gray-800">
-            {mode === 'create' ? 'Create Platform Configuration' : 'Edit Platform Configuration'}
+            {mode === 'create' ? t('create_platform_config') : t('edit_platform_config')}
           </h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <X size={24} />
@@ -155,23 +156,23 @@ export const CreatePlatformDialog: React.FC<CreatePlatformDialogProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Platform Name <span className="text-red-500">*</span>
+                  {t('platform_name')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
-                  placeholder="e.g. line_official"
+                  placeholder={t('platform_name_placeholder')}
                   required
                   disabled={mode === 'edit'}
                 />
-                <p className="text-xs text-gray-500 mt-1">Unique identifier, cannot be changed later.</p>
+                <p className="text-xs text-gray-500 mt-1">{t('platform_name_help')}</p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Platform Type <span className="text-red-500">*</span>
+                  {t('platform_type')} <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={platformType}
@@ -180,7 +181,7 @@ export const CreatePlatformDialog: React.FC<CreatePlatformDialogProps> = ({
                   required
                   disabled={mode === 'edit'}
                 >
-                  <option value="">Select Type</option>
+                  <option value="">{t('select_type')}</option>
                   {platformTypes.map(type => (
                     <option key={type.value} value={type.value}>{type.label}</option>
                   ))}
@@ -190,20 +191,20 @@ export const CreatePlatformDialog: React.FC<CreatePlatformDialogProps> = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Display Name
+                {t('display_name')}
               </label>
               <input
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g. Line Official Account"
+                placeholder={t('display_name_placeholder')}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Callback URL
+                {t('callback_url')}
               </label>
               <input
                 type="url"
@@ -212,15 +213,15 @@ export const CreatePlatformDialog: React.FC<CreatePlatformDialogProps> = ({
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="https://api.example.com/callback"
               />
-              <p className="text-xs text-gray-500 mt-1">System will POST reply messages to this URL.</p>
+              <p className="text-xs text-gray-500 mt-1">{t('callback_url_help')}</p>
             </div>
 
             <div className="border-t border-gray-100 pt-4">
-              <h4 className="text-sm font-bold text-gray-800 mb-4">Authentication</h4>
+              <h4 className="text-sm font-bold text-gray-800 mb-4">{t('authentication_section')}</h4>
               <div className="grid grid-cols-1 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Auth Type
+                    {t('auth_type')}
                   </label>
                   <select
                     value={authType}
@@ -236,7 +237,7 @@ export const CreatePlatformDialog: React.FC<CreatePlatformDialogProps> = ({
                 {authType !== 'NONE' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Auth Credential
+                      {t('auth_credential')}
                     </label>
                     <div className="relative">
                       <input
@@ -259,7 +260,7 @@ export const CreatePlatformDialog: React.FC<CreatePlatformDialogProps> = ({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Webhook Secret
+                    {t('webhook_secret_label')}
                   </label>
                   <div className="relative">
                     <input
@@ -267,7 +268,7 @@ export const CreatePlatformDialog: React.FC<CreatePlatformDialogProps> = ({
                       value={webhookSecret}
                       onChange={(e) => setWebhookSecret(e.target.value)}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
-                      placeholder="Secret for verifying incoming webhook requests"
+                      placeholder={t('webhook_secret_placeholder_verify')}
                     />
                     <button
                       type="button"
@@ -283,19 +284,19 @@ export const CreatePlatformDialog: React.FC<CreatePlatformDialogProps> = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Extra Headers (JSON)
+                {t('extra_headers_label')}
               </label>
               <textarea
                 value={extraHeaders}
                 onChange={(e) => setExtraHeaders(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm h-20"
-                placeholder='{"X-Custom-Header": "value"}'
+                placeholder={t('extra_headers_placeholder')}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Remark
+                {t('remark')}
               </label>
               <textarea
                 value={remark}
@@ -313,7 +314,7 @@ export const CreatePlatformDialog: React.FC<CreatePlatformDialogProps> = ({
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
               <label htmlFor="enabled" className="ml-2 block text-sm text-gray-900">
-                Enable this platform
+                {t('enable_platform')}
               </label>
             </div>
           </form>
@@ -327,7 +328,7 @@ export const CreatePlatformDialog: React.FC<CreatePlatformDialogProps> = ({
             className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
             disabled={isSubmitting}
           >
-            Cancel
+            {t('cancel')}
           </button>
           <button
             type="submit"
@@ -336,7 +337,7 @@ export const CreatePlatformDialog: React.FC<CreatePlatformDialogProps> = ({
             disabled={isSubmitting}
           >
             {isSubmitting && <Loader2 className="animate-spin" size={16} />}
-            {mode === 'create' ? 'Create' : 'Save Changes'}
+            {mode === 'create' ? t('create_button') : t('save_changes')}
           </button>
         </div>
       </div>

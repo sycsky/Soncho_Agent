@@ -19,13 +19,5 @@
     "welcome_message": {
       "label": "Welcome Message"
     }
-  },
-  "ratings": {
-    "stars": {
-      "label": "Rating"
-    },
-    "home": {
-      "recommendationText": "Recommended"
-    }
   }
 }

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Role } from '../types';
 import { getRoles, createRole, updateRole, deleteRole, CreateRoleRequest, UpdateRoleRequest } from '../services/adminService';
 import { Plus, Edit, Trash2, X } from 'lucide-react';
 
 const RoleForm: React.FC<{ role?: Role; onSave: (data: CreateRoleRequest | UpdateRoleRequest) => void; onCancel: () => void; }> = ({ role, onSave, onCancel }) => {
+  const { t } = useTranslation();
   const [name, setName] = useState(role?.name || '');
   const [description, setDescription] = useState(role?.description || '');
   const [permissions, setPermissions] = useState(role ? Object.keys(role.permissions).filter(p => role.permissions[p]).join(', ') : '');
@@ -21,10 +23,10 @@ const RoleForm: React.FC<{ role?: Role; onSave: (data: CreateRoleRequest | Updat
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6">{role ? 'Edit Role' : 'Add New Role'}</h2>
+        <h2 className="text-2xl font-bold mb-6">{role ? t('edit_role_title') : t('add_new_role_title')}</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">Name</label>
+            <label className="block text-sm font-medium text-gray-700">{t('name')}</label>
             <input
               type="text"
               value={name}
@@ -34,7 +36,7 @@ const RoleForm: React.FC<{ role?: Role; onSave: (data: CreateRoleRequest | Updat
             />
           </div>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">Description</label>
+            <label className="block text-sm font-medium text-gray-700">{t('description')}</label>
             <input
               type="text"
               value={description}
@@ -43,7 +45,7 @@ const RoleForm: React.FC<{ role?: Role; onSave: (data: CreateRoleRequest | Updat
             />
           </div>
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700">Permissions (comma-separated)</label>
+            <label className="block text-sm font-medium text-gray-700">{t('permissions_label')}</label>
             <input
               type="text"
               value={permissions}
@@ -52,8 +54,8 @@ const RoleForm: React.FC<{ role?: Role; onSave: (data: CreateRoleRequest | Updat
             />
           </div>
           <div className="flex justify-end gap-4">
-            <button type="button" onClick={onCancel} className="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300">Cancel</button>
-            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Save</button>
+            <button type="button" onClick={onCancel} className="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300">{t('cancel')}</button>
+            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">{t('save')}</button>
           </div>
         </form>
       </div>
@@ -62,6 +64,7 @@ const RoleForm: React.FC<{ role?: Role; onSave: (data: CreateRoleRequest | Updat
 };
 
 export const RoleView: React.FC = () => {
+  const { t } = useTranslation();
   const [roles, setRoles] = useState<Role[]>([]);
   const [editingRole, setEditingRole] = useState<Role | undefined>(undefined);
   const [isCreating, setIsCreating] = useState(false);
@@ -128,9 +131,9 @@ export const RoleView: React.FC = () => {
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Name</th>
-              <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Description</th>
-              <th className="text-right py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Actions</th>
+              <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">{t('name')}</th>
+              <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">{t('description')}</th>
+              <th className="text-right py-3 px-6 text-xs font-semibold text-gray-500 uppercase">{t('actions')}</th>
             </tr>
           </thead>
           <tbody>

@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import api from './api';
 
 const apiKey = process.env.API_KEY || '';
 const ai = new GoogleGenAI({ apiKey });
@@ -96,26 +97,18 @@ export const generateChatSummary = async (
   }
 };
 
-export const rewriteMessage = async (draft: string): Promise<string> => {
+export const rewriteMessage = async (draft: string, sessionId?: string): Promise<string> => {
   try {
-    const model = 'gemini-2.0-flash-exp';
-    const prompt = `
-      Rewrite the following draft customer support message to be professional, empathetic, and clear.
-      Keep the core meaning but improve the tone significantly.
-      
-      Draft: "${draft}"
-      
-      Return ONLY the rewritten text, no quotes or explanations.
-    `;
-
-    const result = await ai.models.generateContent({
-      model: model,
-      contents: prompt
+    // Call backend API for magic rewrite
+    const response = await api.post<{ rewrittenText: string }>('/ai/rewrite', { 
+      text: draft,
+      sessionId: sessionId // Pass sessionId for context
     });
-
-    return result.text?.trim() || draft;
+    
+    return response.rewrittenText || draft;
   } catch (error) {
-    console.error("Gemini Rewrite Error:", error);
+    console.error("Magic Rewrite Error:", error);
+    // Fallback to original text if backend fails
     return draft;
   }
 };
@@ -149,9 +142,18 @@ export const analyzeSentiment = async (lastUserMessage: string): Promise<{ score
 
 export const suggestUserTags = async (
   conversationHistory: { role: string; content: string }[],
-  userContext: string
+  userContext: string,
+  sessionId?: string
 ): Promise<string[]> => {
   try {
+    if (sessionId) {
+       // Call backend API for AI tags
+       const response = await api.post<{ tags: string[] }>('/ai/suggest-tags', { 
+         sessionId: sessionId 
+       });
+       return response.tags || [];
+    }
+
     const model = 'gemini-2.0-flash-exp';
     const prompt = `
       Analyze the following customer conversation history and user profile details.

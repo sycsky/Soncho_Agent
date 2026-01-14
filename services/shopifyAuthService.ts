@@ -12,30 +12,48 @@ const SHOPIFY_HOST_KEY = 'shopify_host';
  */
 export const checkShopifyAuth = (shop: string): boolean => {
   if (!shop) return false;
-  const installed = sessionStorage.getItem(`${SHOPIFY_INSTALLED_KEY_PREFIX}${shop}`) === '1';
-  const installStarted = sessionStorage.getItem(`${SHOPIFY_INSTALL_STARTED_KEY_PREFIX}${shop}`) === '1';
-  return installed || installStarted;
+  return isShopifyInstalled(shop);
+};
+
+export const isShopifyInstalled = (shop: string): boolean => {
+  if (!shop) return false;
+  return sessionStorage.getItem(`${SHOPIFY_INSTALLED_KEY_PREFIX}${shop}`) === '1';
+};
+
+export const hasShopifyInstallStarted = (shop: string): boolean => {
+  if (!shop) return false;
+  return sessionStorage.getItem(`${SHOPIFY_INSTALL_STARTED_KEY_PREFIX}${shop}`) === '1';
 };
 
 /**
  * Redirects the browser to backend install endpoint, which will start Shopify OAuth.
  * Backend: GET /api/v1/shopify/oauth/install?shop={shop}
  */
-export const initiateShopifyInstall = (shop: string) => {
+export const initiateShopifyInstall = async (shop: string) => {
   if (!shop) {
     return;
   }
 
   sessionStorage.setItem(`${SHOPIFY_INSTALL_STARTED_KEY_PREFIX}${shop}`, '1');
 
-  const host = sessionStorage.getItem(SHOPIFY_HOST_KEY) || undefined;
-  const installUrl = new URL('/api/v1/shopify/oauth/install', window.location.origin);
+  const urlParams = new URLSearchParams(window.location.search);
+  const hostFromUrl = urlParams.get('host') || undefined;
+  const host = hostFromUrl || sessionStorage.getItem(SHOPIFY_HOST_KEY) || undefined;
+  if (hostFromUrl) {
+    sessionStorage.setItem(SHOPIFY_HOST_KEY, hostFromUrl);
+  }
+
+  const installUrl = new URL(`${BASE_URL}/api/v1/shopify/oauth/install`);
   installUrl.searchParams.set('shop', shop);
   if (host) {
     installUrl.searchParams.set('host', host);
   }
 
-  window.location.assign(installUrl.toString());
+  console.log('Redirecting to install:', installUrl.toString());
+
+  // Use _top to break out of iframe if App Bridge is not active,
+  // or use App Bridge's patched window.open if it is active.
+  window.open(installUrl.toString(), '_top');
 };
 
 export const saveShopifyLaunchParams = (params: { shop?: string | null; host?: string | null; tenantId?: string | null }) => {
@@ -50,6 +68,7 @@ export const saveShopifyLaunchParams = (params: { shop?: string | null; host?: s
   if (shop && tenantId) {
     sessionStorage.setItem(`${SHOPIFY_TENANT_ID_KEY_PREFIX}${shop}`, tenantId);
     sessionStorage.setItem(`${SHOPIFY_INSTALLED_KEY_PREFIX}${shop}`, '1');
+    sessionStorage.removeItem(`${SHOPIFY_INSTALL_STARTED_KEY_PREFIX}${shop}`);
   }
 };
 
@@ -78,6 +97,8 @@ type ShopifyAuthExchangeResult = {
   shop?: string;
   tenantId?: string;
   token?: string;
+  error?: string;
+  httpStatus?: number;
 };
 
 const parseShopifyAuthExchangeResult = async (response: Response): Promise<ShopifyAuthExchangeResult> => {
@@ -106,6 +127,38 @@ export const getIdTokenFromUrl = (): string | undefined => {
   return urlParams.get('id_token') || undefined;
 };
 
+export const probeShopifyExchange = async (shop: string): Promise<ShopifyAuthExchangeResult> => {
+  if (!shop) {
+    throw new Error('Shop is required');
+  }
+  const endpoint = `${BASE_URL}/api/v1/shopify/auth/exchange`;
+  const url = `${endpoint}?shop=${encodeURIComponent(shop)}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    credentials: 'include'
+  });
+  const status = res.status;
+  const text = await res.text();
+  if (!text) {
+    if (res.ok) {
+      return { success: false, httpStatus: status, error: 'Empty response' };
+    }
+    return { success: false, httpStatus: status, error: `HTTP ${status}` };
+  }
+
+  try {
+    const json = JSON.parse(text);
+    const data = json && typeof json === 'object' && 'data' in json ? (json as any).data : json;
+    const result = (data && typeof data === 'object') ? (data as ShopifyAuthExchangeResult) : ({ success: false } as ShopifyAuthExchangeResult);
+    return { ...result, httpStatus: status };
+  } catch {
+    if (res.ok) {
+      return { success: false, httpStatus: status, error: 'Invalid JSON' };
+    }
+    return { success: false, httpStatus: status, error: text };
+  }
+};
+
 export const exchangeShopifyAuth = async (params: {
   shop: string;
   host?: string;
@@ -129,7 +182,8 @@ export const exchangeShopifyAuth = async (params: {
       credentials: 'include'
     });
     if (!res.ok) {
-      throw new Error(`POST /shopify/auth/exchange (query) -> HTTP ${res.status}`);
+      const errorText = await res.text();
+      throw new Error(`POST /shopify/auth/exchange (query) -> HTTP ${res.status}: ${errorText}`);
     }
     return await parseShopifyAuthExchangeResult(res);
   }
@@ -142,11 +196,14 @@ export const exchangeShopifyAuth = async (params: {
       credentials: 'include'
     });
     if (!res.ok) {
-      throw new Error(`POST /shopify/auth/exchange (header) -> HTTP ${res.status}`);
+      const errorText = await res.text();
+      console.error(`POST /shopify/auth/exchange failed. Status: ${res.status}, Body: ${errorText}`);
+      throw new Error(`POST /shopify/auth/exchange (header) -> HTTP ${res.status}: ${errorText}`);
     }
     return await parseShopifyAuthExchangeResult(res);
   }
 
+  console.error('Missing session token / id_token in exchangeShopifyAuth');
   throw new Error('Missing session token / id_token');
 };
 
@@ -171,11 +228,17 @@ const ensureShopifyAppBridgeReady = async (params: { apiKey: string; host: strin
   const w = window as any;
 
   w.shopify = w.shopify || {};
-  w.shopify.config = w.shopify.config || {};
-  w.shopify.config.apiKey = apiKey;
-  w.shopify.config.host = host;
-  if (shop) {
-    w.shopify.config.shop = shop;
+  
+  // Try to configure via window object if possible, but don't crash if read-only
+  try {
+      w.shopify.config = w.shopify.config || {};
+      if (!w.shopify.config.apiKey) w.shopify.config.apiKey = apiKey;
+      if (!w.shopify.config.host) w.shopify.config.host = host;
+      if (shop && !w.shopify.config.shop) {
+        w.shopify.config.shop = shop;
+      }
+  } catch (e) {
+      console.warn('Unable to write to window.shopify.config in ensureShopifyAppBridgeReady:', e);
   }
 
   const scriptId = 'shopify-app-bridge';
@@ -183,21 +246,39 @@ const ensureShopifyAppBridgeReady = async (params: { apiKey: string; host: strin
   if (!existing) {
     const script = document.createElement('script');
     script.id = scriptId;
+    script.setAttribute('data-api-key', apiKey);
+    script.setAttribute('data-host', host);
     script.src = 'https://cdn.shopify.com/shopifycloud/app-bridge.js';
-    script.async = true;
-    document.head.appendChild(script);
+    script.async = false; // Explicitly disable async to satisfy App Bridge requirements
+    document.head.prepend(script);
+  } else {
+    if (!existing.getAttribute('data-api-key')) {
+      existing.setAttribute('data-api-key', apiKey);
+    }
+    if (!existing.getAttribute('data-host')) {
+      existing.setAttribute('data-host', host);
+    }
   }
 
   const start = Date.now();
+  console.log(`[AppBridge] Waiting for App Bridge ready... (apiKey=${apiKey}, host=${host})`);
+  
   while (Date.now() - start < 10_000) {
     const current = (window as any).shopify;
-    if (current && (typeof current.idToken === 'function' || typeof current.idToken?.get === 'function')) {
+    if (
+      current &&
+      (typeof current.idToken === 'function' ||
+        typeof current.idToken?.get === 'function' ||
+        typeof current.sessionToken?.get === 'function')
+    ) {
+      console.log('[AppBridge] Ready!');
       return;
     }
     await new Promise(r => setTimeout(r, 50));
   }
 
-  throw new Error('Shopify App Bridge is not ready');
+  console.error('[AppBridge] Timeout waiting for window.shopify.idToken');
+  throw new Error('Shopify App Bridge is not ready (Timeout)');
 };
 
 const getShopifySessionToken = async (): Promise<string> => {
@@ -207,6 +288,9 @@ const getShopifySessionToken = async (): Promise<string> => {
   }
   if (current && typeof current.idToken?.get === 'function') {
     return await current.idToken.get();
+  }
+  if (current && typeof current.sessionToken?.get === 'function') {
+    return await current.sessionToken.get();
   }
   throw new Error('Missing Shopify session token');
 };
@@ -226,20 +310,24 @@ export const exchangeShopifyForAgentSession = async (params: {
   const idTokenFromUrl = params.idTokenFromUrl || getIdTokenFromUrl();
   const apiKey = params.apiKey || resolveShopifyApiKey();
 
-  const sessionToken = idTokenFromUrl
-    ? undefined
-    : (apiKey && host ? (await ensureShopifyAppBridgeReady({ apiKey, host, shop }), await getShopifySessionToken()) : undefined);
+  let sessionToken: string | undefined;
+
+  const canUseSessionToken = !!apiKey && !!host;
+  if (canUseSessionToken) {
+    await ensureShopifyAppBridgeReady({ apiKey: apiKey as string, host: host as string, shop });
+    sessionToken = await getShopifySessionToken();
+  }
 
   const result = await exchangeShopifyAuth({
     shop,
     host,
     tenantId,
     sessionToken,
-    idTokenFromUrl
+    idTokenFromUrl: canUseSessionToken ? undefined : idTokenFromUrl
   });
 
   if (!result.success || !result.token) {
-    throw new Error('Token exchange failed');
+    throw new Error(result.error || 'Token exchange failed');
   }
 
   const resolvedTenantId = result.tenantId || tenantId;

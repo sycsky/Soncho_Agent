@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Play, Loader2, CheckCircle, AlertCircle, Clock, Globe } from 'lucide-react';
 import { AiTool, AiToolExecuteResponse } from '../../types/aiTool';
 import aiToolApi from '../../services/aiToolApi';
@@ -10,6 +11,7 @@ interface AiToolTestDialogProps {
 }
 
 export const AiToolTestDialog: React.FC<AiToolTestDialogProps> = ({ isOpen, onClose, tool }) => {
+  const { t } = useTranslation();
   const [params, setParams] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AiToolExecuteResponse | null>(null);
@@ -30,8 +32,8 @@ export const AiToolTestDialog: React.FC<AiToolTestDialogProps> = ({ isOpen, onCl
       console.error('Test failed', error);
       setResult({
         success: false,
-        output: 'Execution failed due to network or server error.',
-        errorMessage: (error as any).message || 'Unknown error',
+        output: t('execution_failed_network'),
+        errorMessage: (error as any).message || t('unknown_error'),
         durationMs: 0,
         executionId: ''
       });
@@ -179,7 +181,7 @@ export const AiToolTestDialog: React.FC<AiToolTestDialogProps> = ({ isOpen, onCl
                 <div className="bg-gray-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
                   <Play size={24} className="text-gray-300" />
                 </div>
-                <p className="text-sm text-gray-400">Enter parameters and click Execute to see results.</p>
+                <p className="text-sm text-gray-400">{t('enter_parameters_hint')}</p>
               </div>
             )}
           </div>

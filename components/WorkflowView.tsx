@@ -1,5 +1,6 @@
 import React, { useCallback, useRef, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { 
   ReactFlow, 
   MiniMap, 
@@ -36,7 +37,8 @@ import { getLayoutedElements } from '../utils/layout';
 
 // Helper hook to resolve model name from ID if display name is missing
 const useModelName = (modelId?: string, modelDisplayName?: string) => {
-  const [displayName, setDisplayName] = useState(modelDisplayName || modelId || 'Select Model');
+  const { t } = useTranslation();
+  const [displayName, setDisplayName] = useState(modelDisplayName || modelId || t('workflow.select_model'));
 
   useEffect(() => {
     let isMounted = true;
@@ -65,14 +67,14 @@ const useModelName = (modelId?: string, modelDisplayName?: string) => {
           console.error('Failed to resolve model name', err);
         }
       } else {
-         if (isMounted) setDisplayName(modelDisplayName || modelId || 'Select Model');
+         if (isMounted) setDisplayName(modelDisplayName || modelId || t('workflow.select_model'));
       }
     };
 
     resolveName();
 
     return () => { isMounted = false; };
-  }, [modelId, modelDisplayName]);
+  }, [modelId, modelDisplayName, t]);
 
   return displayName;
 };
@@ -127,6 +129,7 @@ const CustomEdge = ({
   selected,
 }: EdgeProps) => {
   const { deleteElements } = useReactFlow();
+  const { t } = useTranslation();
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
@@ -166,7 +169,7 @@ const CustomEdge = ({
                 event.stopPropagation();
                 deleteElements({ edges: [{ id }] });
               }}
-              title="Delete Connection"
+              title={t('workflow_editor.delete_connection')}
             >
               <Trash2 size={12} />
             </button>
@@ -180,6 +183,7 @@ const CustomEdge = ({
 // Reusable Node Menu Component
 const NodeMenu = ({ nodeId }: { nodeId: string }) => {
   const { deleteElements, getNodes, setNodes } = useReactFlow();
+  const { t } = useTranslation();
   const [showMenu, setShowMenu] = useState(false);
 
   const handleCopyNode = (e: React.MouseEvent) => {
@@ -226,7 +230,7 @@ const NodeMenu = ({ nodeId }: { nodeId: string }) => {
               onClick={handleCopyNode}
             >
               <Copy size={12} />
-              <span>Copy Node</span>
+              <span>{t('workflow_editor.copy_node')}</span>
             </button>
             <button 
               className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
@@ -236,7 +240,7 @@ const NodeMenu = ({ nodeId }: { nodeId: string }) => {
               }}
             >
               <Trash2 size={12} />
-              <span>Delete Node</span>
+              <span>{t('workflow_editor.delete_node')}</span>
             </button>
           </div>
         )}
@@ -257,6 +261,7 @@ const NodeMenu = ({ nodeId }: { nodeId: string }) => {
 
 // Custom Node Components (Keep existing ones)
 const StartNode = ({ id, data, selected }: NodeProps) => {
+  const { t } = useTranslation();
   return (
     <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[200px] group hover:border-blue-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
       <NodeMenu nodeId={id} />
@@ -264,10 +269,10 @@ const StartNode = ({ id, data, selected }: NodeProps) => {
         <div className="bg-blue-100 p-1 rounded-lg text-blue-600">
           <Play size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Start'}</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || t('workflow_editor.start_node')}</span>
       </div>
       <div className="p-4">
-        <div className="text-xs text-gray-500">Workflow Entry Point</div>
+        <div className="text-xs text-gray-500">{t('workflow_editor.workflow_entry_point')}</div>
       </div>
       <Handle type="source" position={Position.Right} className="!bg-blue-500" />
     </div>
@@ -275,6 +280,7 @@ const StartNode = ({ id, data, selected }: NodeProps) => {
 };
 
 const IntentNode = ({ id, data, selected }: NodeProps) => {
+  const { t } = useTranslation();
   const intents = (data.config as any)?.intents || [];
   const config = data.config as any;
   const modelDisplay = useModelName(config?.modelId || config?.model, config?.modelDisplayName);
@@ -286,7 +292,7 @@ const IntentNode = ({ id, data, selected }: NodeProps) => {
         <div className="bg-green-100 p-1 rounded-lg text-green-600">
           <GitBranch size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Intent Recognition'}</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || t('workflow_editor.intent_node')}</span>
       </div>
       <div className="p-3 bg-gray-50 border-b border-gray-100">
         <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
@@ -306,14 +312,14 @@ const IntentNode = ({ id, data, selected }: NodeProps) => {
                   ))
                 ) : (
                   <div className="px-4 py-3 text-xs text-gray-400 italic text-center">
-                    No intents configured. Add in properties.
+                    {t('workflow_editor.no_intents')}
                   </div>
                 )}
             </div>
         </div>
       </div>
       <div className="p-3 bg-gray-50 rounded-b-xl text-[10px] text-gray-400 leading-relaxed border-t border-gray-100">
-        Classify user intent to direct the conversation flow.
+        {t('workflow_editor.intent_description')}
       </div>
       <Handle type="target" position={Position.Left} className="!bg-gray-400" />
     </div>
@@ -321,6 +327,7 @@ const IntentNode = ({ id, data, selected }: NodeProps) => {
 };
 
 const KnowledgeNode = ({ id, data, selected }: NodeProps) => {
+  const { t } = useTranslation();
   const config = data.config as any || {};
   const selectedKBs = config.selectedKnowledgeBases || [];
   const kbIds = config.knowledgeBaseIds || (config.knowledgeBaseId ? [config.knowledgeBaseId] : []);
@@ -332,11 +339,11 @@ const KnowledgeNode = ({ id, data, selected }: NodeProps) => {
         <div className="bg-orange-100 p-1 rounded-lg text-orange-600">
           <Database size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Knowledge Retrieval'}</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || t('workflow_editor.knowledge_node')}</span>
       </div>
       
       <div className="p-3 bg-gray-50 border-b border-gray-100">
-        <div className="text-[10px] uppercase font-bold text-gray-400 mb-2">Selected Knowledge Bases</div>
+        <div className="text-[10px] uppercase font-bold text-gray-400 mb-2">{t('workflow_editor.selected_kbs')}</div>
         {selectedKBs.length > 0 ? (
            <div className="space-y-1.5">
              {selectedKBs.slice(0, 3).map((kb: any) => (
@@ -346,23 +353,23 @@ const KnowledgeNode = ({ id, data, selected }: NodeProps) => {
                </div>
              ))}
              {selectedKBs.length > 3 && (
-               <div className="text-[10px] text-gray-500 pl-1 font-medium">+{selectedKBs.length - 3} more</div>
+               <div className="text-[10px] text-gray-500 pl-1 font-medium">+{selectedKBs.length - 3} {t('workflow_editor.more')}</div>
              )}
            </div>
         ) : kbIds.length > 0 ? (
            <div className="flex items-center gap-2 bg-white border border-gray-200 px-2 py-1.5 rounded-lg text-xs text-gray-600 shadow-sm">
                <Database size={10} className="text-orange-500 flex-shrink-0"/>
-               <span className="truncate font-medium">{kbIds.length} Knowledge Base{kbIds.length > 1 ? 's' : ''}</span>
+               <span className="truncate font-medium">{kbIds.length} {t('workflow_editor.knowledge_bases')}</span>
            </div>
         ) : (
            <div className="text-xs text-gray-400 italic bg-white/50 px-2 py-1.5 rounded border border-dashed border-gray-200">
-             No knowledge base selected
+             {t('workflow_editor.no_kb_selected')}
            </div>
         )}
       </div>
 
       <div className="p-4">
-        <p className="text-xs text-gray-500">{(data as any).label || 'Retrieve relevant context'}</p>
+        <p className="text-xs text-gray-500">{(data as any).label || t('workflow_editor.retrieve_context')}</p>
       </div>
       <Handle type="target" position={Position.Left} className="!bg-gray-400" />
       <Handle type="source" position={Position.Right} className="!bg-orange-500" />
@@ -371,6 +378,7 @@ const KnowledgeNode = ({ id, data, selected }: NodeProps) => {
 };
 
 const LLMNode = ({ id, data, selected }: NodeProps) => {
+  const { t } = useTranslation();
   const config = data.config as any;
   const modelDisplay = useModelName(config?.modelId || config?.model, config?.modelDisplayName);
   const tools = useTools();
@@ -385,7 +393,7 @@ const LLMNode = ({ id, data, selected }: NodeProps) => {
         <div className="bg-indigo-100 p-1 rounded-lg text-indigo-600">
           <Bot size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'LLM Generation'}</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || t('workflow_editor.llm_node')}</span>
       </div>
       <div className="p-3 bg-gray-50 border-b border-gray-100">
         <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
@@ -398,7 +406,7 @@ const LLMNode = ({ id, data, selected }: NodeProps) => {
           <div className="px-3 py-2 bg-white border-b border-gray-100">
              <div className="text-[10px] font-semibold text-gray-400 mb-1.5 uppercase tracking-wider flex items-center gap-1">
                 <Hammer size={10} />
-                Tools
+                {t('workflow_editor.tools')}
              </div>
              <div className="flex flex-col gap-1.5">
                 {boundTools.map(tool => (
@@ -412,7 +420,7 @@ const LLMNode = ({ id, data, selected }: NodeProps) => {
       )}
 
       <div className="p-4">
-        <p className="text-xs text-gray-500">Generate answer based on context</p>
+        <p className="text-xs text-gray-500">{t('workflow_editor.generate_answer')}</p>
       </div>
       <Handle type="target" position={Position.Left} className="!bg-gray-400" />
       <Handle type="source" position={Position.Right} className="!bg-indigo-500" />
@@ -421,6 +429,7 @@ const LLMNode = ({ id, data, selected }: NodeProps) => {
 };
 
 const TranslationNode = ({ id, data, selected }: NodeProps) => {
+  const { t } = useTranslation();
   const config = data.config as any;
   const modelDisplay = useModelName(config?.modelId || config?.model, config?.modelDisplayName);
 
@@ -431,7 +440,7 @@ const TranslationNode = ({ id, data, selected }: NodeProps) => {
         <div className="bg-orange-100 p-1 rounded-lg text-orange-600">
           <Languages size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Translation'}</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || t('workflow_editor.translation_node')}</span>
       </div>
       <div className="p-3 bg-gray-50 border-b border-gray-100">
         <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
@@ -440,7 +449,7 @@ const TranslationNode = ({ id, data, selected }: NodeProps) => {
         </div>
       </div>
       <div className="p-4">
-        <p className="text-xs text-gray-500">Translate text to target language</p>
+        <p className="text-xs text-gray-500">{t('workflow_editor.translate_text')}</p>
       </div>
       <Handle type="target" position={Position.Left} className="!bg-gray-400" />
       <Handle type="source" position={Position.Right} className="!bg-orange-500" />
@@ -449,6 +458,7 @@ const TranslationNode = ({ id, data, selected }: NodeProps) => {
 };
 
 const ReplyNode = ({ id, data, selected }: NodeProps) => {
+  const { t } = useTranslation();
   return (
     <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[240px] group hover:border-blue-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
       <NodeMenu nodeId={id} />
@@ -456,17 +466,17 @@ const ReplyNode = ({ id, data, selected }: NodeProps) => {
         <div className="bg-blue-100 p-1 rounded-lg text-blue-600">
           <MessageSquare size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Direct Reply'}</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || t('workflow_editor.reply_node')}</span>
       </div>
       <div className="p-3 bg-gray-50 border-b border-gray-100">
-         <div className="text-[10px] uppercase font-bold text-gray-400 mb-1">Response Source</div>
+         <div className="text-[10px] uppercase font-bold text-gray-400 mb-1">{t('workflow_editor.response_source')}</div>
          <div className="flex items-center gap-2 text-xs text-gray-600 bg-white px-2 py-1 rounded border border-gray-200">
-            {(data as any).source || 'LLM Output'}
+            {(data as any).source || t('workflow_editor.llm_output')}
          </div>
       </div>
       {(data as any).config?.text && (
           <div className="p-4 bg-gray-50/50">
-            <p className="text-xs text-gray-500 italic">"{(data as any).config.text}"</p>
+            <p className="text-xs text-gray-500 italic whitespace-pre-wrap break-words max-w-[200px] line-clamp-3">"{(data as any).config.text}"</p>
           </div>
       )}
       <Handle type="target" position={Position.Left} className="!bg-gray-400" />
@@ -475,6 +485,7 @@ const ReplyNode = ({ id, data, selected }: NodeProps) => {
 };
 
 const EndNode = ({ id, data, selected }: NodeProps) => {
+  const { t } = useTranslation();
   return (
     <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[200px] group hover:border-red-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
       <NodeMenu nodeId={id} />
@@ -482,10 +493,10 @@ const EndNode = ({ id, data, selected }: NodeProps) => {
         <div className="bg-red-100 p-1 rounded-lg text-red-600">
           <Square size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'End'}</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || t('workflow_editor.end_node')}</span>
       </div>
       <div className="p-4">
-        <div className="text-xs text-gray-500">Workflow Exit Point</div>
+        <div className="text-xs text-gray-500">{t('workflow_editor.workflow_exit_point')}</div>
       </div>
       <Handle type="target" position={Position.Left} className="!bg-red-500" />
     </div>
@@ -493,6 +504,7 @@ const EndNode = ({ id, data, selected }: NodeProps) => {
 };
 
 const TransferNode = ({ id, data, selected }: NodeProps) => {
+  const { t } = useTranslation();
   return (
     <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[200px] group hover:border-pink-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
       <NodeMenu nodeId={id} />
@@ -500,10 +512,10 @@ const TransferNode = ({ id, data, selected }: NodeProps) => {
         <div className="bg-pink-100 p-1 rounded-lg text-pink-600">
           <Headphones size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Transfer to Human'}</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || t('workflow_editor.transfer_node')}</span>
       </div>
       <div className="p-4">
-        <div className="text-xs text-gray-500">Transfer conversation to human agent</div>
+        <div className="text-xs text-gray-500">{t('workflow_editor.transfer_to_human')}</div>
       </div>
       <Handle type="target" position={Position.Left} className="!bg-gray-400" />
     </div>
@@ -511,8 +523,9 @@ const TransferNode = ({ id, data, selected }: NodeProps) => {
 };
 
 const AgentNode = ({ id, data, selected }: NodeProps) => {
+  const { t } = useTranslation();
   const config = data.config as any;
-  const workflowName = config?.workflowName || 'Select Workflow';
+  const workflowName = config?.workflowName || t('workflow_editor.select_workflow');
 
   return (
     <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[240px] group hover:border-purple-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
@@ -521,7 +534,7 @@ const AgentNode = ({ id, data, selected }: NodeProps) => {
         <div className="bg-purple-100 p-1 rounded-lg text-purple-600">
           <Bot size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Agent'}</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || t('workflow_editor.agent_node')}</span>
       </div>
       <div className="p-3 bg-gray-50 border-b border-gray-100">
         <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
@@ -530,7 +543,7 @@ const AgentNode = ({ id, data, selected }: NodeProps) => {
         </div>
       </div>
       <div className="p-4">
-        <p className="text-xs text-gray-500">Execute another workflow</p>
+        <p className="text-xs text-gray-500">{t('workflow_editor.execute_another_workflow')}</p>
       </div>
       <Handle type="target" position={Position.Left} className="!bg-gray-400" />
       <Handle type="source" position={Position.Right} className="!bg-purple-500" />
@@ -539,6 +552,7 @@ const AgentNode = ({ id, data, selected }: NodeProps) => {
 };
 
 const AgentEndNode = ({ id, data, selected }: NodeProps) => {
+  const { t } = useTranslation();
   return (
     <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[200px] group hover:border-gray-400 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
       <NodeMenu nodeId={id} />
@@ -546,10 +560,10 @@ const AgentEndNode = ({ id, data, selected }: NodeProps) => {
         <div className="bg-gray-200 p-1 rounded-lg text-gray-600">
           <Square size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Agent End'}</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || t('workflow_editor.agent_end_node')}</span>
       </div>
       <div className="p-4">
-        <div className="text-xs text-gray-500">Agent Execution End</div>
+        <div className="text-xs text-gray-500">{t('workflow_editor.agent_execution_end')}</div>
       </div>
       <Handle type="target" position={Position.Left} className="!bg-gray-500" />
     </div>
@@ -557,6 +571,7 @@ const AgentEndNode = ({ id, data, selected }: NodeProps) => {
 };
 
 const AgentUpdateNode = ({ id, data, selected }: NodeProps) => {
+  const { t } = useTranslation();
   return (
     <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[200px] group hover:border-yellow-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
       <NodeMenu nodeId={id} />
@@ -564,10 +579,10 @@ const AgentUpdateNode = ({ id, data, selected }: NodeProps) => {
         <div className="bg-yellow-100 p-1 rounded-lg text-yellow-600">
           <Edit2 size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Agent Update'}</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || t('workflow_editor.agent_update_node')}</span>
       </div>
       <div className="p-4">
-        <div className="text-xs text-gray-500">Update Agent State</div>
+        <div className="text-xs text-gray-500">{t('workflow_editor.update_agent_state')}</div>
       </div>
       <Handle type="target" position={Position.Left} className="!bg-gray-400" />
       <Handle type="source" position={Position.Right} className="!bg-yellow-500" />
@@ -576,8 +591,9 @@ const AgentUpdateNode = ({ id, data, selected }: NodeProps) => {
 };
 
 const ToolNode = ({ id, data, selected }: NodeProps) => {
+  const { t } = useTranslation();
   const config = data.config as any;
-  const toolName = config?.toolName || 'Select Tool';
+  const toolName = config?.toolName || t('workflow_editor.select_tool');
 
   return (
     <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[240px] group hover:border-orange-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
@@ -586,7 +602,7 @@ const ToolNode = ({ id, data, selected }: NodeProps) => {
         <div className="bg-orange-100 p-1 rounded-lg text-orange-600">
           <Hammer size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Tool Execution'}</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || t('workflow_editor.tool_node')}</span>
       </div>
       <div className="p-3 bg-gray-50 border-b border-gray-100">
         <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
@@ -596,16 +612,16 @@ const ToolNode = ({ id, data, selected }: NodeProps) => {
       </div>
       <div className="flex flex-col">
         <div className="flex justify-between items-center py-2 px-4 border-b border-gray-100 relative hover:bg-gray-50">
-           <span className="text-xs font-medium text-gray-600">Executed</span>
+           <span className="text-xs font-medium text-gray-600">{t('workflow_editor.executed')}</span>
            <Handle type="source" position={Position.Right} id="executed" className="!bg-orange-500 !right-[-6px]" style={{top: '50%'}} />
         </div>
         <div className="flex justify-between items-center py-2 px-4 relative hover:bg-gray-50">
-           <span className="text-xs font-medium text-gray-600">Not Executed</span>
+           <span className="text-xs font-medium text-gray-600">{t('workflow_editor.not_executed')}</span>
            <Handle type="source" position={Position.Right} id="not_executed" className="!bg-gray-400 !right-[-6px]" style={{top: '50%'}} />
         </div>
       </div>
       <div className="p-3 bg-gray-50 rounded-b-xl text-[10px] text-gray-400 leading-relaxed border-t border-gray-100">
-        Execute tool if matched, else skip.
+        {t('workflow_editor.execute_tool_desc')}
       </div>
       <Handle type="target" position={Position.Left} className="!bg-gray-400" />
     </div>
@@ -765,6 +781,7 @@ const ToolSelectionDialog = ({
 };
 
 const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, currentWorkflowId }: { node: NodeProps | any, nodes?: NodeProps[] | any[], edges?: Edge[] | any[], onChange: (data: any) => void, onClose: () => void, currentWorkflowId?: string }) => {
+  const { t } = useTranslation();
   const [llmModels, setLlmModels] = useState<LlmModel[]>([]);
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
   const [workflows, setWorkflows] = useState<AiWorkflow[]>([]);
@@ -1305,27 +1322,27 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
   return (
     <div className="absolute top-4 right-4 w-[600px] bg-white rounded-xl shadow-xl border border-gray-200 z-20 flex flex-col max-h-[calc(100vh-32px)] overflow-hidden animate-in slide-in-from-right-5 duration-200">
       <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-        <div className="flex flex-col">
-            <div className="flex items-center gap-2">
-              <Settings size={16} className="text-gray-500" />
-              <h3 className="font-bold text-gray-800">Properties</h3>
+              <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <Settings size={16} className="text-gray-500" />
+                    <h3 className="font-bold text-gray-800">{t('workflow_editor.properties')}</h3>
+                  </div>
+              </div>
+              <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                <X size={18} />
+              </button>
             </div>
-        </div>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-          <X size={18} />
-        </button>
-      </div>
-      
-      <div className="p-4 overflow-y-auto flex-1 space-y-4">
-        <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">Node Label</label>
-          <input 
-            type="text" 
-            value={node.data.label || ''} 
-            onChange={(e) => handleChange('label', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+            
+            <div className="p-4 overflow-y-auto flex-1 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.node_label')}</label>
+                <input 
+                  type="text" 
+                  value={node.data.label || ''} 
+                  onChange={(e) => handleChange('label', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
 
         <div className="h-px bg-gray-100 my-2"></div>
 
@@ -1333,13 +1350,13 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
         {node.type === 'intent' && (
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Model</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.model')}</label>
               <select 
                 value={node.data.config?.modelId || node.data.config?.model || ''}
                 onChange={(e) => handleConfigChange('modelId', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="" disabled>Select a model</option>
+                <option value="" disabled>{t('workflow_editor.select_a_model')}</option>
                 {llmModels.length > 0 ? (
                     llmModels.map(model => (
                       <option key={model.id} value={model.id}>{model.name} ({model.provider})</option>
@@ -1356,7 +1373,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
 
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label className="block text-xs font-medium text-gray-500">System Prompt</label>
+                <label className="block text-xs font-medium text-gray-500">{t('workflow_editor.system_prompt')}</label>
                 <SystemPromptEnhancer 
                     nodeType="intent" 
                     userInput={node.data.config?.customPrompt || ''}
@@ -1370,14 +1387,14 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                     value={node.data.config?.customPrompt || ''} 
                     onChange={(val, selection) => handleEditorChange('customPrompt', val, selection)}
                     onSlash={(rect, index) => handleEditorSlash('customPrompt', rect, index)}
-                    placeholder="Enter system prompt for intent classification. Type '/' to insert variable..."
+                    placeholder={t('workflow_editor.enter_system_prompt_intent')}
                     className="min-h-[150px]"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">History Turns</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.history_turns')}</label>
               <input 
                 type="number" 
                 min="0"
@@ -1389,17 +1406,17 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="0"
               />
-              <p className="text-[10px] text-gray-400 mt-1">Number of historical messages to include (&gt;=0)</p>
+              <p className="text-[10px] text-gray-400 mt-1">{t('workflow_editor.number_of_historical_messages')}</p>
             </div>
 
             <div>
               <div className="flex justify-between items-center mb-2">
-                <label className="block text-xs font-medium text-gray-500">Intents</label>
+                <label className="block text-xs font-medium text-gray-500">{t('workflow_editor.intents')}</label>
                 <button 
                   onClick={handleAddIntent}
                   className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
                 >
-                  <Plus size={12} /> Add
+                  <Plus size={12} /> {t('workflow_editor.add')}
                 </button>
               </div>
               
@@ -1411,7 +1428,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                       value={intent.label} 
                       onChange={(e) => handleUpdateIntent(intent.id, e.target.value)}
                       className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Intent name"
+                      placeholder={t('workflow_editor.intent_name')}
                     />
                     <button 
                       onClick={() => handleDeleteIntent(intent.id)}
@@ -1423,7 +1440,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                 ))}
                 {(!node.data.config?.intents || node.data.config.intents.length === 0) && (
                   <div className="text-center py-4 bg-gray-50 rounded-lg border border-dashed border-gray-200 text-xs text-gray-400">
-                    No intents yet
+                    {t('workflow_editor.no_intents_yet')}
                   </div>
                 )}
               </div>
@@ -1433,7 +1450,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
 
         {node.type === 'agent' && (
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Select Workflow</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.select_workflow')}</label>
             <select 
               value={node.data.config?.workflowId || ''}
               onChange={(e) => {
@@ -1450,7 +1467,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
               }}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="" disabled>Select a workflow</option>
+              <option value="" disabled>{t('workflow_editor.select_a_workflow')}</option>
               {workflows
                 .filter(w => w.id !== currentWorkflowId)
                 .map(workflow => (
@@ -1462,7 +1479,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
 
         {node.type === 'tool' && (
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Select Tool</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.select_tool')}</label>
             <select 
               value={node.data.config?.toolId || ''}
               onChange={(e) => {
@@ -1479,13 +1496,13 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
               }}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="" disabled>Select a tool</option>
+              <option value="" disabled>{t('workflow_editor.select_a_tool')}</option>
               {tools.map(tool => (
                 <option key={tool.id} value={tool.id}>{tool.displayName}</option>
               ))}
             </select>
             <p className="text-[10px] text-gray-400 mt-2">
-                This node will try to match and execute the selected tool.
+                {t('workflow_editor.tool_execution_desc')}
             </p>
           </div>
         )}
@@ -1496,18 +1513,18 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
            <div className="space-y-4">
               <div className="p-4 bg-orange-50 rounded-lg border border-orange-100 mb-4">
                  <p className="text-xs text-orange-800">
-                   Translates target text into a language inferred from conversation history.
+                   {t('workflow_editor.translation_desc')}
                  </p>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Model</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.model')}</label>
                 <select 
                   value={node.data.config?.modelId || node.data.config?.model || ''}
                   onChange={(e) => handleConfigChange('modelId', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                 >
-                  <option value="" disabled>Select a model</option>
+                  <option value="" disabled>{t('workflow_editor.select_a_model')}</option>
                   {llmModels.length > 0 ? (
                       llmModels.map(model => (
                         <option key={model.id} value={model.id}>{model.name} ({model.provider})</option>
@@ -1524,7 +1541,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
 
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <label className="block text-xs font-medium text-gray-500">Additional Prompt</label>
+                  <label className="block text-xs font-medium text-gray-500">{t('workflow_editor.additional_prompt')}</label>
                   <SystemPromptEnhancer 
                       nodeType="translation"
                       userInput={node.data.config?.systemPrompt || ''}
@@ -1537,28 +1554,28 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                       value={node.data.config?.systemPrompt || ''} 
                       onChange={(val, selection) => handleEditorChange('systemPrompt', val, selection)}
                       onSlash={(rect, index) => handleEditorSlash('systemPrompt', rect, index)}
-                      placeholder="Enter additional instructions for translation..."
+                      placeholder={t('workflow_editor.enter_additional_instructions')}
                       className="min-h-[100px]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Target Text</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.target_text')}</label>
                 <div className="relative">
                   <TiptapEditor
                       ref={el => textareaRefs.current['targetText'] = el}
                       value={node.data.config?.targetText || ''} 
                       onChange={(val, selection) => handleEditorChange('targetText', val, selection)}
                       onSlash={(rect, index) => handleEditorSlash('targetText', rect, index)}
-                      placeholder="Enter text to translate (supports variables)..."
+                      placeholder={t('workflow_editor.enter_text_to_translate')}
                       className="min-h-[100px]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">History Messages Count</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.history_message_count')}</label>
                 <input 
                   type="number" 
                   min="0"
@@ -1570,7 +1587,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                   placeholder="0"
                 />
-                <p className="text-[10px] text-gray-400 mt-1">Number of historical messages to use for language inference</p>
+                <p className="text-[10px] text-gray-400 mt-1">{t('workflow_editor.number_of_messages_for_language_inference')}</p>
               </div>
            </div>
         )}
@@ -1579,18 +1596,18 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
            <div className="space-y-4">
               <div className="p-4 bg-teal-50 rounded-lg border border-teal-100 mb-4">
                  <p className="text-xs text-teal-800">
-                   Splits image and text content into structured JSON using an AI model.
+                   {t('workflow_editor.image_text_split_desc')}
                  </p>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Model</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.model')}</label>
                 <select 
                   value={node.data.config?.modelId || node.data.config?.model || ''}
                   onChange={(e) => handleConfigChange('modelId', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                 >
-                  <option value="" disabled>Select a model</option>
+                  <option value="" disabled>{t('workflow_editor.select_a_model')}</option>
                   {llmModels.length > 0 ? (
                       llmModels.map(model => (
                         <option key={model.id} value={model.id}>{model.name} ({model.provider})</option>
@@ -1607,7 +1624,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
 
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <label className="block text-xs font-medium text-gray-500">System Prompt</label>
+                  <label className="block text-xs font-medium text-gray-500">{t('workflow_editor.system_prompt')}</label>
                   <SystemPromptEnhancer 
                       nodeType="imageTextSplit"
                       userInput={node.data.config?.systemPrompt || ''}
@@ -1620,7 +1637,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                       value={node.data.config?.systemPrompt || ''} 
                       onChange={(val, selection) => handleEditorChange('systemPrompt', val, selection)}
                       onSlash={(rect, index) => handleEditorSlash('systemPrompt', rect, index)}
-                      placeholder="Enter system prompt for image-text splitting..."
+                      placeholder={t('workflow_editor.enter_system_prompt_split')}
                       className="min-h-[150px]"
                   />
                 </div>
@@ -1632,18 +1649,18 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
            <div className="space-y-4">
               <div className="p-4 bg-fuchsia-50 rounded-lg border border-fuchsia-100 mb-4">
                  <p className="text-xs text-fuchsia-800">
-                   Extracts information from context and sets session metadata fields.
+                   {t('workflow_editor.set_metadata_desc')}
                  </p>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Model</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.model')}</label>
                 <select 
                   value={node.data.config?.modelId || node.data.config?.model || ''}
                   onChange={(e) => handleConfigChange('modelId', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
                 >
-                  <option value="" disabled>Select a model</option>
+                  <option value="" disabled>{t('workflow_editor.select_a_model')}</option>
                   {llmModels.length > 0 ? (
                       llmModels.map(model => (
                         <option key={model.id} value={model.id}>{model.name} ({model.provider})</option>
@@ -1660,7 +1677,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
 
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <label className="block text-xs font-medium text-gray-500">System Prompt</label>
+                  <label className="block text-xs font-medium text-gray-500">{t('workflow_editor.system_prompt')}</label>
                   <SystemPromptEnhancer 
                       nodeType="setSessionMetadata"
                       userInput={node.data.config?.systemPrompt || ''}
@@ -1673,7 +1690,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                       value={node.data.config?.systemPrompt || ''} 
                       onChange={(val, selection) => handleEditorChange('systemPrompt', val, selection)}
                       onSlash={(rect, index) => handleEditorSlash('systemPrompt', rect, index)}
-                      placeholder="Enter system prompt for metadata extraction..."
+                      placeholder={t('workflow_editor.enter_system_prompt_metadata')}
                       className="min-h-[150px]"
                   />
                 </div>
@@ -1681,7 +1698,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
 
               <div>
                  <div className="flex justify-between items-center mb-2">
-                    <label className="block text-xs font-medium text-gray-500">Mappings (Extracted -&gt; Metadata)</label>
+                    <label className="block text-xs font-medium text-gray-500">{t('workflow_editor.mappings')}</label>
                     <button 
                         onClick={() => {
                             const currentMappings = (node.data.config?.mappings && !Array.isArray(node.data.config?.mappings)) ? node.data.config.mappings : {};
@@ -1695,7 +1712,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                         }}
                         className="text-xs text-fuchsia-600 hover:text-fuchsia-700 font-medium flex items-center gap-1"
                     >
-                        <Plus size={12} /> Add Mapping
+                        <Plus size={12} /> {t('workflow_editor.add_mapping')}
                     </button>
                  </div>
                  
@@ -1723,7 +1740,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                                     handleConfigChange('mappings', newMappings);
                                 }}
                                 className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
-                                placeholder="Source Field"
+                                placeholder={t('workflow_editor.source_field')}
                             />
                             <ArrowLeft size={14} className="text-gray-400 rotate-180" />
                             <input 
@@ -1735,7 +1752,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                                     handleConfigChange('mappings', currentMappings);
                                 }}
                                 className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
-                                placeholder="Metadata Field"
+                                placeholder={t('workflow_editor.metadata_field')}
                             />
                             <button 
                                 onClick={() => {
@@ -1751,7 +1768,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                     ))}
                     {Object.keys((node.data.config?.mappings && !Array.isArray(node.data.config?.mappings)) ? node.data.config.mappings : {}).length === 0 && (
                         <div className="text-center py-4 bg-gray-50 rounded-lg border border-dashed border-gray-200 text-xs text-gray-400">
-                            No mappings defined
+                            {t('workflow_editor.no_mappings_defined')}
                         </div>
                     )}
                  </div>
@@ -1763,18 +1780,18 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
            <div className="space-y-4">
               <div className="p-4 bg-violet-50 rounded-lg border border-violet-100 mb-4">
                  <p className="text-xs text-violet-800">
-                   Extracts structured parameters from user input using an AI model.
+                   {t('workflow_editor.parameter_extraction_desc')}
                  </p>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Model</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.model')}</label>
                 <select 
                   value={node.data.config?.modelId || node.data.config?.model || ''}
                   onChange={(e) => handleConfigChange('modelId', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                 >
-                  <option value="" disabled>Select a model</option>
+                  <option value="" disabled>{t('workflow_editor.select_a_model')}</option>
                   {llmModels.length > 0 ? (
                       llmModels.map(model => (
                         <option key={model.id} value={model.id}>{model.name} ({model.provider})</option>
@@ -1791,7 +1808,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
 
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <label className="block text-xs font-medium text-gray-500">System Prompt</label>
+                  <label className="block text-xs font-medium text-gray-500">{t('workflow_editor.system_prompt')}</label>
                   <SystemPromptEnhancer 
                       nodeType="parameter_extraction"
                       userInput={node.data.config?.systemPrompt || ''}
@@ -1804,7 +1821,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                       value={node.data.config?.systemPrompt || ''} 
                       onChange={(val, selection) => handleEditorChange('systemPrompt', val, selection)}
                       onSlash={(rect, index) => handleEditorSlash('systemPrompt', rect, index)}
-                      placeholder="Enter system prompt for parameter extraction..."
+                      placeholder={t('workflow_editor.enter_system_prompt_extraction')}
                       className="min-h-[150px]"
                   />
                 </div>
@@ -1812,7 +1829,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
 
               <div>
                  <div className="flex justify-between items-center mb-2">
-                    <label className="block text-xs font-medium text-gray-500">Parameters</label>
+                    <label className="block text-xs font-medium text-gray-500">{t('workflow_editor.parameters')}</label>
                     <button 
                         onClick={() => {
                             const currentParams = node.data.config?.parameters || [];
@@ -1821,7 +1838,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                         }}
                         className="text-xs text-violet-600 hover:text-violet-700 font-medium flex items-center gap-1"
                     >
-                        <Plus size={12} /> Add Parameter
+                        <Plus size={12} /> {t('workflow_editor.add_parameter')}
                     </button>
                  </div>
                  
@@ -1838,7 +1855,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                                         handleConfigChange('parameters', newParams);
                                     }}
                                     className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-                                    placeholder="Parameter Name"
+                                    placeholder={t('workflow_editor.parameter_name')}
                                 />
                                 <select
                                     value={param.type}
@@ -1849,11 +1866,11 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                                     }}
                                     className="w-24 px-2 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                                 >
-                                    <option value="string">String</option>
-                                    <option value="number">Number</option>
-                                    <option value="boolean">Boolean</option>
-                                    <option value="array">Array</option>
-                                    <option value="object">Object</option>
+                                    <option value="string">{t('workflow_editor.string')}</option>
+                                    <option value="number">{t('workflow_editor.number')}</option>
+                                    <option value="boolean">{t('workflow_editor.boolean')}</option>
+                                    <option value="array">{t('workflow_editor.array')}</option>
+                                    <option value="object">{t('workflow_editor.object')}</option>
                                 </select>
                                 <button 
                                     onClick={() => {
@@ -1874,13 +1891,13 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                                     handleConfigChange('parameters', newParams);
                                 }}
                                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white"
-                                placeholder="Description (optional)"
+                                placeholder={t('workflow_editor.description_optional')}
                             />
                         </div>
                     ))}
                     {(!node.data.config?.parameters || node.data.config.parameters.length === 0) && (
                         <div className="text-center py-4 bg-gray-50 rounded-lg border border-dashed border-gray-200 text-xs text-gray-400">
-                            No parameters defined
+                            {t('workflow_editor.no_parameters_defined')}
                         </div>
                     )}
                  </div>
@@ -1892,12 +1909,12 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
            <div className="space-y-4">
               <div className="p-4 bg-cyan-50 rounded-lg border border-cyan-100 mb-4">
                  <p className="text-xs text-cyan-800">
-                   Sets a workflow variable from a source field.
+                   {t('workflow_editor.variable_desc')}
                  </p>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Variable Name</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.variable_name')}</label>
                 <input 
                   type="text" 
                   value={node.data.config?.variableName || ''}
@@ -1905,11 +1922,11 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
                   placeholder="e.g. user_id"
                 />
-                <p className="text-[10px] text-gray-400 mt-1">The name of the variable to set.</p>
+                <p className="text-[10px] text-gray-400 mt-1">{t('workflow_editor.variable_name_help')}</p>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Source Field</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.source_field')}</label>
                 <input 
                   type="text" 
                   value={node.data.config?.sourceField || ''}
@@ -1917,7 +1934,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
                   placeholder="e.g. {{LLM.text}}"
                 />
-                <p className="text-[10px] text-gray-400 mt-1">The value or variable reference to assign.</p>
+                <p className="text-[10px] text-gray-400 mt-1">{t('workflow_editor.source_field_help')}</p>
               </div>
            </div>
         )}
@@ -1925,13 +1942,13 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
         {node.type === 'llm' && (
           <>
              <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Model</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.model')}</label>
               <select 
                 value={node.data.config?.modelId || node.data.config?.model || ''}
                 onChange={(e) => handleConfigChange('modelId', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="" disabled>Select a model</option>
+                <option value="" disabled>{t('workflow_editor.select_a_model')}</option>
                 {llmModels.length > 0 ? (
                     llmModels.map(model => (
                       <option key={model.id} value={model.id}>{model.name} ({model.provider})</option>
@@ -1947,7 +1964,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
             </div>
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label className="block text-xs font-medium text-gray-500">System Prompt</label>
+                <label className="block text-xs font-medium text-gray-500">{t('workflow_editor.system_prompt')}</label>
                 <SystemPromptEnhancer 
                     nodeType="llm"
                     toolIds={node.data.config?.tools}
@@ -1962,7 +1979,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                     value={node.data.config?.systemPrompt || ''} 
                     onChange={(val, selection) => handleEditorChange('systemPrompt', val, selection)}
                     onSlash={(rect, index) => handleEditorSlash('systemPrompt', rect, index)}
-                    placeholder="Enter system prompt. Type '/' to insert variable..."
+                    placeholder={t('workflow_editor.enter_system_prompt')}
                     className="min-h-[150px]"
                 />
               </div>
@@ -1977,12 +1994,12 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                         onChange={(e) => handleConfigChange('useHistory', e.target.checked)}
                         className="rounded text-blue-600 focus:ring-blue-500"
                     />
-                    Read Conversation History
+                    {t('workflow_editor.read_conversation_history')}
                 </label>
                 
                 {node.data.config?.useHistory && (
                     <div className="mt-3 pl-6 border-l-2 border-blue-100 animate-in fade-in slide-in-from-top-1 duration-200">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">History Message Count</label>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.history_message_count')}</label>
                         <input 
                             type="number"
                             min="1"
@@ -1990,15 +2007,14 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                             value={node.data.config?.readCount || 10}
                             onChange={(e) => handleConfigChange('readCount', parseInt(e.target.value))}
                             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                            placeholder="Number of messages to read"
                         />
-                        <p className="text-[10px] text-gray-400 mt-1">Include recent chat history</p>
+                        <p className="text-[10px] text-gray-400 mt-1">{t('workflow_editor.include_recent_chat_history')}</p>
                     </div>
                 )}
             </div>
 
             <div>
-                 <label className="block text-xs font-medium text-gray-500 mb-2">Conversation History</label>
+                 <label className="block text-xs font-medium text-gray-500 mb-2">{t('workflow_editor.conversation_history')}</label>
                  <div className="space-y-3">
                     {(node.data.config?.messages || []).map((msg: any, index: number) => (
                         <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
@@ -2009,7 +2025,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                                         onClick={() => handleUpdateMessage(index, 'role', msg.role === 'user' ? 'assistant' : 'user')}
                                         className="text-[10px] text-blue-600 hover:underline"
                                     >
-                                        Switch Role
+                                        {t('workflow_editor.switch_role')}
                                     </button>
                                 </div>
                                 <button 
@@ -2027,7 +2043,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                                     onKeyDown={handleKeyDown}
                                     rows={3}
                                     className="w-full px-3 py-2 text-sm focus:outline-none resize-none block border-none"
-                                    placeholder={`Enter ${msg.role} message. Type '/' to insert variable...`}
+                                    placeholder={t('workflow_editor.enter_role_message', { role: msg.role })}
                                 />
                             </div>
                         </div>
@@ -2037,19 +2053,19 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                     onClick={handleAddMessage}
                     className="w-full mt-2 py-2 border border-dashed border-gray-300 rounded-lg text-xs text-gray-500 hover:bg-gray-50 hover:border-gray-400 transition-colors flex items-center justify-center gap-1"
                  >
-                    <Plus size={12} /> Add Message
+                    <Plus size={12} /> {t('workflow_editor.add_message')}
                  </button>
             </div>
 
             {/* Tools Section */}
             <div>
                 <div className="flex justify-between items-center mb-2">
-                    <label className="block text-xs font-medium text-gray-500">Tools</label>
+                    <label className="block text-xs font-medium text-gray-500">{t('workflow_editor.tools')}</label>
                     <button 
                         onClick={() => setShowToolDialog(true)}
                         className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
                     >
-                        <Plus size={12} /> Add Tool
+                        <Plus size={12} /> {t('workflow_editor.add_tool')}
                     </button>
                 </div>
                 
@@ -2061,7 +2077,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                         if (addedTools.length === 0) {
                             return (
                                 <div className="text-center py-4 bg-gray-50 rounded-lg border border-dashed border-gray-200 text-xs text-gray-400">
-                                    No tools added yet
+                                    {t('workflow_editor.no_tools_added_yet')}
                                 </div>
                             );
                         }
@@ -2078,7 +2094,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                                 <button 
                                     onClick={() => handleRemoveTool(tool.id)}
                                     className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors opacity-0 group-hover:opacity-100"
-                                    title="Remove tool"
+                                    title={t('workflow_editor.remove_tool')}
                                 >
                                     <Trash2 size={14} />
                                 </button>
@@ -2100,7 +2116,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
 
 
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Temperature: {node.data.config?.temperature || 0.7}</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.temperature')}: {node.data.config?.temperature || 0.7}</label>
               <input 
                 type="range" 
                 min="0" 
@@ -2116,13 +2132,13 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
 
         {node.type === 'reply' && (
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Reply Text</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.reply_text')}</label>
             <textarea 
               value={node.data.config?.text || ''} 
               onChange={(e) => handleConfigChange('text', e.target.value)}
               rows={3}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              placeholder="Enter reply text..."
+              placeholder={t('workflow_editor.enter_reply_text')}
             />
           </div>
         )}
@@ -2131,7 +2147,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
         
         {node.type === 'variable' && (
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Variable Name</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.variable_name')}</label>
             <input 
               type="text"
               value={node.data.config?.variableName || ''}
@@ -2140,7 +2156,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
               placeholder="e.g. user_age"
             />
             
-            <label className="block text-xs font-medium text-gray-500 mb-1">Source Value</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.source_value')}</label>
             <div className="relative">
                 <input 
                   ref={el => textareaRefs.current['sourceField'] = el}
@@ -2155,14 +2171,14 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 p-1 rounded hover:bg-blue-50 transition-colors"
                     onClick={(e) => {
                         const input = textareaRefs.current['sourceField'];
-                        if (input) {
+                        if (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement) {
                             const rect = input.getBoundingClientRect();
                             setVarMenuPos({ top: rect.bottom + 5, left: rect.left, placement: 'bottom' });
                             setActiveField('sourceField');
                             setShowVarMenu(true);
                             // When clicking button, assume we want to append if cursor is at 0/default
-                            if ((input as any).value && (input as any).selectionStart === 0) {
-                                setCursorIndex((input as any).value.length + 1);
+                            if (input.value && input.selectionStart === 0) {
+                                setCursorIndex(input.value.length + 1);
                             }
                         }
                     }}
@@ -2176,7 +2192,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
         {node.type === 'condition' && (
           <div className="space-y-4">
              <div className="flex justify-between items-center">
-                 <label className="block text-xs font-medium text-gray-500">Conditions</label>
+                 <label className="block text-xs font-medium text-gray-500">{t('workflow_editor.conditions')}</label>
                  <button 
                      onClick={() => {
                         const conditions = node.data.config?.conditions || [];
@@ -2190,7 +2206,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                      }}
                      className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
                  >
-                     <Plus size={12} /> Add Condition
+                     <Plus size={12} /> {t('workflow_editor.add_condition')}
                  </button>
              </div>
              
@@ -2198,7 +2214,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                  {(node.data.config?.conditions || []).map((condition: any, idx: number) => (
                      <div key={condition.id} className="p-3 bg-gray-50 border border-gray-200 rounded-lg relative group">
                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-xs font-bold text-gray-500 uppercase">{idx === 0 ? 'IF' : 'ELSE IF'}</span>
+                            <span className="text-xs font-bold text-gray-500 uppercase">{idx === 0 ? t('workflow_editor.if') : t('workflow_editor.else_if')}</span>
                             <button 
                                 onClick={() => {
                                     const conditions = node.data.config?.conditions || [];
@@ -2224,20 +2240,20 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                                   }}
                                   onFocus={() => setActiveField(`condition_source_${condition.id}`)}
                                   className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 pr-7"
-                                  placeholder="Source Value"
+                                  placeholder={t('workflow_editor.source_value')}
                                 />
                                 <button 
                                         className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 p-0.5 rounded hover:bg-blue-50 transition-colors"
                                         onClick={(e) => {
                                             const input = textareaRefs.current[`condition_source_${condition.id}`];
-                                            if (input) {
+                                            if (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement) {
                                                 const rect = input.getBoundingClientRect();
                                                 setVarMenuPos({ top: rect.bottom + 5, left: rect.left, placement: 'bottom' });
                                                 setActiveField(`condition_source_${condition.id}`);
                                                 setShowVarMenu(true);
                                                 // When clicking button, assume we want to append if cursor is at 0/default
-                                                if ((input as any).value && (input as any).selectionStart === 0) {
-                                                    setCursorIndex((input as any).value.length + 1);
+                                                if (input.value && input.selectionStart === 0) {
+                                                    setCursorIndex(input.value.length + 1);
                                                 }
                                             }
                                         }}
@@ -2256,18 +2272,18 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                                 }}
                                 className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                              >
-                                <option value="contains">Contains</option>
-                                <option value="notContains">Not Contains</option>
-                                <option value="startsWith">Starts With</option>
-                                <option value="endsWith">Ends With</option>
-                                <option value="equals">Equals</option>
-                                <option value="notEquals">Not Equals</option>
-                                <option value="isEmpty">Is Empty</option>
-                                <option value="isNotEmpty">Is Not Empty</option>
-                                <option value="gt">Greater Than</option>
-                                <option value="lt">Less Than</option>
-                                <option value="gte">Greater Than or Equal</option>
-                                <option value="lte">Less Than or Equal</option>
+                                <option value="contains">{t('workflow_editor.contains')}</option>
+                                <option value="notContains">{t('workflow_editor.not_contains')}</option>
+                                <option value="startsWith">{t('workflow_editor.starts_with')}</option>
+                                <option value="endsWith">{t('workflow_editor.ends_with')}</option>
+                                <option value="equals">{t('workflow_editor.equals')}</option>
+                                <option value="notEquals">{t('workflow_editor.not_equals')}</option>
+                                <option value="isEmpty">{t('workflow_editor.is_empty')}</option>
+                                <option value="isNotEmpty">{t('workflow_editor.is_not_empty')}</option>
+                                <option value="gt">{t('workflow_editor.greater_than')}</option>
+                                <option value="lt">{t('workflow_editor.less_than')}</option>
+                                <option value="gte">{t('workflow_editor.greater_than_or_equal')}</option>
+                                <option value="lte">{t('workflow_editor.less_than_or_equal')}</option>
                              </select>
                              
                              {/* Input Value */}
@@ -2284,20 +2300,20 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                                       }}
                                       onFocus={() => setActiveField(`condition_input_${condition.id}`)}
                                       className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 pr-7"
-                                      placeholder="Target Value"
+                                      placeholder={t('workflow_editor.target_value')}
                                     />
                                     <button 
                                         className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 p-0.5 rounded hover:bg-blue-50 transition-colors"
                                         onClick={(e) => {
                                             const input = textareaRefs.current[`condition_input_${condition.id}`];
-                                            if (input) {
+                                            if (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement) {
                                                 const rect = input.getBoundingClientRect();
                                                 setVarMenuPos({ top: rect.bottom + 5, left: rect.left, placement: 'bottom' });
                                                 setActiveField(`condition_input_${condition.id}`);
                                                 setShowVarMenu(true);
                                                 // When clicking button, assume we want to append if cursor is at 0/default
-                                                if ((input as any).value && (input as any).selectionStart === 0) {
-                                                    setCursorIndex((input as any).value.length + 1);
+                                                if (input.value && input.selectionStart === 0) {
+                                                    setCursorIndex(input.value.length + 1);
                                                 }
                                             }
                                         }}
@@ -2312,13 +2328,13 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                  
                  {(node.data.config?.conditions || []).length === 0 && (
                     <div className="text-center py-4 bg-gray-50 rounded-lg border border-dashed border-gray-200 text-xs text-gray-400">
-                        No conditions added
+                        {t('workflow_editor.no_conditions_added')}
                     </div>
                  )}
                  
                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-between opacity-50 cursor-not-allowed">
-                     <span className="text-xs font-bold text-gray-500 uppercase">ELSE</span>
-                     <span className="text-xs text-gray-400 italic">Fallback branch</span>
+                     <span className="text-xs font-bold text-gray-500 uppercase">{t('workflow_editor.else')}</span>
+                     <span className="text-xs text-gray-400 italic">{t('workflow_editor.fallback_branch')}</span>
                  </div>
              </div>
           </div>
@@ -2326,7 +2342,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
 
         {node.type === 'knowledge' && (
            <div>
-            <label className="block text-xs font-medium text-gray-500 mb-2">Knowledge Bases</label>
+            <label className="block text-xs font-medium text-gray-500 mb-2">{t('workflow_editor.knowledge_bases')}</label>
             <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto pr-1 mb-4">
               {(() => {
                   const selectedIds = node.data.config?.knowledgeBaseIds || (node.data.config?.knowledgeBaseId ? [node.data.config.knowledgeBaseId] : []);
@@ -2403,19 +2419,19 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
               {knowledgeBases.length === 0 && (
                 <div className="text-center py-8 bg-gray-50 rounded-lg border border-dashed border-gray-200">
                     <Database size={24} className="mx-auto text-gray-300 mb-2" />
-                    <p className="text-xs text-gray-500">No knowledge bases available</p>
+                    <p className="text-xs text-gray-500">{t('workflow_editor.no_knowledge_bases_available')}</p>
                 </div>
               )}
             </div>
 
-            <label className="block text-xs font-medium text-gray-500 mb-1">Query Source</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.query_source')}</label>
             <select 
                 value={node.data.config?.querySource || 'userMessage'}
                 onChange={(e) => handleConfigChange('querySource', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-                <option value="userMessage">User Message</option>
-                <option value="lastOutput">Last Node Output</option>
+                <option value="userMessage">{t('workflow_editor.user_message')}</option>
+                <option value="lastOutput">{t('workflow_editor.last_node_output')}</option>
             </select>
           </div>
         )}
@@ -2424,11 +2440,11 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
         <div className="mt-4 pt-4 border-t border-gray-100">
             <label className="block text-xs font-bold text-gray-700 mb-3 flex items-center gap-1.5">
                 <GitBranch size={14} className="text-gray-400" />
-                Next Step
+                {t('workflow_editor.next_step')}
             </label>
             {nextNodesInfo.length === 0 ? (
                 <div className="text-xs text-gray-400 italic bg-gray-50 p-3 rounded-lg border border-dashed border-gray-200 text-center">
-                    No connected nodes
+                    {t('workflow_editor.no_connected_nodes')}
                 </div>
             ) : (
                 <div className="space-y-4">
@@ -2437,7 +2453,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                             {(node.type === 'intent' || node.type === 'tool' || node.type === 'condition') && info.handleId !== 'default' && (
                                 <div className="text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md w-fit border border-blue-100 shadow-sm flex items-center gap-1.5">
                                     <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                                    {node.type === 'intent' || node.type === 'condition' ? info.handleLabel : `Exit: ${info.handleLabel}`}
+                                    {node.type === 'intent' || node.type === 'condition' ? info.handleLabel : `${t('workflow_editor.exit')}: ${info.handleLabel}`}
                                 </div>
                             )}
                             {info.targets.map((target: any) => (
@@ -2500,7 +2516,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                         <div className="relative">
                             <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" size={12} />
                             <div className="w-full pl-7 pr-2 py-1 text-xs border border-gray-200 rounded bg-white text-gray-500 truncate">
-                                {filterText || 'Search variable...'}
+                                {filterText || t('workflow_editor.search_variable')}
                             </div>
                         </div>
                     </div>
@@ -2518,7 +2534,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                             }, {} as Record<string, typeof availableVariables>);
 
                             if (Object.keys(groupedVars).length === 0) {
-                                return <div className="p-4 text-center text-xs text-gray-400">No variables found</div>;
+                                return <div className="p-4 text-center text-xs text-gray-400">{t('workflow_editor.no_variables_found')}</div>;
                             }
 
                             return Object.entries(groupedVars).map(([group, vars]) => (
@@ -2551,6 +2567,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
 };
 
 const ImageTextSplitNode = ({ id, data, selected }: NodeProps) => {
+  const { t } = useTranslation();
   const config = data.config as any;
   const modelDisplay = useModelName(config?.modelId || config?.model, config?.modelDisplayName);
 
@@ -2561,7 +2578,7 @@ const ImageTextSplitNode = ({ id, data, selected }: NodeProps) => {
         <div className="bg-teal-100 p-1 rounded-lg text-teal-600">
           <Split size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Image-Text Split'}</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || t('workflow_editor.image_text_split')}</span>
       </div>
       <div className="p-3 bg-gray-50 border-b border-gray-100">
         <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
@@ -2571,7 +2588,7 @@ const ImageTextSplitNode = ({ id, data, selected }: NodeProps) => {
       </div>
       <div className="p-4">
         <div className="text-xs text-gray-500">
-          Splits context into structured JSON
+          {t('workflow_editor.splits_context_structured')}
         </div>
       </div>
       <Handle type="target" position={Position.Left} className="!bg-gray-400" />
@@ -2581,6 +2598,7 @@ const ImageTextSplitNode = ({ id, data, selected }: NodeProps) => {
 };
 
 const SetSessionMetadataNode = ({ id, data, selected }: NodeProps) => {
+  const { t } = useTranslation();
   const config = data.config as any;
   const modelDisplay = useModelName(config?.modelId || config?.model, config?.modelDisplayName);
 
@@ -2591,7 +2609,7 @@ const SetSessionMetadataNode = ({ id, data, selected }: NodeProps) => {
         <div className="bg-fuchsia-100 p-1 rounded-lg text-fuchsia-600">
           <Tags size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Set Metadata'}</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || t('workflow_editor.set_metadata')}</span>
       </div>
       <div className="p-3 bg-gray-50 border-b border-gray-100">
         <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
@@ -2601,7 +2619,7 @@ const SetSessionMetadataNode = ({ id, data, selected }: NodeProps) => {
       </div>
       <div className="p-4">
         <div className="text-xs text-gray-500">
-          Extract and set session metadata
+          {t('workflow_editor.extract_set_metadata')}
         </div>
       </div>
       <Handle type="target" position={Position.Left} className="!bg-gray-400" />
@@ -2611,6 +2629,7 @@ const SetSessionMetadataNode = ({ id, data, selected }: NodeProps) => {
 };
 
 const ParameterExtractionNode = ({ id, data, selected }: NodeProps) => {
+  const { t } = useTranslation();
   const config = data.config as any;
   const modelDisplay = useModelName(config?.modelId || config?.model, config?.modelDisplayName);
   const parameters = config?.parameters || [];
@@ -2622,7 +2641,7 @@ const ParameterExtractionNode = ({ id, data, selected }: NodeProps) => {
         <div className="bg-violet-100 p-1 rounded-lg text-violet-600">
           <ListFilter size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Param Extraction'}</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || t('workflow_editor.param_extraction')}</span>
       </div>
       <div className="p-3 bg-gray-50 border-b border-gray-100">
         <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
@@ -2631,7 +2650,7 @@ const ParameterExtractionNode = ({ id, data, selected }: NodeProps) => {
         </div>
       </div>
       <div className="p-4">
-        <div className="text-xs text-gray-500 mb-2">Extract structured parameters</div>
+        <div className="text-xs text-gray-500 mb-2">{t('workflow_editor.extract_structured_parameters')}</div>
         {parameters.length > 0 ? (
             <div className="space-y-1">
                 {parameters.slice(0, 3).map((param: any, idx: number) => (
@@ -2645,7 +2664,7 @@ const ParameterExtractionNode = ({ id, data, selected }: NodeProps) => {
                 )}
             </div>
         ) : (
-            <div className="text-[10px] text-gray-400 italic">No parameters configured</div>
+            <div className="text-[10px] text-gray-400 italic">{t('workflow_editor.no_parameters_configured')}</div>
         )}
       </div>
       <Handle type="target" position={Position.Left} className="!bg-gray-400" />
@@ -2655,6 +2674,7 @@ const ParameterExtractionNode = ({ id, data, selected }: NodeProps) => {
 };
 
 const VariableNode = ({ id, data, selected }: NodeProps) => {
+  const { t } = useTranslation();
   const config = data.config as any;
   const variableName = config?.variableName || '';
   const sourceField = config?.sourceField || '';
@@ -2666,16 +2686,16 @@ const VariableNode = ({ id, data, selected }: NodeProps) => {
         <div className="bg-cyan-100 p-1 rounded-lg text-cyan-600">
           <Braces size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Variable Setting'}</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || t('workflow_editor.variable_setting')}</span>
       </div>
       <div className="p-4">
         {variableName ? (
            <div className="flex flex-col gap-1">
-             <div className="text-xs text-gray-500">Variable: <span className="font-medium text-gray-700">{variableName}</span></div>
-             {sourceField && <div className="text-xs text-gray-500">Source: <span className="font-medium text-gray-700">{sourceField}</span></div>}
+             <div className="text-xs text-gray-500">{t('workflow_editor.variable_name')}: <span className="font-medium text-gray-700">{variableName}</span></div>
+             {sourceField && <div className="text-xs text-gray-500">{t('workflow_editor.source_field')}: <span className="font-medium text-gray-700">{sourceField}</span></div>}
            </div>
         ) : (
-           <div className="text-xs text-gray-500">Set workflow variable</div>
+           <div className="text-xs text-gray-500">{t('workflow_editor.set_workflow_variable')}</div>
         )}
       </div>
       <Handle type="target" position={Position.Left} className="!bg-gray-400" />
@@ -2685,6 +2705,7 @@ const VariableNode = ({ id, data, selected }: NodeProps) => {
 };
 
 const ConditionNode = ({ id, data, selected }: NodeProps) => {
+  const { t } = useTranslation();
   const conditions = (data.config as any)?.conditions || [];
 
   return (
@@ -2694,7 +2715,7 @@ const ConditionNode = ({ id, data, selected }: NodeProps) => {
         <div className="bg-teal-100 p-1 rounded-lg text-teal-600">
           <Split size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Condition Check'}</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || t('workflow_editor.condition_check')}</span>
       </div>
       
       <div className="p-0">
@@ -2704,7 +2725,7 @@ const ConditionNode = ({ id, data, selected }: NodeProps) => {
                 <div key={condition.id} className="px-4 py-3 border-b border-gray-100 flex justify-between items-center relative hover:bg-gray-50">
                     <div className="flex flex-col overflow-hidden mr-2">
                         <span className="text-xs font-bold text-gray-500 uppercase mb-0.5">
-                            {index === 0 ? 'IF' : 'ELSE IF'}
+                            {index === 0 ? t('workflow_editor.if') : t('workflow_editor.else_if')}
                         </span>
                         <div className="flex items-center gap-1 text-xs text-gray-700 truncate max-w-[180px]">
                             <span className="font-mono bg-gray-100 px-1 rounded">{condition.sourceValue || '?'}</span>
@@ -2720,7 +2741,7 @@ const ConditionNode = ({ id, data, selected }: NodeProps) => {
             
             {/* ELSE Branch */}
             <div className="px-4 py-3 flex justify-between items-center relative hover:bg-gray-50 bg-gray-50/50 rounded-b-xl">
-                <span className="text-xs font-bold text-gray-500 uppercase">ELSE</span>
+                <span className="text-xs font-bold text-gray-500 uppercase">{t('workflow_editor.else')}</span>
                 <Handle type="source" position={Position.Right} id="else" className="!bg-gray-400 !right-[-6px]" style={{top: '50%'}} />
             </div>
         </div>
@@ -2761,57 +2782,44 @@ const edgeTypes = {
 
 // Sidebar Component for Draggable Nodes
 const Sidebar = () => {
+  const { t } = useTranslation();
   const onDragStart = (event: React.DragEvent, nodeType: string, label: string) => {
     event.dataTransfer.setData('application/reactflow', nodeType);
     event.dataTransfer.setData('application/reactflow/label', label);
     event.dataTransfer.effectAllowed = 'move';
   };
 
-  return (
-    <div className="absolute top-20 left-4 w-60 bg-white rounded-xl shadow-xl border border-gray-200 p-4 z-20 flex flex-col gap-4">
-      <div className="pb-2 border-b border-gray-100">
-        <h3 className="text-sm font-bold text-gray-800">Components</h3>
-        <p className="text-xs text-gray-500">Drag to add to workflow</p>
-      </div>
-      
-      <div className="space-y-3">
-        <div 
-          className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'start', 'Start')}
-          draggable
-        >
-          <div className="bg-blue-100 p-1.5 rounded text-blue-600"><Play size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Start</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-red-50 border border-red-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'end', 'End')}
-          draggable
-        >
-          <div className="bg-red-100 p-1.5 rounded text-red-600"><Square size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">End</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-green-50 border border-green-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => {
-            onDragStart(event, 'intent', 'Intent Recognition');
-            // Add default empty intents for new nodes
-            event.dataTransfer.setData('application/reactflow/config', JSON.stringify({
-              intents: []
-            }));
-          }}
-          draggable
-        >
-          <div className="bg-green-100 p-1.5 rounded text-green-600"><GitBranch size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Intent Recognition</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-teal-50 border border-teal-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => {
-            onDragStart(event, 'condition', 'Condition Check');
+  const categories = [
+    {
+      title: t('workflow_editor.categories.flow_control'),
+      items: [
+        {
+          type: 'start',
+          label: t('workflow_editor.nodes.start'),
+          icon: <Play size={16} />,
+          bg: 'bg-blue-50',
+          border: 'border-blue-100',
+          iconBg: 'bg-blue-100',
+          iconColor: 'text-blue-600'
+        },
+        {
+          type: 'end',
+          label: t('workflow_editor.nodes.end'),
+          icon: <Square size={16} />,
+          bg: 'bg-red-50',
+          border: 'border-red-100',
+          iconBg: 'bg-red-100',
+          iconColor: 'text-red-600'
+        },
+        {
+          type: 'condition',
+          label: t('workflow_editor.condition_check'),
+          icon: <Split size={16} />,
+          bg: 'bg-teal-50',
+          border: 'border-teal-100',
+          iconBg: 'bg-teal-100',
+          iconColor: 'text-teal-600',
+          onDragExtra: (event: React.DragEvent) => {
              event.dataTransfer.setData('application/reactflow/config', JSON.stringify({
               conditions: [
                   {
@@ -2822,133 +2830,187 @@ const Sidebar = () => {
                   }
               ]
             }));
-          }}
-          draggable
-        >
-          <div className="bg-teal-100 p-1.5 rounded text-teal-600"><Split size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Condition Check</span>
-        </div>
+          }
+        },
+        {
+          type: 'intent',
+          label: t('workflow_editor.nodes.intent'),
+          icon: <GitBranch size={16} />,
+          bg: 'bg-green-50',
+          border: 'border-green-100',
+          iconBg: 'bg-green-100',
+          iconColor: 'text-green-600',
+          onDragExtra: (event: React.DragEvent) => {
+            event.dataTransfer.setData('application/reactflow/config', JSON.stringify({
+              intents: []
+            }));
+          }
+        }
+      ]
+    },
+    {
+      title: t('workflow_editor.categories.ai_capabilities'),
+      items: [
+        {
+            type: 'llm',
+            label: t('workflow_editor.nodes.llm'),
+            icon: <Bot size={16}/>,
+            bg: 'bg-indigo-50',
+            border: 'border-indigo-100',
+            iconBg: 'bg-indigo-100',
+            iconColor: 'text-indigo-600'
+        },
+        {
+            type: 'knowledge',
+            label: t('workflow_editor.nodes.knowledge'),
+            icon: <Database size={16}/>,
+            bg: 'bg-orange-50',
+            border: 'border-orange-100',
+            iconBg: 'bg-orange-100',
+            iconColor: 'text-orange-600'
+        },
+        {
+            type: 'translation',
+            label: t('workflow_editor.nodes.translation'),
+            icon: <Languages size={16}/>,
+            bg: 'bg-orange-50',
+            border: 'border-orange-100',
+            iconBg: 'bg-orange-100',
+            iconColor: 'text-orange-600'
+        },
+        {
+            type: 'imageTextSplit',
+            label: t('workflow_editor.image_text_split'),
+            icon: <Split size={16}/>,
+            bg: 'bg-teal-50',
+            border: 'border-teal-100',
+            iconBg: 'bg-teal-100',
+            iconColor: 'text-teal-600'
+        }
+      ]
+    },
+    {
+        title: t('workflow_editor.categories.interaction'),
+        items: [
+            {
+                type: 'reply',
+                label: t('workflow_editor.nodes.reply'),
+                icon: <MessageSquare size={16}/>,
+                bg: 'bg-blue-50',
+                border: 'border-blue-100',
+                iconBg: 'bg-blue-100',
+                iconColor: 'text-blue-600'
+            },
+            {
+                type: 'human_transfer',
+                label: t('workflow_editor.transfer_to_human'),
+                icon: <Headphones size={16}/>,
+                bg: 'bg-pink-50',
+                border: 'border-pink-100',
+                iconBg: 'bg-pink-100',
+                iconColor: 'text-pink-600'
+            },
+            {
+                type: 'parameter_extraction',
+                label: t('workflow_editor.param_extraction'),
+                icon: <ListFilter size={16}/>,
+                bg: 'bg-violet-50',
+                border: 'border-violet-100',
+                iconBg: 'bg-violet-100',
+                iconColor: 'text-violet-600'
+            },
+            {
+                type: 'variable',
+                label: t('workflow_editor.variable_setting'),
+                icon: <Braces size={16}/>,
+                bg: 'bg-cyan-50',
+                border: 'border-cyan-100',
+                iconBg: 'bg-cyan-100',
+                iconColor: 'text-cyan-600'
+            },
+            {
+                type: 'setSessionMetadata',
+                label: t('workflow_editor.set_metadata'),
+                icon: <Tags size={16}/>,
+                bg: 'bg-fuchsia-50',
+                border: 'border-fuchsia-100',
+                iconBg: 'bg-fuchsia-100',
+                iconColor: 'text-fuchsia-600'
+            }
+        ]
+    },
+    {
+        title: t('workflow_editor.categories.advanced'),
+        items: [
+            {
+                type: 'tool',
+                label: t('workflow_editor.tool_node'),
+                icon: <Hammer size={16}/>,
+                bg: 'bg-orange-50',
+                border: 'border-orange-100',
+                iconBg: 'bg-orange-100',
+                iconColor: 'text-orange-600'
+            },
+            {
+                type: 'agent',
+                label: t('workflow_editor.nodes.transfer'),
+                icon: <Bot size={16}/>,
+                bg: 'bg-purple-50',
+                border: 'border-purple-100',
+                iconBg: 'bg-purple-100',
+                iconColor: 'text-purple-600'
+            },
+            {
+                type: 'agent_end',
+                label: t('workflow_editor.agent_end'),
+                icon: <Square size={16}/>,
+                bg: 'bg-gray-50',
+                border: 'border-gray-100',
+                iconBg: 'bg-gray-200',
+                iconColor: 'text-gray-600'
+            },
+            {
+                type: 'agent_update',
+                label: t('workflow_editor.agent_update'),
+                icon: <Edit2 size={16}/>,
+                bg: 'bg-yellow-50',
+                border: 'border-yellow-100',
+                iconBg: 'bg-yellow-100',
+                iconColor: 'text-yellow-600'
+            }
+        ]
+    }
+  ];
 
-        <div 
-          className="flex items-center gap-3 p-3 bg-orange-50 border border-orange-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'knowledge', 'Knowledge Retrieval')}
-          draggable
-        >
-          <div className="bg-orange-100 p-1.5 rounded text-orange-600"><Database size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Knowledge Retrieval</span>
-        </div>
-
-
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-indigo-50 border border-indigo-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'llm', 'LLM Generation')}
-          draggable
-        >
-          <div className="bg-indigo-100 p-1.5 rounded text-indigo-600"><Bot size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">LLM Generation</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-orange-50 border border-orange-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'translation', 'Translation')}
-          draggable
-        >
-          <div className="bg-orange-100 p-1.5 rounded text-orange-600"><Languages size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Translation</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'reply', 'Direct Reply')}
-          draggable
-        >
-          <div className="bg-blue-100 p-1.5 rounded text-blue-600"><MessageSquare size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Direct Reply</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-pink-50 border border-pink-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'human_transfer', 'Transfer to Human')}
-          draggable
-        >
-          <div className="bg-pink-100 p-1.5 rounded text-pink-600"><Headphones size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Transfer to Human</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-purple-50 border border-purple-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'agent', 'Agent')}
-          draggable
-        >
-          <div className="bg-purple-100 p-1.5 rounded text-purple-600"><Bot size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Agent</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'agent_end', 'Agent End')}
-          draggable
-        >
-          <div className="bg-gray-200 p-1.5 rounded text-gray-600"><Square size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Agent End</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'agent_update', 'Agent Update')}
-          draggable
-        >
-          <div className="bg-yellow-100 p-1.5 rounded text-yellow-600"><Edit2 size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Agent Update</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-orange-50 border border-orange-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'tool', 'Tool Execution')}
-          draggable
-        >
-          <div className="bg-orange-100 p-1.5 rounded text-orange-600"><Hammer size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Tool Execution</span>
-        </div>
-
-
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-teal-50 border border-teal-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'imageTextSplit', 'Image-Text Split')}
-          draggable
-        >
-          <div className="bg-teal-100 p-1.5 rounded text-teal-600"><Split size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Image-Text Split</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-fuchsia-50 border border-fuchsia-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'setSessionMetadata', 'Set Metadata')}
-          draggable
-        >
-          <div className="bg-fuchsia-100 p-1.5 rounded text-fuchsia-600"><Tags size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Set Metadata</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-violet-50 border border-violet-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'parameter_extraction', 'Param Extraction')}
-          draggable
-        >
-          <div className="bg-violet-100 p-1.5 rounded text-violet-600"><ListFilter size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Param Extraction</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-cyan-50 border border-cyan-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'variable', 'Variable Setting')}
-          draggable
-        >
-          <div className="bg-cyan-100 p-1.5 rounded text-cyan-600"><Braces size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Variable Setting</span>
-        </div>
+  return (
+    <div className="absolute top-20 left-4 w-60 bg-white rounded-xl shadow-xl border border-gray-200 z-20 flex flex-col max-h-[calc(100vh-7rem)]">
+      <div className="p-4 pb-2 border-b border-gray-100 flex-shrink-0">
+        <h3 className="text-sm font-bold text-gray-800">{t('workflow_editor.components')}</h3>
+        <p className="text-xs text-gray-500">{t('workflow_editor.drag_to_add')}</p>
+      </div>
+      
+      <div className="p-3 overflow-y-auto custom-scrollbar flex-1 space-y-6">
+        {categories.map((group, index) => (
+            <div key={index}>
+                <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">{group.title}</h4>
+                <div className="space-y-2">
+                    {group.items.map((item) => (
+                        <div 
+                          key={item.type}
+                          className={`flex items-center gap-2 p-2 ${item.bg} border ${item.border} rounded-md cursor-grab active:cursor-grabbing hover:shadow-sm transition-all`}
+                          onDragStart={(event) => {
+                            onDragStart(event, item.type, item.label);
+                            if (item.onDragExtra) item.onDragExtra(event);
+                          }}
+                          draggable
+                        >
+                          <div className={`${item.iconBg} p-1 rounded ${item.iconColor}`}>{item.icon}</div>
+                          <span className="text-xs font-medium text-gray-700">{item.label}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        ))}
       </div>
     </div>
   );
@@ -2956,6 +3018,7 @@ const Sidebar = () => {
 
 // Internal component to access React Flow instance
 const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId: string }) => {
+  const { t } = useTranslation();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -3275,14 +3338,14 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
                 value={workflowName}
                 onChange={(e) => setWorkflowName(e.target.value)}
                 className="font-bold text-gray-800 leading-tight bg-transparent border-none focus:ring-0 p-0 text-base truncate"
-                placeholder="Workflow Name"
+                placeholder={t('workflow_editor.workflow_name')}
               />
               <input 
                 type="text" 
                 value={workflowDescription}
                 onChange={(e) => setWorkflowDescription(e.target.value)}
                 className="text-xs text-gray-500 bg-transparent border-none focus:ring-0 p-0 truncate"
-                placeholder="Add description..."
+                placeholder={t('workflow_editor.add_description')}
               />
             </div>
             <div className="h-6 w-px bg-gray-200 mx-2 flex-shrink-0"></div>
@@ -3290,28 +3353,28 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
                 <button 
                   onClick={() => setShowGeneratorDialog(true)}
                   className="p-1.5 hover:bg-purple-50 rounded-lg text-purple-600 hover:text-purple-700 transition-colors"
-                  title="Generate Workflow"
+                  title={t('workflow_editor.generate_workflow')}
                 >
                   <Wand2 size={20} />
                 </button>
                 <button 
                   onClick={onLayout}
                   className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-800 transition-colors"
-                  title="Auto Layout"
+                  title={t('workflow_editor.auto_layout')}
                 >
                   <Layout size={20} />
                 </button>
                 <button 
                   onClick={() => setShowTestDialog(true)}
                   className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-800 transition-colors"
-                  title="Test Workflow"
+                  title={t('workflow_editor.test_workflow')}
                 >
                   <Play size={20} />
                 </button>
                 <button 
                   onClick={() => setIsSettingsOpen(true)}
                   className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-800 transition-colors"
-                  title="Workflow Settings"
+                  title={t('workflow_editor.workflow_settings')}
                 >
                   <Settings size={20} />
                 </button>
@@ -3321,7 +3384,7 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
                   className="flex items-center gap-2 bg-blue-600 text-white px-3 py-1.5 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ml-2"
                 >
                   {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                  <span>Save</span>
+                  <span>{t('workflow_editor.save')}</span>
                 </button>
             </div>
         </div>
@@ -3394,6 +3457,7 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
 };
 
 const WorkflowList = ({ onSelect }: { onSelect: (id: string) => void }) => {
+  const { t } = useTranslation();
   const [workflows, setWorkflows] = useState<AiWorkflow[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -3485,7 +3549,7 @@ const WorkflowList = ({ onSelect }: { onSelect: (id: string) => void }) => {
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (window.confirm('Are you sure you want to delete this workflow?')) {
+    if (window.confirm(t('workflow_editor.delete_workflow_confirm'))) {
       try {
         await workflowApi.deleteWorkflow(id);
         await loadWorkflows();
@@ -3528,8 +3592,8 @@ const WorkflowList = ({ onSelect }: { onSelect: (id: string) => void }) => {
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Workflow Orchestration</h1>
-            <p className="text-gray-500 mt-1">Manage and design your AI agent workflows</p>
+            <h1 className="text-2xl font-bold text-gray-800">{t('workflow_editor.workflow_orchestration')}</h1>
+            <p className="text-gray-500 mt-1">{t('workflow_editor.manage_design_workflows')}</p>
           </div>
           <button 
             onClick={handleCreate}
@@ -3537,7 +3601,7 @@ const WorkflowList = ({ onSelect }: { onSelect: (id: string) => void }) => {
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {creating ? <Loader2 className="animate-spin" size={20} /> : <Plus size={20} />}
-            <span>Create Workflow</span>
+            <span>{t('workflow_editor.create_workflow')}</span>
           </button>
         </div>
 
@@ -3546,13 +3610,13 @@ const WorkflowList = ({ onSelect }: { onSelect: (id: string) => void }) => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                 <input 
                     type="text" 
-                    placeholder="Search workflows..." 
+                    placeholder={t('workflow_editor.search_workflows')} 
                     className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
             </div>
             <button className="px-4 py-2 border border-gray-200 rounded-lg flex items-center gap-2 text-gray-600 hover:bg-gray-50">
                 <Filter size={20} />
-                <span>Filter</span>
+                <span>{t('workflow_editor.filter')}</span>
             </button>
         </div>
 
@@ -3571,35 +3635,35 @@ const WorkflowList = ({ onSelect }: { onSelect: (id: string) => void }) => {
                   <button 
                     className={`p-1.5 rounded transition-colors ${workflow.isDefault ? 'text-yellow-500 bg-yellow-50' : 'text-gray-400 hover:text-yellow-500 hover:bg-yellow-50'}`}
                     onClick={(e) => handleSetDefault(e, workflow.id)}
-                    title="Set as Default"
+                    title={t('workflow_editor.set_as_default')}
                   >
                     <Star size={16} fill={workflow.isDefault ? "currentColor" : "none"} />
                   </button>
                   <button 
                     className={`p-1.5 rounded transition-colors ${workflow.enabled ? 'text-green-500 bg-green-50' : 'text-gray-400 hover:text-green-500 hover:bg-green-50'}`}
                     onClick={(e) => handleToggleEnabled(e, workflow.id, !workflow.enabled)}
-                    title={workflow.enabled ? "Disable" : "Enable"}
+                    title={workflow.enabled ? t('workflow_editor.disable') : t('workflow_editor.enable')}
                   >
                     <Power size={16} />
                   </button>
                   <button 
                     className="text-gray-400 hover:text-blue-600 p-1.5 hover:bg-blue-50 rounded transition-colors"
                     onClick={(e) => handleCopy(e, workflow.id)}
-                    title="Copy Workflow"
+                    title={t('workflow_editor.copy_workflow')}
                   >
                     <Copy size={16} />
                   </button>
                   <button 
                     className="text-gray-400 hover:text-blue-600 p-1.5 hover:bg-blue-50 rounded transition-colors"
                     onClick={(e) => handleEdit(e, workflow)}
-                    title="Edit Details"
+                    title={t('workflow_editor.edit_details')}
                   >
                     <Edit2 size={16} />
                   </button>
                   <button 
                     className="text-gray-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded transition-colors"
                     onClick={(e) => handleDelete(e, workflow.id)}
-                    title="Delete"
+                    title={t('delete')}
                   >
                     <Trash2 size={16} />
                   </button>
@@ -3610,7 +3674,7 @@ const WorkflowList = ({ onSelect }: { onSelect: (id: string) => void }) => {
                 {workflow.name}
               </h3>
               <p className="text-sm text-gray-500 mb-4 line-clamp-2 h-10">
-                {workflow.description || 'No description provided'}
+                {workflow.description || t('workflow_editor.no_description_provided')}
               </p>
 
               {workflow.categories && workflow.categories.length > 0 && (
@@ -3633,7 +3697,7 @@ const WorkflowList = ({ onSelect }: { onSelect: (id: string) => void }) => {
                 </div>
                 <div className="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded">
                   <GitBranch size={14} />
-                  <span>{workflow.nodesJson ? JSON.parse(workflow.nodesJson).length : 0} nodes</span>
+                  <span>{workflow.nodesJson ? JSON.parse(workflow.nodesJson).length : 0} {t('workflow_editor.nodes_count')}</span>
                 </div>
               </div>
             </div>
@@ -3648,7 +3712,7 @@ const WorkflowList = ({ onSelect }: { onSelect: (id: string) => void }) => {
             <div className="p-4 rounded-full bg-gray-50 group-hover:bg-blue-100 transition-colors">
                 {creating ? <Loader2 className="animate-spin" size={32} /> : <Plus size={32} />}
             </div>
-            <span className="font-medium">Create New Workflow</span>
+            <span className="font-medium">{t('workflow_editor.create_new_workflow')}</span>
           </button>
         </div>
       </div>

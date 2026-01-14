@@ -1,21 +1,29 @@
 // Global notification service
+import { toast } from 'sonner';
+
 type NotificationType = 'SUCCESS' | 'ERROR' | 'INFO';
 
 class NotificationService {
-  private listener: ((type: NotificationType, message: string) => void) | null = null;
-
-  // Set the listener (called by App.tsx)
-  setListener(listener: (type: NotificationType, message: string) => void) {
-    this.listener = listener;
+  // Show notification using sonner
+  show(type: NotificationType, message: string) {
+    switch (type) {
+      case 'SUCCESS':
+        toast.success(message);
+        break;
+      case 'ERROR':
+        toast.error(message);
+        break;
+      case 'INFO':
+        toast.info(message);
+        break;
+      default:
+        toast(message);
+    }
   }
 
-  // Show notification
-  show(type: NotificationType, message: string) {
-    if (this.listener) {
-      this.listener(type, message);
-    } else {
-      console.warn('NotificationService: No listener set, message:', message);
-    }
+  // Deprecated: No longer needed as we use sonner directly
+  setListener(listener: (type: NotificationType, message: string) => void) {
+    console.warn('NotificationService.setListener is deprecated. We use sonner directly now.');
   }
 
   success(message: string) {

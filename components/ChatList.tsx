@@ -1,6 +1,7 @@
 
 
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChatSession, ChatStatus, UserSource, ChatGroup } from '../types';
 import { Monitor, Smartphone, Bot, User, CheckCircle, ChevronDown, ChevronRight, Inbox, MoreVertical, Plus, Trash2, FolderOpen, ArrowRight, X, Search } from 'lucide-react';
 import { DEFAULT_AVATAR } from '../constants';
@@ -40,6 +41,7 @@ export const ChatList: React.FC<ChatListProps> = ({
   onRenameGroup,
   currentUserId
 }) => {
+  const { t } = useTranslation();
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
     groups.reduce((acc, g) => ({ ...acc, [g.id]: true }), {})
   );
@@ -123,16 +125,16 @@ export const ChatList: React.FC<ChatListProps> = ({
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
         <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
           <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-            <h3 className="font-bold text-lg text-gray-800">{mode === 'create' ? '创建分组' : '编辑分组'}</h3>
+            <h3 className="font-bold text-lg text-gray-800">{mode === 'create' ? t('create_group') : t('edit_group')}</h3>
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20}/></button>
           </div>
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">分组名称</label>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('group_name')}</label>
               <input value={name} onChange={e => setName(e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">绑定分类</label>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('bind_category')}</label>
               <div className="max-h-40 overflow-y-auto border border-gray-200 rounded p-2">
                 {available.map(c => (
                   <label key={c.id} className="flex items-center gap-2 text-sm py-1">
@@ -141,13 +143,13 @@ export const ChatList: React.FC<ChatListProps> = ({
                   </label>
                 ))}
                 {available.length === 0 && (
-                  <div className="text-xs text-gray-400">暂无分类，请先在系统设置中创建分类</div>
+                  <div className="text-xs text-gray-400">{t('no_category_tip')}</div>
                 )}
               </div>
             </div>
             <div className="flex justify-end gap-2">
-              <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-200 rounded-lg transition-colors">取消</button>
-              <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors">保存</button>
+              <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-200 rounded-lg transition-colors">{t('cancel')}</button>
+              <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors">{t('save')}</button>
             </div>
           </form>
         </div>
@@ -204,7 +206,33 @@ export const ChatList: React.FC<ChatListProps> = ({
     const isResolved = session.status === ChatStatus.RESOLVED;
     const isMenuOpen = openMenuSessionId === session.id;
     const lastMessage = session.lastMessage;  // ✅ 直接使用 lastMessage 字段
-    const { cleanText, mentionedNames } = lastMessage ? parseMessagePreview(lastMessage.text) : { cleanText: '', mentionedNames: [] };
+    
+    // Calculate preview text
+    let previewText = '';
+    let mentionedNames: string[] = [];
+    
+    if (lastMessage) {
+        if (lastMessage.messageType === 'CARD_PRODUCT') {
+            previewText = t('card_product');
+        } else if (lastMessage.messageType === 'CARD_GIFT') {
+            previewText = t('card_gift');
+        } else if (lastMessage.messageType === 'CARD_DISCOUNT') {
+            previewText = t('card_discount');
+        } else if (lastMessage.messageType === 'CARD_ORDER') {
+            previewText = t('card_order');
+        } else if (lastMessage.text.startsWith('card#')) {
+             // Fallback for raw text
+             if (lastMessage.text.includes('CARD_PRODUCT')) previewText = t('card_product');
+             else if (lastMessage.text.includes('CARD_GIFT')) previewText = t('card_gift');
+             else if (lastMessage.text.includes('CARD_DISCOUNT')) previewText = t('card_discount');
+             else if (lastMessage.text.includes('CARD_ORDER')) previewText = t('card_order');
+             else previewText = t('card_generic');
+        } else {
+            const parsed = parseMessagePreview(lastMessage.text);
+            previewText = parsed.cleanText;
+            mentionedNames = parsed.mentionedNames;
+        }
+    }
 
     return (
       <div
@@ -215,7 +243,7 @@ export const ChatList: React.FC<ChatListProps> = ({
         }`}
       >
         <div className="flex justify-between items-start">
-          <div className="flex items-center gap-2 overflow-hidden">
+          <div className="flex items-center gap-3 overflow-hidden flex-1">
             <div className="relative shrink-0">
                <img 
                   src={session.user.avatar || DEFAULT_AVATAR} 
@@ -232,57 +260,58 @@ export const ChatList: React.FC<ChatListProps> = ({
                  </div>
                )}
             </div>
-            <div className="min-w-0">
-              <h3 className={`font-semibold text-sm truncate w-full ${session.unreadCount > 0 ? 'text-gray-900 font-bold' : 'text-gray-700'}`}>
-                 {session.user.name}
-              </h3>
-              <p className={`text-xs text-gray-500 truncate ${session.unreadCount > 0 ? 'font-medium text-gray-800' : ''}`}>
-                {lastMessage
-                  ? cleanText
-                  : <span className="italic text-gray-400">No messages yet</span>}
-              </p>
-              <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                      <h3 className={`font-semibold text-sm truncate ${session.unreadCount > 0 ? 'text-gray-900 font-bold' : 'text-gray-700'}`}>
+                        {session.user.name}
+                      </h3>
+                      {mentionedNames.length > 0 && (
+                        <span 
+                          className="bg-red-50 text-red-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-0.5 border border-red-100" 
+                          title={mentionedNames.join(', ')}
+                        >
+                          <span>@</span>
+                          <span className="max-w-[60px] truncate">{mentionedNames[0]}</span>
+                          {mentionedNames.length > 1 && <span>+{mentionedNames.length - 1}</span>}
+                        </span>
+                      )}
+                  </div>
+                  <span className={`text-[10px] shrink-0 ${session.unreadCount > 0 ? 'text-blue-600 font-bold' : 'text-gray-400'}`}>
+                    {formatDate(session.lastActive)}
+                  </span>
+              </div>
+              
+              <div className="flex items-center justify-between mt-0.5">
+                  <p className={`text-xs text-gray-500 truncate pr-2 ${session.unreadCount > 0 ? 'font-medium text-gray-800' : ''}`}>
+                    {lastMessage
+                      ? previewText
+                      : <span className="italic text-gray-400">{t('no_messages_yet')}</span>}
+                  </p>
+                  
+                  {session.unreadCount > 0 && (
+                    <span className="shrink-0 bg-blue-600 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full">
+                        {session.unreadCount}
+                    </span>
+                  )}
+              </div>
+
+              <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
                 {isResolved ? (
                     <span className="flex items-center gap-1 text-green-600 font-medium bg-green-50 px-1.5 py-0.5 rounded-full text-[10px]">
-                        <CheckCircle size={10} /> Resolved
+                        <CheckCircle size={10} /> {t('resolved')}
                     </span>
                 ) : session.status === ChatStatus.AI_HANDLING ? (
-                   <><Bot size={12} className="text-purple-500" /> <span>AI Pilot</span></>
+                   <><Bot size={12} className="text-purple-500" /> <span>{t('ai_pilot')}</span></>
                 ) : (
-                   <><User size={12} className="text-orange-500" /> <span>Human</span></>
+                   <><User size={12} className="text-orange-500" /> <span>{t('human_agent')}</span></>
                 )}
               </div>
             </div>
           </div>
-          <div className="flex flex-col items-end shrink-0 ml-2">
-             <div className="flex items-center gap-2 h-4">
-                <span className={`text-[10px] shrink-0 ${session.unreadCount > 0 ? 'text-blue-600 font-bold' : 'text-gray-400'}`}>
-                    {formatDate(session.lastActive)}
-                </span>
-             </div>
-             {session.unreadCount > 0 && (
-                <span className="mt-1 bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                    {session.unreadCount}
-                </span>
-             )}
-          </div>
         </div>
         
-        {mentionedNames.length > 0 && (
-          <div className="mt-2 flex items-center gap-1">
-            <span 
-              className="bg-blue-50 text-blue-600 text-[10px] font-semibold px-1.5 py-0.5 rounded-full max-w-[60px] truncate" 
-              title={mentionedNames.join(', ')}
-            >
-              @{mentionedNames[0]}
-            </span>
-            {mentionedNames.length > 1 && (
-              <span className="bg-gray-200 text-gray-600 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
-                +{mentionedNames.length - 1}
-              </span>
-            )}
-          </div>
-        )}
+        {/* Removed old mention block */}
         
         {/* Move Menu Trigger - Only visible on hover */}
         <button 
@@ -297,7 +326,7 @@ export const ChatList: React.FC<ChatListProps> = ({
            <>
              <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setOpenMenuSessionId(null); }} />
              <div className="absolute right-2 top-10 z-50 bg-white border border-gray-200 shadow-xl rounded-lg w-40 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
-               <div className="px-3 py-2 bg-gray-50 border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase">Move to Group</div>
+               <div className="px-3 py-2 bg-gray-50 border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase">{t('move_to_group')}</div>
                {groups.map(group => (
                   <button
                     key={group.id}
@@ -333,7 +362,7 @@ export const ChatList: React.FC<ChatListProps> = ({
                     type="text" 
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search name, email..."
+                    placeholder={t('search_placeholder_contacts')}
                     className="flex-1 bg-transparent outline-none text-sm text-gray-700 placeholder-gray-400"
                 />
                 <button onClick={() => { setIsSearching(false); setSearchQuery(''); }} className="text-gray-400 hover:text-gray-600">
@@ -343,25 +372,25 @@ export const ChatList: React.FC<ChatListProps> = ({
         ) : (
             <>
                 <h2 className="font-bold text-gray-800 text-lg flex items-center gap-2">
-                    <Inbox size={18} /> Inbox
+                    <Inbox size={18} /> {t('inbox')}
                 </h2>
                 <div className="flex items-center gap-2">
                    <button 
                      onClick={() => setIsSearching(true)}
                      className="p-1.5 text-gray-500 hover:bg-gray-200 rounded-lg transition-colors"
-                     title="Search Contacts"
+                     title={t('search_contacts')}
                    >
                      <Search size={16} />
                    </button>
                    <button 
                      onClick={() => setShowCreateModal(true)}
                      className="p-1.5 text-gray-500 hover:bg-gray-200 rounded-lg transition-colors"
-                     title="Create Group"
+                     title={t('create_group')}
                    >
                      <Plus size={16} />
                    </button>
                    <span className="text-xs font-medium px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
-                    {sessions.reduce((acc, s) => acc + s.unreadCount, 0)} Total
+                    {sessions.reduce((acc, s) => acc + s.unreadCount, 0)} {t('total')}
                    </span>
                 </div>
             </>
@@ -451,7 +480,7 @@ export const ChatList: React.FC<ChatListProps> = ({
                                   <button 
                                     onClick={(e) => { e.stopPropagation(); handleRenameGroup(group.id, group.name); }}
                                     className="text-gray-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title="Rename Group"
+                                    title={t('rename_group_tooltip')}
                                   >
                                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                       <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
@@ -460,7 +489,7 @@ export const ChatList: React.FC<ChatListProps> = ({
                                   <button 
                                     onClick={(e) => { e.stopPropagation(); onDeleteGroup(group.id); }}
                                     className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title="Delete Group"
+                                    title={t('delete_group_tooltip')}
                                   >
                                     <Trash2 size={12} />
                                   </button>
@@ -468,7 +497,7 @@ export const ChatList: React.FC<ChatListProps> = ({
                              )}
                              {groupUnreadCount > 0 && (
                                 <span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1">
-                                    {groupUnreadCount} new
+                                    {groupUnreadCount} {t('new_messages_suffix')}
                                 </span>
                              )}
                         </div>
@@ -478,7 +507,7 @@ export const ChatList: React.FC<ChatListProps> = ({
                          <div className="bg-white">
                             {groupSessions.length === 0 ? (
                                 <div className="p-4 text-center text-gray-300 text-xs border-dashed border border-gray-100 m-2 rounded">
-                                    {isSearching ? 'No matches' : 'Empty Group'}
+                                    {isSearching ? t('no_matches') : t('empty_group')}
                                 </div>
                             ) : (
                                 groupSessions.map(renderChatItem)
@@ -490,7 +519,7 @@ export const ChatList: React.FC<ChatListProps> = ({
          })}
          {isSearching && sessions.filter(s => s.user && s.user.name?.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
              <div className="p-8 text-center text-gray-400 text-sm">
-                 No contacts found matching "{searchQuery}"
+                 {t('no_contacts_found', { query: searchQuery })}
              </div>
          )}
       </div>

@@ -30,6 +30,7 @@ export interface Message {
   text: string;
   sender: MessageSender;
   timestamp: number;
+  messageType?: string; // Add message type
   isInternal?: boolean; // For notes
   attachments?: Attachment[];
   mentions?: string[]; // Array of mentioned agent IDs

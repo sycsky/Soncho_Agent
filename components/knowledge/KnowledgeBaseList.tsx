@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { KnowledgeBase } from '../../types';
 import { Plus, Search, Database, MoreVertical, Trash2, Edit, BookOpen, RefreshCw } from 'lucide-react';
 
@@ -21,8 +22,10 @@ export const KnowledgeBaseList: React.FC<KnowledgeBaseListProps> = ({
   onSelect,
   onRebuildIndex,
 }) => {
+  const { t } = useTranslation();
+
   if (loading) {
-    return <div className="flex items-center justify-center h-64 text-gray-500">Loading knowledge bases...</div>;
+    return <div className="flex items-center justify-center h-64 text-gray-500">{t('loading_kb')}</div>;
   }
 
   return (
@@ -30,15 +33,15 @@ export const KnowledgeBaseList: React.FC<KnowledgeBaseListProps> = ({
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-            <Database className="text-purple-600" /> Knowledge Bases
+            <Database className="text-purple-600" /> {t('knowledge_bases_title')}
           </h2>
-          <p className="text-sm text-gray-500 mt-1">Manage your vector databases for AI context retrieval</p>
+          <p className="text-sm text-gray-500 mt-1">{t('kb_description_suffix')}</p>
         </div>
         <button
           onClick={onCreate}
           className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 flex items-center gap-2"
         >
-          <Plus size={18} /> Create Knowledge Base
+          <Plus size={18} /> {t('create_kb')}
         </button>
       </div>
 
@@ -56,21 +59,21 @@ export const KnowledgeBaseList: React.FC<KnowledgeBaseListProps> = ({
                 <button
                   onClick={(e) => { e.stopPropagation(); onRebuildIndex(kb); }}
                   className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
-                  title="Rebuild Index"
+                  title={t('rebuild_index')}
                 >
                   <RefreshCw size={16} />
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); onEdit(kb); }}
                   className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
-                  title="Edit Settings"
+                  title={t('edit_settings')}
                 >
                   <Edit size={16} />
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); onDelete(kb); }}
                   className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                  title="Delete"
+                  title={t('delete')}
                 >
                   <Trash2 size={16} />
                 </button>
@@ -81,15 +84,15 @@ export const KnowledgeBaseList: React.FC<KnowledgeBaseListProps> = ({
               {kb.name}
             </h3>
             <p className="text-sm text-gray-500 line-clamp-2 mb-4 h-10">
-              {kb.description || 'No description provided.'}
+              {kb.description || t('no_description')}
             </p>
 
             <div className="flex items-center justify-between text-xs text-gray-500 pt-4 border-t border-gray-100">
               <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1">
-                  <BookOpen size={14} /> {kb.documentCount} Docs
+                  <BookOpen size={14} /> {t('docs_count', { count: kb.documentCount })}
                 </span>
-                <span>{kb.vectorDimension} dim</span>
+                <span>{kb.vectorDimension} {t('dim')}</span>
               </div>
               <span>{new Date(kb.updatedAt).toLocaleDateString()}</span>
             </div>
@@ -98,7 +101,7 @@ export const KnowledgeBaseList: React.FC<KnowledgeBaseListProps> = ({
               onClick={() => onSelect(kb)}
               className="w-full mt-4 py-2 bg-gray-50 text-gray-600 text-sm font-medium rounded-lg hover:bg-purple-50 hover:text-purple-700 transition-colors"
             >
-              Manage Documents
+              {t('manage_documents')}
             </button>
           </div>
         ))}
@@ -106,13 +109,13 @@ export const KnowledgeBaseList: React.FC<KnowledgeBaseListProps> = ({
         {knowledgeBases.length === 0 && (
           <div className="col-span-full flex flex-col items-center justify-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-300">
             <Database size={48} className="text-gray-300 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900">No knowledge bases yet</h3>
-            <p className="text-sm text-gray-500 mb-6">Create one to start adding documents for AI context.</p>
+            <h3 className="text-lg font-medium text-gray-900">{t('no_kb_yet')}</h3>
+            <p className="text-sm text-gray-500 mb-6">{t('no_kb_desc')}</p>
             <button
               onClick={onCreate}
               className="text-purple-600 font-medium hover:text-purple-700 hover:underline"
             >
-              Create your first knowledge base
+              {t('create_first_kb')}
             </button>
           </div>
         )}

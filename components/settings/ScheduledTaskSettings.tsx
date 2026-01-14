@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   Calendar, 
   Plus, 
@@ -41,6 +42,7 @@ const DAYS_OF_WEEK = [
 ];
 
 const ScheduledTaskSettings = () => {
+  const { t } = useTranslation();
   const [tasks, setTasks] = useState<ScheduledTask[]>([]);
   const [loading, setLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -93,7 +95,7 @@ const ScheduledTaskSettings = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this task?')) {
+    if (confirm(t('confirm_delete_task'))) {
       try {
         await scheduledTaskApi.deleteTask(id);
         loadTasks();
@@ -128,8 +130,8 @@ const ScheduledTaskSettings = () => {
     <div className="p-6 max-w-6xl mx-auto animate-in fade-in duration-300">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Scheduled Tasks</h2>
-          <p className="text-gray-500 mt-1">Manage automated workflow executions</p>
+          <h2 className="text-2xl font-bold text-gray-800">{t('scheduled_tasks_title')}</h2>
+          <p className="text-gray-500 mt-1">{t('scheduled_tasks_desc')}</p>
         </div>
         <button
           onClick={() => {
@@ -139,7 +141,7 @@ const ScheduledTaskSettings = () => {
           className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
         >
           <Plus size={18} />
-          <span>Create Task</span>
+          <span>{t('create_task')}</span>
         </button>
       </div>
 
@@ -151,18 +153,18 @@ const ScheduledTaskSettings = () => {
         ) : tasks.length === 0 ? (
             <div className="p-12 text-center text-gray-500">
                 <Calendar size={48} className="mx-auto mb-4 opacity-20" />
-                <p>No scheduled tasks found</p>
+                <p>{t('no_scheduled_tasks')}</p>
             </div>
         ) : (
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Task Name</th>
-                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Frequency</th>
-                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Target</th>
-                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Workflow</th>
-                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Status</th>
-                  <th className="text-right py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">{t('task_name')}</th>
+                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">{t('frequency')}</th>
+                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">{t('target')}</th>
+                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">{t('workflow')}</th>
+                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">{t('status')}</th>
+                  <th className="text-right py-3 px-6 text-xs font-semibold text-gray-500 uppercase">{t('actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -186,8 +188,8 @@ const ScheduledTaskSettings = () => {
                             {task.customerMode === 'CUSTOMER_ROLE' ? <Users size={14} className="text-purple-500"/> : <User size={14} className="text-blue-500"/>}
                             <span>
                                 {task.targetIds && task.targetIds.length > 0 
-                                    ? (task.targetIds.length > 1 ? `${task.targetIds.length} targets` : task.targetIds[0]) 
-                                    : 'No target'}
+                                    ? (task.targetIds.length > 1 ? t('targets_count', { count: task.targetIds.length }) : task.targetIds[0]) 
+                                    : t('no_target')}
                             </span>
                         </div>
                     </td>
@@ -207,7 +209,7 @@ const ScheduledTaskSettings = () => {
                             }`}
                         >
                             {task.enabled ? <Play size={10} /> : <Pause size={10} />}
-                            {task.enabled ? 'Active' : 'Paused'}
+                            {task.enabled ? t('active') : t('paused')}
                         </button>
                     </td>
                     <td className="py-4 px-6 text-right">
@@ -275,6 +277,7 @@ const TaskDialog = ({
     searchCustomers: (q: string) => void,
     customers: Customer[]
 }) => {
+    const { t } = useTranslation();
     // Helper to parse time string HH:mm:ss to {hour, minute, second}
     const parseTime = (timeStr?: string) => {
         if (!timeStr) return { hour: 0, minute: 0, second: 0 };
@@ -423,7 +426,7 @@ const TaskDialog = ({
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                 <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
-                    <h3 className="text-lg font-semibold text-gray-800">{task ? 'Edit Task' : 'Create New Task'}</h3>
+                    <h3 className="text-lg font-semibold text-gray-800">{task ? t('edit_task') : t('create_new_task')}</h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><Trash2 size={20} className="rotate-45" /></button>
                 </div>
                 
@@ -431,7 +434,7 @@ const TaskDialog = ({
                     {/* Basic Info */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Task Name</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">{t('task_name')}</label>
                             <input 
                                 type="text" 
                                 required
@@ -441,7 +444,7 @@ const TaskDialog = ({
                             />
                         </div>
                         <div className="col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">{t('description')}</label>
                             <input 
                                 type="text" 
                                 value={formData.description || ''}
@@ -454,12 +457,12 @@ const TaskDialog = ({
                     {/* Schedule */}
                     <div className="bg-gray-50 p-4 rounded-lg space-y-4">
                         <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                            <Clock size={16} /> Schedule Configuration
+                            <Clock size={16} /> {t('schedule_configuration')}
                         </h4>
                         
                         <div className="grid grid-cols-3 gap-4">
                             <div>
-                                <label className="block text-xs font-medium text-gray-500 mb-1">Frequency</label>
+                                <label className="block text-xs font-medium text-gray-500 mb-1">{t('frequency')}</label>
                                 <select 
                                     value={formData.scheduleConfig?.type}
                                     onChange={e => setFormData({
@@ -474,13 +477,13 @@ const TaskDialog = ({
                                     className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm"
                                 >
                                     {FREQUENCY_OPTIONS.map(opt => (
-                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                        <option key={opt.value} value={opt.value}>{t(opt.label)}</option>
                                     ))}
                                 </select>
                             </div>
                             <div className="grid grid-cols-3 gap-2 col-span-2">
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-500 mb-1">Hour (0-23)</label>
+                                    <label className="block text-xs font-medium text-gray-500 mb-1">{t('hour_label')}</label>
                                     <input 
                                         type="number" min="0" max="23"
                                         value={timeState.hour}
@@ -489,7 +492,7 @@ const TaskDialog = ({
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-500 mb-1">Minute (0-59)</label>
+                                    <label className="block text-xs font-medium text-gray-500 mb-1">{t('minute_label')}</label>
                                     <input 
                                         type="number" min="0" max="59"
                                         value={timeState.minute}
@@ -498,7 +501,7 @@ const TaskDialog = ({
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-500 mb-1">Second (0-59)</label>
+                                    <label className="block text-xs font-medium text-gray-500 mb-1">{t('second_label')}</label>
                                     <input 
                                         type="number" min="0" max="59"
                                         value={timeState.second}
@@ -511,7 +514,7 @@ const TaskDialog = ({
 
                         {formData.scheduleConfig?.type === 'WEEKLY' && (
                             <div>
-                                <label className="block text-xs font-medium text-gray-500 mb-2">Days of Week</label>
+                                <label className="block text-xs font-medium text-gray-500 mb-2">{t('days_of_week')}</label>
                                 <div className="flex gap-2 flex-wrap">
                                     {DAYS_OF_WEEK.map(day => (
                                         <button
@@ -539,7 +542,7 @@ const TaskDialog = ({
 
                         {formData.scheduleConfig?.type === 'MONTHLY' && (
                             <div>
-                                <label className="block text-xs font-medium text-gray-500 mb-2">Days of Month (1-31)</label>
+                                <label className="block text-xs font-medium text-gray-500 mb-2">{t('days_of_month')}</label>
                                 <div className="grid grid-cols-7 gap-2">
                                     {Array.from({length: 31}, (_, i) => i + 1).map(day => (
                                         <button
@@ -570,24 +573,24 @@ const TaskDialog = ({
                     <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-4">
                             <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                <GitBranch size={16} /> Workflow Configuration
+                                <GitBranch size={16} /> {t('workflow_configuration')}
                             </h4>
                             <div>
-                                <label className="block text-xs font-medium text-gray-500 mb-1">Select Workflow</label>
+                                <label className="block text-xs font-medium text-gray-500 mb-1">{t('select_workflow_label')}</label>
                                 <select 
                                     required
                                     value={formData.workflowId}
                                     onChange={e => setFormData({...formData, workflowId: e.target.value})}
                                     className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm"
                                 >
-                                    <option value="">-- Select Workflow --</option>
+                                    <option value="">{t('select_workflow_placeholder')}</option>
                                     {workflows.map(wf => (
                                         <option key={wf.id} value={wf.id}>{wf.name}</option>
                                     ))}
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-gray-500 mb-1">Initial Input (String)</label>
+                                <label className="block text-xs font-medium text-gray-500 mb-1">{t('initial_input')}</label>
                                 <div className="relative">
                                     <Terminal size={14} className="absolute left-3 top-3 text-gray-400" />
                                     <input 
@@ -595,7 +598,7 @@ const TaskDialog = ({
                                         value={formData.initialInput || ''}
                                         onChange={e => setFormData({...formData, initialInput: e.target.value})}
                                         className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                                        placeholder="Start signal..."
+                                        placeholder={t('start_signal_placeholder')}
                                     />
                                 </div>
                             </div>
@@ -603,7 +606,7 @@ const TaskDialog = ({
 
                         <div className="space-y-4">
                             <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                <Users size={16} /> Target Audience
+                                <Users size={16} /> {t('target_audience')}
                             </h4>
                             
                             <div className="flex gap-4 mb-2">
@@ -615,7 +618,7 @@ const TaskDialog = ({
                                         onChange={() => setFormData({...formData, customerMode: 'CUSTOMER_ROLE', targetIds: []})}
                                         className="text-blue-600"
                                     />
-                                    <span>Customer Role</span>
+                                    <span>{t('customer_role')}</span>
                                 </label>
                                 <label className="flex items-center gap-2 text-sm cursor-pointer">
                                     <input 
@@ -625,19 +628,19 @@ const TaskDialog = ({
                                         onChange={() => setFormData({...formData, customerMode: 'SPECIFIC_CUSTOMER', targetIds: []})}
                                         className="text-blue-600"
                                     />
-                                    <span>Specific Customer</span>
+                                    <span>{t('specific_customer')}</span>
                                 </label>
                             </div>
 
                             {formData.customerMode === 'CUSTOMER_ROLE' ? (
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-500 mb-1">Select Role</label>
+                                    <label className="block text-xs font-medium text-gray-500 mb-1">{t('select_role')}</label>
                                     <select 
                                         value={formData.targetIds?.[0] || ''}
                                         onChange={e => setFormData({...formData, targetIds: [e.target.value]})}
                                         className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm"
                                     >
-                                        <option value="">-- Select Role --</option>
+                                        <option value="">{t('select_role_placeholder')}</option>
                                         {roles.map(role => (
                                             <option key={role.code} value={role.code}>{role.name}</option>
                                         ))}
@@ -645,7 +648,7 @@ const TaskDialog = ({
                                 </div>
                             ) : (
                                 <div className="relative" ref={dropdownRef}>
-                                    <label className="block text-xs font-medium text-gray-500 mb-1">Search Customer</label>
+                                    <label className="block text-xs font-medium text-gray-500 mb-1">{t('search_customer')}</label>
                                     
                                     {/* Selected Customer Display */}
                                     {formData.targetIds && formData.targetIds.length > 0 && (
@@ -686,7 +689,7 @@ const TaskDialog = ({
                                                 setShowDropdown(true);
                                             }}
                                             onFocus={() => setShowDropdown(true)}
-                                            placeholder={formData.targetIds?.length ? "Add another customer..." : "Type customer name..."}
+                                            placeholder={formData.targetIds?.length ? t('add_another_customer') : t('type_customer_name')}
                                             className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                         />
                                     </div>
@@ -695,7 +698,7 @@ const TaskDialog = ({
                                     {showDropdown && searchTerm && (
                                         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                                             {customers.length === 0 ? (
-                                                <div className="p-3 text-center text-xs text-gray-500">No customers found</div>
+                                                <div className="p-3 text-center text-xs text-gray-500">{t('no_customers_found')}</div>
                                             ) : (
                                                 <div className="py-1">
                                                     {customers.map(c => (
@@ -742,13 +745,13 @@ const TaskDialog = ({
                             onClick={onClose}
                             className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium"
                         >
-                            Cancel
+                            {t('cancel')}
                         </button>
                         <button 
                             type="submit"
                             className="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-lg font-medium"
                         >
-                            Save Task
+                            {t('save_task')}
                         </button>
                     </div>
                 </form>

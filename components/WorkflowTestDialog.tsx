@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Send, Trash2, Play, Bot, User, AlertCircle, Clock, CheckCircle2, RotateCcw, ChevronDown, ChevronRight } from 'lucide-react';
 import workflowTestService from '../services/workflowTestService';
 import { TestMessage, WorkflowTestSessionDto, NodeDetail } from '../types/workflowTest';
@@ -6,6 +7,7 @@ import { TestMessage, WorkflowTestSessionDto, NodeDetail } from '../types/workfl
 import { Node } from '@xyflow/react';
 
 const ExecutionPathItem = ({ node, nodes }: { node: NodeDetail, nodes: Node[] }) => {
+    const { t } = useTranslation();
     const [isExpanded, setIsExpanded] = useState(false);
     
     return (
@@ -31,7 +33,7 @@ const ExecutionPathItem = ({ node, nodes }: { node: NodeDetail, nodes: Node[] })
                 <div className="bg-gray-50 px-3 py-2 text-xs font-mono space-y-2 border-t border-gray-100">
                     {node.input && (
                         <div>
-                            <div className="text-[10px] font-bold text-gray-500 uppercase mb-1">Input</div>
+                            <div className="text-[10px] font-bold text-gray-500 uppercase mb-1">{t('workflow_test.input')}</div>
                             <div className="bg-white p-2 rounded border border-gray-200 overflow-x-auto whitespace-pre-wrap max-h-40 overflow-y-auto custom-scrollbar">
                                 {typeof node.input === 'string' ? node.input : JSON.stringify(node.input, null, 2)}
                             </div>
@@ -39,14 +41,14 @@ const ExecutionPathItem = ({ node, nodes }: { node: NodeDetail, nodes: Node[] })
                     )}
                     {node.output && (
                         <div>
-                            <div className="text-[10px] font-bold text-gray-500 uppercase mb-1">Output</div>
+                            <div className="text-[10px] font-bold text-gray-500 uppercase mb-1">{t('workflow_test.output')}</div>
                             <div className="bg-white p-2 rounded border border-gray-200 overflow-x-auto whitespace-pre-wrap max-h-40 overflow-y-auto custom-scrollbar">
                                 {typeof node.output === 'string' ? node.output : JSON.stringify(node.output, null, 2)}
                             </div>
                         </div>
                     )}
                     {!node.input && !node.output && (
-                        <div className="text-gray-400 italic text-[10px]">No detailed data available</div>
+                        <div className="text-gray-400 italic text-[10px]">{t('workflow_test.no_data')}</div>
                     )}
                 </div>
             )}
@@ -69,6 +71,7 @@ export const WorkflowTestDialog: React.FC<WorkflowTestDialogProps> = ({
   nodes = [],
   onClose 
 }) => {
+  const { t } = useTranslation();
   const [testSessionId, setTestSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<TestMessage[]>([]);
   const [input, setInput] = useState('');
@@ -87,7 +90,7 @@ export const WorkflowTestDialog: React.FC<WorkflowTestDialogProps> = ({
         setTestSessionId(session.testSessionId);
         setMessages(session.messages);
       } catch (err: any) {
-        setError(err.message || 'Failed to initialize test session');
+        setError(err.message || t('workflow_test.error_init_session'));
       } finally {
         setLoading(false);
       }
@@ -124,7 +127,7 @@ export const WorkflowTestDialog: React.FC<WorkflowTestDialogProps> = ({
     } catch (err: any) {
       console.error('Send message failed', err);
       // Remove optimistic message or show error
-      setError('Failed to send message');
+      setError(t('workflow_test.error_send_message'));
     } finally {
       setLoading(false);
     }
@@ -154,10 +157,10 @@ export const WorkflowTestDialog: React.FC<WorkflowTestDialogProps> = ({
               <Bot size={20} />
             </div>
             <div>
-              <h3 className="font-bold text-gray-800">Workflow Test</h3>
+              <h3 className="font-bold text-gray-800">{t('workflow_test.title')}</h3>
               <div className="text-xs text-gray-500 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                Running: {workflowName}
+                {t('workflow_test.running')} {workflowName}
               </div>
             </div>
           </div>
@@ -165,7 +168,7 @@ export const WorkflowTestDialog: React.FC<WorkflowTestDialogProps> = ({
             <button 
               onClick={handleClearHistory}
               className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-              title="Clear History"
+              title={t('workflow_test.clear_history')}
             >
               <RotateCcw size={18} />
             </button>
@@ -192,7 +195,7 @@ export const WorkflowTestDialog: React.FC<WorkflowTestDialogProps> = ({
               <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center">
                 <Play size={32} className="text-gray-300 ml-1" />
               </div>
-              <p className="text-sm">Send a message to start testing the workflow</p>
+              <p className="text-sm">{t('workflow_test.start_message')}</p>
             </div>
           )}
 
@@ -282,7 +285,7 @@ export const WorkflowTestDialog: React.FC<WorkflowTestDialogProps> = ({
             </button>
           </div>
           <div className="text-[10px] text-gray-400 text-center mt-2">
-            Test sessions expire after 30 minutes of inactivity
+            {t('workflow_test.session_expiry')}
           </div>
         </div>
       </div>

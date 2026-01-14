@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Plus, Trash2, Save, Play, ChevronDown, ChevronUp, HelpCircle, Code, List } from 'lucide-react';
 import { AiTool, ParameterDefinition, FieldType, AiToolType, AuthType, ApiMethod, McpServerType } from '../../types/aiTool';
 import aiToolApi from '../../services/aiToolApi';
@@ -29,6 +30,7 @@ const DEFAULT_TOOL: Partial<AiTool> = {
 };
 
 export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen, onClose, onSave }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<Partial<AiTool>>(DEFAULT_TOOL);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -115,15 +117,15 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
       // Sync from JSON to Form
       try {
         const parsed = JSON.parse(jsonParameters);
-        if (!Array.isArray(parsed)) {
-          notificationService.error('Parameters must be an array');
-          return;
-        }
-        updateField('parameters', parsed);
-      } catch (e) {
-        notificationService.error('Invalid JSON format');
+      if (!Array.isArray(parsed)) {
+        notificationService.error(t('parameters_must_be_array'));
         return;
       }
+      updateField('parameters', parsed);
+    } catch (e) {
+      notificationService.error(t('invalid_json_format'));
+      return;
+    }
     }
     setParameterMode(mode);
   };
@@ -178,13 +180,13 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
     
     // Validation
     if (!formData.name || !formData.displayName || !formData.toolType) {
-      notificationService.error('Please fill in all required fields');
+      notificationService.error(t('fill_required_fields'));
       return;
     }
 
     // Name validation (letters, numbers, underscores only)
     if (!/^[a-zA-Z0-9_]+$/.test(formData.name)) {
-      notificationService.error('Tool name can only contain letters, numbers, and underscores');
+      notificationService.error(t('tool_name_validation'));
       return;
     }
 
@@ -233,10 +235,10 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
     if (parameterMode === 'json') {
       try {
         const parsed = JSON.parse(jsonParameters);
-        if (!Array.isArray(parsed)) throw new Error('Parameters must be an array');
+        if (!Array.isArray(parsed)) throw new Error(t('parameters_must_be_array'));
         payloadData.parameters = parsed;
       } catch (e) {
-        notificationService.error('Invalid JSON in parameters');
+        notificationService.error(t('invalid_json_parameters'));
         return;
       }
     }
@@ -248,15 +250,15 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
     try {
       if (tool) {
         await aiToolApi.updateTool(tool.id, payload);
-        notificationService.success('Tool updated successfully');
+        notificationService.success(t('tool_updated_success'));
       } else {
         await aiToolApi.createTool(payload as Omit<AiTool, 'id'>);
-        notificationService.success('Tool created successfully');
+        notificationService.success(t('tool_created_success'));
       }
       onSave();
     } catch (error: any) {
       console.error('Failed to save tool', error);
-      notificationService.error(error.response?.data?.message || 'Failed to save tool');
+      notificationService.error(error.response?.data?.message || t('save_tool_failed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -270,7 +272,7 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-100 shrink-0">
           <h3 className="text-xl font-bold text-gray-800">
-            {tool ? 'Edit AI Tool' : 'Create AI Tool'}
+            {tool ? t('edit_ai_tool') : t('create_ai_tool')}
           </h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <X size={24} />
@@ -283,12 +285,12 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
             
             {/* Basic Info */}
             <section className="space-y-4">
-              <h4 className="font-bold text-gray-800 border-b border-gray-100 pb-2">Basic Information</h4>
+              <h4 className="font-bold text-gray-800 border-b border-gray-100 pb-2">{t('basic_information')}</h4>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tool Name <span className="text-red-500">*</span>
+                    {t('tool_name')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -298,11 +300,11 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
                     placeholder="e.g. get_weather"
                     required
                   />
-                  <p className="text-xs text-gray-500 mt-1">Unique identifier for AI calls (letters, numbers, _)</p>
+                  <p className="text-xs text-gray-500 mt-1">{t('tool_name_help')}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Display Name <span className="text-red-500">*</span>
+                    {t('display_name')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -317,20 +319,20 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description <span className="text-red-500">*</span>
+                  {t('description')} <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => updateField('description', e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 h-20 resize-none"
-                  placeholder="Describe what this tool does. This helps the AI understand when to use it."
+                  placeholder={t('description_placeholder')}
                   required
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tool Type <span className="text-red-500">*</span>
+                  {t('tool_type')} <span className="text-red-500">*</span>
                 </label>
                 <div className="flex gap-4">
                   <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-colors ${formData.toolType === 'API' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'border-gray-200 hover:bg-gray-50'}`}>
@@ -342,7 +344,7 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
                       onChange={(e) => updateField('toolType', e.target.value)}
                       className="hidden"
                     />
-                    <span className="font-medium">API Interface</span>
+                    <span className="font-medium">{t('api_interface')}</span>
                   </label>
                   <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-colors ${formData.toolType === 'MCP' ? 'bg-purple-50 border-purple-200 text-purple-700' : 'border-gray-200 hover:bg-gray-50'}`}>
                     <input
@@ -353,7 +355,7 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
                       onChange={(e) => updateField('toolType', e.target.value)}
                       className="hidden"
                     />
-                    <span className="font-medium">MCP Service</span>
+                    <span className="font-medium">{t('mcp_service')}</span>
                   </label>
                   <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-colors ${formData.toolType === 'INTERNAL' ? 'bg-orange-50 border-orange-200 text-orange-700' : 'border-gray-200 hover:bg-gray-50'}`}>
                     <input
@@ -364,7 +366,7 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
                       onChange={(e) => updateField('toolType', e.target.value)}
                       className="hidden"
                     />
-                    <span className="font-medium">Internal Tool</span>
+                    <span className="font-medium">{t('internal_tool')}</span>
                   </label>
                 </div>
               </div>
@@ -372,31 +374,31 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
 
             {/* Result Configuration Section */}
             <section className="space-y-4">
-                 <h4 className="font-bold text-gray-800 border-b border-gray-100 pb-2">Result Configuration</h4>
+                 <h4 className="font-bold text-gray-800 border-b border-gray-100 pb-2">{t('result_configuration')}</h4>
                  
                  <div>
                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                         Result Description
+                         {t('result_description')}
                      </label>
                      <textarea
                          value={formData.resultDescription || ''}
                          onChange={(e) => updateField('resultDescription', e.target.value)}
                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 h-20 resize-none"
-                         placeholder="Describe the returned data structure to help AI understand the output."
+                         placeholder={t('result_description_placeholder')}
                      />
-                     <p className="text-xs text-gray-500 mt-1">Example: Returns a JSON object containing temperature and weather condition.</p>
+                     <p className="text-xs text-gray-500 mt-1">{t('result_description_help')}</p>
                  </div>
 
                  <div>
                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                         Result Metadata (JSON Fields)
+                         {t('result_metadata')}
                      </label>
                      <div className="border border-gray-200 rounded-lg overflow-hidden">
                          <table className="w-full text-sm text-left">
                              <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-200">
                                  <tr>
-                                     <th className="px-4 py-2 w-1/3">Field Name</th>
-                                     <th className="px-4 py-2">Description</th>
+                                     <th className="px-4 py-2 w-1/3">{t('field_name')}</th>
+                                     <th className="px-4 py-2">{t('description')}</th>
                                      <th className="px-4 py-2 w-10"></th>
                                  </tr>
                              </thead>
@@ -435,7 +437,7 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
                                  {metadataRows.length === 0 && (
                                      <tr>
                                          <td colSpan={3} className="px-4 py-6 text-center text-gray-400 italic text-xs">
-                                             No metadata fields defined.
+                                             {t('no_metadata_fields')}
                                          </td>
                                      </tr>
                                  )}
@@ -447,7 +449,7 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
                                  onClick={addMetadataRow}
                                  className="w-full py-1.5 border border-dashed border-gray-300 rounded text-xs text-gray-500 hover:bg-white hover:border-blue-400 hover:text-blue-600 transition-all flex items-center justify-center gap-1"
                              >
-                                 <Plus size={12} /> Add Field
+                                 <Plus size={12} /> {t('add_field')}
                              </button>
                          </div>
                      </div>
@@ -457,7 +459,7 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
             {/* Parameters */}
             <section className="space-y-4">
               <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                <h4 className="font-bold text-gray-800">Parameters</h4>
+                <h4 className="font-bold text-gray-800">{t('parameters_title')}</h4>
                 <div className="flex gap-2">
                   <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200">
                     <button
@@ -469,7 +471,7 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
                           : 'text-gray-500 hover:text-gray-700'
                       }`}
                     >
-                      <List size={14} /> Form
+                      <List size={14} /> {t('form_mode')}
                     </button>
                     <button
                       type="button"
@@ -480,7 +482,7 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
                           : 'text-gray-500 hover:text-gray-700'
                       }`}
                     >
-                      <Code size={14} /> JSON
+                      <Code size={14} /> {t('json_mode')}
                     </button>
                   </div>
                   {parameterMode === 'form' && (
@@ -489,7 +491,7 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
                       onClick={addParameter}
                       className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 ml-2"
                     >
-                      <Plus size={16} /> Add Parameter
+                      <Plus size={16} /> {t('add_field')}
                     </button>
                   )}
                 </div>
@@ -507,7 +509,7 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
                   ))}
                   {(!formData.parameters || formData.parameters.length === 0) && (
                     <div className="text-center py-8 text-gray-400 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                      No parameters defined. Click "Add Parameter" to create one.
+                      {t('no_parameters_required')}
                     </div>
                   )}
                 </div>
@@ -529,11 +531,11 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
             {/* API Config */}
             {formData.toolType === 'API' && (
               <section className="space-y-4">
-                <h4 className="font-bold text-gray-800 border-b border-gray-100 pb-2">API Configuration</h4>
+                <h4 className="font-bold text-gray-800 border-b border-gray-100 pb-2">{t('result_configuration')}</h4>
                 
                 <div className="grid grid-cols-4 gap-4">
                   <div className="col-span-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Method</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('api_interface')}</label>
                     <select
                       value={formData.apiMethod}
                       onChange={(e) => updateField('apiMethod', e.target.value)}
@@ -619,10 +621,10 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
 
             {formData.toolType === 'API' && (
             <section className="space-y-4">
-              <h4 className="font-bold text-gray-800 border-b border-gray-100 pb-2">Authentication</h4>
+              <h4 className="font-bold text-gray-800 border-b border-gray-100 pb-2">{t('authentication_section')}</h4>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Auth Type</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth_type')}</label>
                 <select
                   value={formData.authType}
                   onChange={(e) => updateField('authType', e.target.value)}
@@ -661,7 +663,7 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
                 className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-800"
               >
                 {showAdvanced ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                Advanced Options
+                {t('result_configuration')}
               </button>
 
               {showAdvanced && (
@@ -722,7 +724,7 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
             onClick={onClose}
             className="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors font-medium"
           >
-            Cancel
+            {t('cancel')}
           </button>
           <button
             type="submit"
@@ -730,7 +732,7 @@ export const AiToolEditDialog: React.FC<AiToolEditDialogProps> = ({ tool, isOpen
             disabled={isSubmitting}
             className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? 'Saving...' : 'Save Tool'}
+            {isSubmitting ? t('saving') : t('save_button')}
           </button>
         </div>
       </div>

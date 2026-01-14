@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Trash2, Plus } from 'lucide-react';
 import { ParameterDefinition, FieldType } from '../../types/aiTool';
 
@@ -15,6 +16,7 @@ const FIELD_TYPES: FieldType[] = [
 ];
 
 export const ParameterEditor: React.FC<ParameterEditorProps> = ({ parameter, onChange, onRemove, depth = 0, isItemDefinition = false }) => {
+  const { t } = useTranslation();
   const handleChange = (field: keyof ParameterDefinition, value: any) => {
     if (field === 'type') {
       const newType = value as FieldType;
@@ -90,27 +92,27 @@ export const ParameterEditor: React.FC<ParameterEditorProps> = ({ parameter, onC
         type="button"
         onClick={onRemove}
         className="absolute right-2 top-2 text-gray-400 hover:text-red-500 p-1 rounded hover:bg-red-50 transition-colors z-10"
-        title="Remove Parameter"
+        title={t('remove_parameter')}
       >
         <Trash2 size={16} />
       </button>
 
       {!isItemDefinition && (
         <div className="mb-3 pr-8">
-          <label className="block text-xs font-medium text-gray-500 mb-1">Parameter Name</label>
+          <label className="block text-xs font-medium text-gray-500 mb-1">{t('parameter_name')}</label>
           <input
             type="text"
             value={parameter.name}
             onChange={(e) => handleChange('name', e.target.value)}
             className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm font-mono"
-            placeholder="name"
+            placeholder={t('parameter_name_placeholder')}
           />
         </div>
       )}
 
       <div className="grid grid-cols-4 gap-4 mb-3">
         <div className="col-span-2">
-          <label className="block text-xs font-medium text-gray-500 mb-1">Type</label>
+          <label className="block text-xs font-medium text-gray-500 mb-1">{t('type_label')}</label>
           <select
             value={parameter.type}
             onChange={(e) => handleChange('type', e.target.value)}
@@ -128,7 +130,7 @@ export const ParameterEditor: React.FC<ParameterEditorProps> = ({ parameter, onC
                 onChange={(e) => handleChange('required', e.target.checked)}
                 className="rounded text-blue-600 focus:ring-blue-500"
               />
-              Required
+              {t('required_label')}
             </label>
           </div>
         )}
@@ -136,25 +138,25 @@ export const ParameterEditor: React.FC<ParameterEditorProps> = ({ parameter, onC
 
       {parameter.type === 'ENUM' && (
         <div className="mb-3">
-          <label className="block text-xs font-medium text-gray-500 mb-1">Enum Values (comma separated)</label>
+          <label className="block text-xs font-medium text-gray-500 mb-1">{t('enum_values_label')}</label>
           <input
             type="text"
             value={parameter.enumValues?.join(', ') || ''}
             onChange={(e) => handleChange('enumValues', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
             className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm font-mono"
-            placeholder="metric, imperial"
+            placeholder={t('parameter_enum_placeholder')}
           />
         </div>
       )}
 
       <div className="mb-3">
-        <label className="block text-xs font-medium text-gray-500 mb-1">Description</label>
+        <label className="block text-xs font-medium text-gray-500 mb-1">{t('description_label')}</label>
         <input
           type="text"
           value={parameter.description}
           onChange={(e) => handleChange('description', e.target.value)}
           className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"
-          placeholder="Parameter description"
+          placeholder={t('parameter_description_placeholder')}
         />
       </div>
 
@@ -162,13 +164,13 @@ export const ParameterEditor: React.FC<ParameterEditorProps> = ({ parameter, onC
       {parameter.type === 'OBJECT' && (
         <div className="mt-4 pl-4 border-l-2 border-blue-200">
           <div className="flex justify-between items-center mb-2">
-            <h5 className="text-xs font-bold text-gray-600 uppercase">Properties</h5>
+            <h5 className="text-xs font-bold text-gray-600 uppercase">{t('properties_label')}</h5>
             <button
               type="button"
               onClick={handleAddProperty}
               className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
             >
-              <Plus size={14} /> Add Property
+              <Plus size={14} /> {t('add_property')}
             </button>
           </div>
           <div className="space-y-3">
@@ -183,7 +185,7 @@ export const ParameterEditor: React.FC<ParameterEditorProps> = ({ parameter, onC
             ))}
             {(!parameter.properties || parameter.properties.length === 0) && (
               <div className="text-center py-4 text-gray-400 text-xs italic">
-                No properties defined for this object.
+                {t('no_properties_defined')}
               </div>
             )}
           </div>
@@ -193,7 +195,7 @@ export const ParameterEditor: React.FC<ParameterEditorProps> = ({ parameter, onC
       {/* Array Items Definition */}
       {parameter.type === 'ARRAY' && parameter.items && (
         <div className="mt-4 pl-4 border-l-2 border-purple-200">
-          <h5 className="text-xs font-bold text-gray-600 uppercase mb-2">Array Items Definition</h5>
+          <h5 className="text-xs font-bold text-gray-600 uppercase mb-2">{t('array_items_definition')}</h5>
           <ParameterEditor
             parameter={parameter.items}
             onChange={handleItemsChange}

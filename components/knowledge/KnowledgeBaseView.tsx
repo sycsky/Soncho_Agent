@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { KnowledgeBase } from '../../types';
 import knowledgeBaseApi from '../../services/knowledgeBaseApi';
 import notificationService from '../../services/notificationService';
@@ -7,6 +8,7 @@ import { KnowledgeBaseDetail } from './KnowledgeBaseDetail';
 import { KnowledgeBaseDialog } from './KnowledgeBaseDialog';
 
 export const KnowledgeBaseView: React.FC = () => {
+  const { t } = useTranslation();
   const [viewMode, setViewMode] = useState<'LIST' | 'DETAIL'>('LIST');
   const [selectedKb, setSelectedKb] = useState<KnowledgeBase | null>(null);
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
@@ -23,11 +25,11 @@ export const KnowledgeBaseView: React.FC = () => {
       setKnowledgeBases(data);
     } catch (error) {
       console.error('Failed to fetch knowledge bases:', error);
-      notificationService.error('Failed to load knowledge bases');
+      notificationService.error(t('loading_kb_failed'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchKnowledgeBases();
@@ -36,10 +38,10 @@ export const KnowledgeBaseView: React.FC = () => {
   const handleCreateKb = async (data: any) => {
     try {
       await knowledgeBaseApi.createKnowledgeBase(data);
-      notificationService.success('Knowledge base created successfully');
+      notificationService.success(t('kb_created_success'));
       fetchKnowledgeBases();
     } catch (error) {
-      notificationService.error('Failed to create knowledge base');
+      notificationService.error(t('kb_created_failed'));
       throw error;
     }
   };
@@ -48,36 +50,36 @@ export const KnowledgeBaseView: React.FC = () => {
     if (!editingKb) return;
     try {
       await knowledgeBaseApi.updateKnowledgeBase(editingKb.id, data);
-      notificationService.success('Knowledge base updated successfully');
+      notificationService.success(t('kb_updated_success'));
       fetchKnowledgeBases();
     } catch (error) {
-      notificationService.error('Failed to update knowledge base');
+      notificationService.error(t('kb_updated_failed'));
       throw error;
     }
   };
 
   const handleDeleteKb = async (kb: KnowledgeBase) => {
-    if (!window.confirm(`Are you sure you want to delete "${kb.name}"? This action cannot be undone.`)) return;
+    if (!window.confirm(t('confirm_delete_kb', { name: kb.name }))) return;
     try {
       await knowledgeBaseApi.deleteKnowledgeBase(kb.id);
-      notificationService.success('Knowledge base deleted');
+      notificationService.success(t('kb_deleted_success'));
       fetchKnowledgeBases();
       if (selectedKb?.id === kb.id) {
         setViewMode('LIST');
         setSelectedKb(null);
       }
     } catch (error) {
-      notificationService.error('Failed to delete knowledge base');
+      notificationService.error(t('kb_deleted_failed'));
     }
   };
 
   const handleRebuildIndex = async (kb: KnowledgeBase) => {
-    if (!window.confirm(`Rebuild index for "${kb.name}"? This may take a while.`)) return;
+    if (!window.confirm(t('confirm_rebuild_index', { name: kb.name }))) return;
     try {
       await knowledgeBaseApi.rebuildIndex(kb.id);
-      notificationService.success('Index rebuild started');
+      notificationService.success(t('index_rebuild_started'));
     } catch (error) {
-      notificationService.error('Failed to rebuild index');
+      notificationService.error(t('index_rebuild_failed'));
     }
   };
 

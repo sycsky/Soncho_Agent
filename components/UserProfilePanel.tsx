@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { UserProfile, UserSource, QuickReply, ChatSession, Agent } from '../types';
 import { MapPin, Mail, Phone, Tag, Plus, X, MessageSquareText, Trash2, Lock, Shield, Sparkles, Loader2, Edit3, Check, Crown, Users } from 'lucide-react';
 import { DEFAULT_AVATAR } from '../constants';
@@ -23,6 +24,7 @@ interface UserProfilePanelProps {
   onTransferChat: (agentId: string) => void;
   isGeneratingTags?: boolean;
   canManageSessionAgents?: boolean;
+  subscription?: Subscription | null;
 }
 
 export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({ 
@@ -40,15 +42,18 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   onRemoveSupportAgent,
   onTransferChat,
   isGeneratingTags = false,
-  canManageSessionAgents = false
+  canManageSessionAgents = false,
+  subscription
 }) => {
+  const { t } = useTranslation();
+  const canAiTags = subscription?.supportAiTags ?? false;
   // 安全检查: 如果 user 不存在，返回提示
   if (!user) {
     return (
       <div className="w-80 bg-white border-l border-gray-200 p-6 flex items-center justify-center text-gray-400">
         <div className="text-center">
           <Users size={48} className="mx-auto mb-2 opacity-50" />
-          <p className="text-sm">No user selected</p>
+          <p className="text-sm">{t('no_user_selected')}</p>
         </div>
       </div>
     );
@@ -147,8 +152,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
       try {
         const newReply = await quickReplyServiceAPI.createQuickReply({
           label: newReplyLabel.trim(),
-          text: newReplyText.trim(),
-          category: 'Personal'
+          text: newReplyText.trim()
         }, agentId);
         setPersonalQuickReplies([newReply, ...personalQuickReplies]);
         setNewReplyLabel('');
@@ -198,7 +202,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                         <button 
                             onClick={() => setIsEditingName(true)} 
                             className="absolute left-full ml-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-blue-500 p-1"
-                            title="Edit Name"
+                            title={t('edit_name')}
                         >
                             <Edit3 size={16} />
                         </button>
@@ -210,11 +214,11 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
         <span className={`mt-1 px-3 py-1 rounded-full text-xs font-semibold ${
           user.source === UserSource.WECHAT ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
         }`}>
-          {user.source === UserSource.WECHAT ? 'WeChat User' : 'Web Visitor'}
+          {user.source === UserSource.WECHAT ? t('wechat_user') : t('web_visitor')}
         </span>
         {currentSession.category && (
           <div className="mt-2 text-xs text-gray-600">
-            分组信息：{currentSession.category.name}
+            {t('group_info', { name: currentSession.category.name })}
           </div>
         )}
       </div>
@@ -225,7 +229,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
         <div>
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                <Users size={14} /> Support Team
+                <Users size={14} /> {t('support_team')}
               </h3>
               <div className="relative">
                   <button 
@@ -246,16 +250,16 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                       }
                     }}
                     className={`p-1 rounded transition-colors ${canManageSessionAgents ? 'text-blue-600 hover:bg-blue-50' : 'text-gray-300 cursor-not-allowed'}`}
-                    title="Add Agent to Group"
+                    title={t('add_agent_to_group')}
                   >
                     <Plus size={16} />
                   </button>
                   {isAddingAgent && (
                       <div className="absolute right-0 top-6 w-48 bg-white shadow-xl border border-gray-200 rounded-lg z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                          <div className="bg-gray-50 px-3 py-2 text-[10px] font-bold text-gray-400 uppercase border-b border-gray-100">Add Support Agent</div>
+                          <div className="bg-gray-50 px-3 py-2 text-[10px] font-bold text-gray-400 uppercase border-b border-gray-100">{t('add_support_agent')}</div>
                           <div className="max-h-40 overflow-y-auto">
                               {isLoadingAvailable ? (
-                                <div className="p-3 text-center text-xs text-gray-400">Loading...</div>
+                                <div className="p-3 text-center text-xs text-gray-400">{t('loading')}</div>
                               ) : (
                                 <>
                                   {availableAgents.map(agent => (
@@ -275,7 +279,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                                     </button>
                                   ))}
                                   {availableAgents.length === 0 && (
-                                    <div className="p-3 text-center text-xs text-gray-400">No agents available</div>
+                                    <div className="p-3 text-center text-xs text-gray-400">{t('no_agents_available')}</div>
                                   )}
                                 </>
                               )}
@@ -293,8 +297,8 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2.5 flex items-center gap-3 relative">
                       <Avatar name={currentSession.agents!.find(a => a.isPrimary)?.name} src={currentSession.agents!.find(a => a.isPrimary)?.avatar} size={32} borderClassName="border-2 border-yellow-300" bgClassName="bg-yellow-200" textClassName="text-yellow-700" />
                       <div>
-                          <div className="text-xs font-bold text-gray-800">{currentSession.agents!.find(a => a.isPrimary)?.name || 'Unknown'}</div>
-                          <div className="text-[10px] text-yellow-700 font-bold flex items-center gap-1 uppercase tracking-wider"><Crown size={10} /> Primary Owner</div>
+                          <div className="text-xs font-bold text-gray-800">{currentSession.agents!.find(a => a.isPrimary)?.name || t('unknown_user')}</div>
+                          <div className="text-[10px] text-yellow-700 font-bold flex items-center gap-1 uppercase tracking-wider"><Crown size={10} /> {t('primary_owner')}</div>
                       </div>
                   </div>
                 ) : null}
@@ -307,16 +311,16 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                         <Avatar name={a.name} src={a.avatar} size={24} />
                         <div className="flex-1">
                           <div className="text-xs font-medium text-gray-700">{a.name}</div>
-                          <div className="text-[10px] text-gray-400">Support</div>
+                          <div className="text-[10px] text-gray-400">{t('support_role')}</div>
                         </div>
                         {canManageSessionAgents && (
                           <button
                             onClick={() => {
-                              if (!confirm('确定移除该支持客服吗？')) return;
+                              if (!confirm(t('confirm_remove_support_agent'))) return;
                               onRemoveSupportAgent(a.id);
                             }}
                             className="text-gray-400 hover:text-red-500 p-1 rounded"
-                            title="Remove Support Agent"
+                            title={t('remove_support_agent')}
                           >
                             <Trash2 size={12} />
                           </button>
@@ -325,7 +329,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                     ))}
                   </div>
                 ) : (
-                  <div className="text-xs text-gray-400 italic pl-2">No other support agents</div>
+                  <div className="text-xs text-gray-400 italic pl-2">{t('no_other_support_agents')}</div>
                 )}
             </div>
         </div>
@@ -334,7 +338,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
 
         {/* Contact Info */}
         <div className="space-y-3">
-          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Contact Info</h3>
+          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('contact_info')}</h3>
           {user.email && (
             <div className="flex items-center text-sm text-gray-600">
               <Mail size={16} className="mr-3 text-gray-400" />
@@ -359,17 +363,17 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
         <div>
            <div className="flex justify-between items-center mb-3">
              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-               User Tags <Tag size={14} />
+               {t('user_tags')} <Tag size={14} />
              </h3>
-             {onGenerateAiTags && (
+             {onGenerateAiTags && canAiTags && (
                <button 
                 onClick={() => onGenerateAiTags(user.id)}
                 disabled={isGeneratingTags}
                 className="text-purple-600 hover:text-purple-800 text-[10px] font-bold flex items-center gap-1 bg-purple-50 px-2 py-1 rounded transition-colors disabled:opacity-50"
-                title="Auto-analyze user with AI"
+                title={t('ai_analyze_tooltip')}
                >
                  {isGeneratingTags ? <Loader2 size={10} className="animate-spin"/> : <Sparkles size={10} />}
-                 AI Analyze
+                 {t('ai_analyze_button')}
                </button>
              )}
            </div>
@@ -401,7 +405,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                 type="text"
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
-                placeholder="Add manual tag..."
+                placeholder={t('add_manual_tag_placeholder')}
                 className="w-full text-sm border border-gray-300 rounded-md pl-3 pr-8 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
              />
              <button type="submit" className="absolute right-1 top-1.5 text-blue-500 hover:text-blue-700">
@@ -413,10 +417,10 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
         {/* Notes */}
         <div>
           <div className="flex justify-between items-center mb-2">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Internal Notes</h3>
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('internal_notes_title')}</h3>
             {!isEditingNote && (
               <button onClick={() => setIsEditingNote(true)} className="text-xs text-blue-500 hover:underline">
-                Edit
+                {t('edit_button')}
               </button>
             )}
           </div>
@@ -433,19 +437,19 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                   onClick={() => setIsEditingNote(false)}
                   className="px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded"
                 >
-                  Cancel
+                  {t('cancel_button')}
                 </button>
                 <button 
                   onClick={saveNote}
                   className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
                 >
-                  Save
+                  {t('save_button')}
                 </button>
               </div>
             </div>
           ) : (
             <div className="bg-yellow-50 p-3 rounded-md border border-yellow-100 text-sm text-gray-700 min-h-[80px]">
-              {user.notes || "No notes added."}
+              {user.notes || t('no_notes_placeholder')}
             </div>
           )}
         </div>
@@ -454,13 +458,13 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
         <div>
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                <MessageSquareText size={14} /> Quick Replies
+                <MessageSquareText size={14} /> {t('quick_replies')}
               </h3>
               {!isAddingReply && (
                 <button 
                   onClick={() => setIsAddingReply(true)}
                   className="text-blue-600 hover:bg-blue-50 p-1 rounded transition-colors"
-                  title="Add Personal Reply"
+                  title={t('new_personal_reply')}
                 >
                   <Plus size={16} />
                 </button>
@@ -469,16 +473,16 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
 
             {isAddingReply && (
               <div className="mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200 animate-in slide-in-from-top-2 fade-in duration-200">
-                <div className="text-xs font-semibold text-blue-600 mb-2">New Personal Reply</div>
+                <div className="text-xs font-semibold text-blue-600 mb-2">{t('new_personal_reply')}</div>
                 <input 
                   type="text"
-                  placeholder="Label (e.g. My Greeting)"
+                  placeholder={t('personal_reply_label_placeholder')}
                   value={newReplyLabel}
                   onChange={(e) => setNewReplyLabel(e.target.value)}
                   className="w-full mb-2 text-xs font-semibold border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500"
                 />
                 <textarea
-                  placeholder="Message content..."
+                  placeholder={t('message_content_placeholder')}
                   value={newReplyText}
                   onChange={(e) => setNewReplyText(e.target.value)}
                   className="w-full mb-2 text-xs border border-gray-300 rounded px-2 py-1.5 h-16 resize-none focus:outline-none focus:border-blue-500"
@@ -488,14 +492,14 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                     onClick={() => setIsAddingReply(false)} 
                     className="text-xs text-gray-500 px-2 py-1 hover:text-gray-700"
                   >
-                    Cancel
+                    {t('cancel')}
                   </button>
                   <button 
                     onClick={handleAddPersonalReply}
                     disabled={!newReplyLabel.trim() || !newReplyText.trim()}
                     className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Add
+                    {t('add')}
                   </button>
                 </div>
               </div>
@@ -511,14 +515,14 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                   >
                     <div className="flex justify-between items-center mb-1">
                       <div className="text-xs font-bold text-gray-700 group-hover:text-blue-700">{reply.label}</div>
-                      <span className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full">Personal</span>
+                      <span className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full">{t('personal_category')}</span>
                     </div>
                     <div className="text-xs text-gray-500 truncate">{reply.text}</div>
                   </button>
                   <button 
                     onClick={(e) => { e.stopPropagation(); deletePersonalReply(reply.id); }}
                     className="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-white/80 rounded backdrop-blur-sm"
-                    title="Delete Personal Reply"
+                    title={t('delete_personal_reply')}
                   >
                     <Trash2 size={12} />
                   </button>
@@ -535,13 +539,13 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                     <div className="flex justify-between items-center mb-1">
                       <div className="text-xs font-bold text-gray-700">{reply.label}</div>
                       <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full flex items-center gap-1">
-                        <Shield size={8} /> System
+                        <Shield size={8} /> {t('system_category')}
                       </span>
                     </div>
                     <div className="text-xs text-gray-500 truncate">{reply.text}</div>
                   </button>
                   {/* System replies cannot be deleted here */}
-                  <div className="absolute top-2 right-2 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity p-1" title="System Managed">
+                  <div className="absolute top-2 right-2 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity p-1" title={t('system_managed')}>
                     <Lock size={12} />
                   </div>
                 </div>

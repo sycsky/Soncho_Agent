@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ExternalPlatform } from '../../types/platform';
 import { platformApi } from '../../services/platformApi';
 import { Plus, Edit, Trash2, Globe, Power, PowerOff } from 'lucide-react';
 import { CreatePlatformDialog } from './CreatePlatformDialog';
 
 export const PlatformView: React.FC = () => {
+  const { t } = useTranslation();
   const [platforms, setPlatforms] = useState<ExternalPlatform[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingPlatform, setEditingPlatform] = useState<ExternalPlatform | null>(null);
@@ -27,13 +29,13 @@ export const PlatformView: React.FC = () => {
   };
 
   const handleDeletePlatform = async (id: string, name: string) => {
-    if (!window.confirm(`Are you sure you want to delete platform "${name}"?`)) return;
+    if (!window.confirm(t('delete_confirm'))) return;
     try {
       await platformApi.deletePlatform(id);
       loadPlatforms();
     } catch (error) {
       console.error('Failed to delete platform:', error);
-      alert('Failed to delete platform');
+      alert(t('delete_failed'));
     }
   };
 
@@ -57,13 +59,13 @@ export const PlatformView: React.FC = () => {
     <div className="p-8 max-w-6xl mx-auto w-full relative animate-in fade-in duration-300">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-          <Globe className="text-blue-600" /> External Platforms
+          <Globe className="text-blue-600" /> {t('external_platforms')}
         </h2>
         <button 
           onClick={handleCreatePlatform} 
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium flex items-center gap-2"
         >
-          <Plus size={16} /> Add Platform
+          <Plus size={16} /> {t('create_platform_config')}
         </button>
       </div>
 
@@ -71,22 +73,22 @@ export const PlatformView: React.FC = () => {
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Name / Display Name</th>
-              <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Type</th>
-              <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Auth Type</th>
-              <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Status</th>
-              <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Created At</th>
-              <th className="text-right py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Actions</th>
+              <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">{t('name')}</th>
+              <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">{t('type_label')}</th>
+              <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">{t('auth_type')}</th>
+              <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">{t('status')}</th>
+              <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">{t('table_updated')}</th>
+              <th className="text-right py-3 px-6 text-xs font-semibold text-gray-500 uppercase">{t('actions')}</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
                <tr>
-                 <td colSpan={6} className="py-8 text-center text-gray-500">Loading platforms...</td>
+                 <td colSpan={6} className="py-8 text-center text-gray-500">{t('loading_configurations')}</td>
                </tr>
             ) : platforms.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-8 text-center text-gray-500">No external platforms configured</td>
+                <td colSpan={6} className="py-8 text-center text-gray-500">{t('not_configured')}</td>
               </tr>
             ) : (
               platforms.map(platform => (
@@ -104,11 +106,11 @@ export const PlatformView: React.FC = () => {
                   <td className="py-4 px-6">
                     {platform.enabled ? (
                       <span className="flex items-center gap-1 text-green-600 text-sm font-medium">
-                        <Power size={14} /> Enabled
+                        <Power size={14} /> {t('enabled')}
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 text-gray-400 text-sm font-medium">
-                        <PowerOff size={14} /> Disabled
+                        <PowerOff size={14} /> {t('disabled')}
                       </span>
                     )}
                   </td>
@@ -120,14 +122,14 @@ export const PlatformView: React.FC = () => {
                       <button 
                         onClick={() => handleEditPlatform(platform)} 
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                        title="Edit"
+                        title={t('edit')}
                       >
                         <Edit size={16} />
                       </button>
                       <button 
                         onClick={() => handleDeletePlatform(platform.id, platform.name)} 
                         className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
-                        title="Delete"
+                        title={t('delete')}
                       >
                         <Trash2 size={16} />
                       </button>

@@ -1,6 +1,7 @@
 
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChatSession, Message, MessageSender, ChatStatus, Attachment, Agent, QuickReply } from '../types';
 import sessionService from '../services/sessionService';
 import fileService from '../services/fileService';
@@ -8,10 +9,19 @@ import {
   Send, Paperclip, Smile, Bot, User, CheckCircle, X, 
   Eye, EyeOff, Wand2, Loader2, Sparkles, ArrowRightLeft, 
   Maximize2, Minimize2, Check, Languages, Globe, ClipboardCheck, ArrowLeft,
-  FileText as FileTextIcon
+  FileText as FileTextIcon,
+  ShoppingBag,
+  Gift,
+  Ticket
 } from 'lucide-react';
 import { DEFAULT_AVATAR } from '../constants';
 import Avatar from './Avatar';
+import { ProductSelector } from './ProductSelector';
+import { Product } from '../types/product';
+import { ProductCard, GiftCard, DiscountCard, OrderCard } from './MessageCards';
+import { DiscountSelector } from './DiscountSelector';
+import { GiftCardCreator } from './GiftCardCreator';
+import { Subscription } from '../services/billingApi';
 
 interface ChatAreaProps {
   session: ChatSession;
@@ -31,11 +41,12 @@ interface ChatAreaProps {
   currentAgentLanguage?: string;
   onBack?: () => void;
   onShowProfile?: () => void;
+  subscription?: Subscription | null;
 }
 
 const EMOJIS = ['😀', '😂', '😍', '😭', '😡', '👍', '👎', '🎉', '🔥', '❤️', '👀', '✅', '❌', '👋', '🙏', '💯'];
 
-// Helper to parse and render mentions in chat history
+  // Helper to parse and render mentions in chat history
 const renderWithMentions = (text: string): React.ReactNode => {
   const regex = /@\[(.*?)\]\(user:(.*?)\)/g;
   const parts = text.split(regex);
@@ -72,8 +83,13 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   isAnalyzingSentiment,
   currentAgentLanguage = 'en',
   onBack,
-  onShowProfile
+  onShowProfile,
+  subscription
 }) => {
+  const { t } = useTranslation();
+  const canMagicRewrite = subscription?.supportMagicRewrite ?? false;
+  const canSmartSummary = subscription?.supportSmartSummary ?? false;
+
   const [inputText, setInputText] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isInternalMode, setIsInternalMode] = useState(false);
@@ -107,11 +123,89 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   const [mentionableAgents, setMentionableAgents] = useState<Agent[]>([]);
   const [mentionLoading, setMentionLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [showProductSelector, setShowProductSelector] = useState(false);
+  const [showDiscountSelector, setShowDiscountSelector] = useState(false);
+  const [showGiftCardCreator, setShowGiftCardCreator] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleProductSelect = (product: Product) => {
+      // Append product info to input
+      const productText = t('check_out_product', {
+          title: product.title,
+          currency: product.currency,
+          price: product.price,
+          url: product.url
+      });
+      setInputText(prev => prev ? `${prev}\n${productText}` : productText);
+      setShowProductSelector(false);
+      
+      // Focus textarea
+      setTimeout(() => {
+          textareaRef.current?.focus();
+      }, 0);
+  };
+
+  const handleSendCard = (product: Product | Product[]) => {
+      // Normalize to array
+      const productList = Array.isArray(product) ? product : [product];
+      
+      const cardData = productList.map(p => ({
+            id: p.id,
+            title: p.title,
+            price: p.price,
+            currency: p.currency,
+            url: p.url,
+            image: p.imageUrl,
+            handle: p.url?.split('/').pop() || '',
+            variantId: p.variantId, // Ensure variantId is passed
+            discounts: p.applicableDiscounts || [] // Pass discounts to card
+      }));
+      
+      // Format: card#TYPE#JSON
+      const payload = `card#CARD_PRODUCT#${JSON.stringify(cardData)}`;
+      
+      onSendMessage(payload, [], false, isTranslationEnabled, []);
+      setShowProductSelector(false);
+  };
+
+  const handleSendGiftCard = (giftCard: any) => {
+      const payload = `card#CARD_GIFT#${JSON.stringify(giftCard)}`;
+      onSendMessage(payload, [], false, isTranslationEnabled, []);
+      setShowGiftCardCreator(false);
+  };
+
+  const handleSendDiscountCard = (discount: any) => {
+      const cardData = {
+          code: discount.code,
+          value: discount.value,
+          description: discount.description
+      };
+      const payload = `card#CARD_DISCOUNT#${JSON.stringify(cardData)}`;
+      onSendMessage(payload, [], false, isTranslationEnabled, []);
+      setShowDiscountSelector(false);
+  };
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
+  const renderMessageContent = (msg: Message, shouldShowTranslation: boolean, translationContent?: string) => {
+    if (msg.messageType && msg.messageType.startsWith('CARD_')) {
+        try {
+            const cardData = JSON.parse(msg.text);
+            switch (msg.messageType) {
+                case 'CARD_PRODUCT': return <ProductCard data={cardData} />;
+                case 'CARD_GIFT': return <GiftCard data={cardData} />;
+                case 'CARD_DISCOUNT': return <DiscountCard data={cardData} />;
+                case 'CARD_ORDER': return <OrderCard data={cardData} />;
+            }
+        } catch (e) {
+            return <div className="text-red-500 text-xs">{t('error_rendering_card')}</div>;
+        }
+    }
+    return <p className="text-sm leading-relaxed whitespace-pre-wrap">{renderWithMentions(shouldShowTranslation ? (translationContent as string) : msg.text)}</p>;
+  };
+
   const isResolved = session.status === ChatStatus.RESOLVED;
 
   useEffect(() => {
@@ -259,16 +353,19 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   };
 
   const closeAllPopups = () => {
-      setShowEmojiPicker(false);
-      setShowSlashMenu(false);
-      setShowMentionMenu(false);
+    setShowEmojiPicker(false);
+    setShowSlashMenu(false);
+    setShowMentionMenu(false);
+    setShowProductSelector(false);
+    setShowDiscountSelector(false);
+    setShowGiftCardCreator(false);
   };
 
-  const placeholderText = isRewriting ? "AI Magic Rewrite in progress..." 
-    : isInternalMode || mentionedAgents.length > 0 ? "Type internal note..." 
-    : isResolved ? "Ticket resolved. Re-open to message." 
-    : session.status === ChatStatus.AI_HANDLING ? "Take over and type a message..." 
-    : "Type a message... (Type '/' for commands, '@' to mention)";
+  const placeholderText = isRewriting ? t('magic_rewrite_progress') 
+    : isInternalMode || mentionedAgents.length > 0 ? t('internal_note_placeholder') 
+    : isResolved ? t('ticket_resolved_placeholder') 
+    : session.status === ChatStatus.AI_HANDLING ? t('take_over_placeholder') 
+    : t('type_message_placeholder');
 
   return (
     <div className="flex-1 flex flex-col bg-white h-full relative">
@@ -282,19 +379,19 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             )}
             {!isZenMode ? (
               <div>
-                  <h2 className="font-bold text-gray-800">{session.user?.name || 'Unknown User'}</h2>
+                  <h2 className="font-bold text-gray-800">{session.user?.name || t('unknown_user')}</h2>
                   <div className="flex items-center gap-2 text-xs text-gray-500">
                       <span className={`w-2 h-2 rounded-full ${session.status === ChatStatus.AI_HANDLING ? 'bg-purple-500' : 'bg-orange-500'}`}></span>
-                      {session.status === ChatStatus.AI_HANDLING ? 'AI Pilot' : 'Human Agent'}
+                      {session.status === ChatStatus.AI_HANDLING ? t('ai_pilot_label') : t('human_agent_label')}
                   </div>
               </div>
             ) : (
               <div className="flex items-center gap-3">
                  <Avatar name={session.user?.name} src={session.user?.avatar || undefined} size={40} bgClassName="bg-gray-100" />
                  <div>
-                    <h2 className="font-bold text-gray-800">{session.user?.name || 'Unknown User'}</h2>
+                    <h2 className="font-bold text-gray-800">{session.user?.name || t('unknown_user')}</h2>
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-bold uppercase tracking-wider text-[10px]">Zen Mode</span>
+                      <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-bold uppercase tracking-wider text-[10px]">{t('zen_mode_label')}</span>
                     </div>
                  </div>
               </div>
@@ -305,7 +402,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
               <div className="hidden lg:flex flex-col items-end mr-4">
                  <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">
                    {isAnalyzingSentiment ? <Loader2 size={10} className="animate-spin" /> : null}
-                   Live Sentiment
+                   {t('live_sentiment')}
                  </div>
                  <div className="flex items-center gap-2">
                     <div className="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden">
@@ -327,32 +424,32 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                     ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100' 
                     : 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100'
                 }`}
-                title={session.status === ChatStatus.AI_HANDLING ? "Switch to Human Agent" : "Switch to AI Pilot"}
+                title={session.status === ChatStatus.AI_HANDLING ? t('switch_to_human_agent') : t('switch_to_ai_pilot')}
                >
                  {session.status === ChatStatus.AI_HANDLING ? <Bot size={14}/> : <User size={14}/>}
-                 {session.status === ChatStatus.AI_HANDLING ? 'AI Pilot' : 'Human'}
+                 {session.status === ChatStatus.AI_HANDLING ? t('ai_pilot_label') : t('human_agent_label')}
                </button>
 
               <button 
                  onClick={toggleTranslation} 
                  className={`p-2 rounded-lg transition-all duration-200 ${isTranslationEnabled ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'}`} 
-                 title={isTranslationEnabled ? "Translation Active" : "Enable Translation"}
+                 title={isTranslationEnabled ? t('translation_active') : t('enable_translation')}
               >
                  <Languages size={18} />
               </button>
 
               <div className="h-6 w-px bg-gray-200 mx-1 hidden sm:block"></div>
 
-              <button onClick={onSummary} className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="AI Smart Summary"><Sparkles size={18} /></button>
-              <button onClick={onTransfer} className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Transfer Chat"><ArrowRightLeft size={18} /></button>
-              <button onClick={() => setIsZenMode(!isZenMode)} className={`p-2 rounded-lg transition-colors ${isZenMode ? 'text-blue-600 bg-blue-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`} title={isZenMode ? "Exit Zen Mode" : "Enter Zen Mode"}>{isZenMode ? <Minimize2 size={18} /> : <Maximize2 size={18} />}</button>
+              <button onClick={onSummary} className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title={t('ai_smart_summary')}><Sparkles size={18} /></button>
+              <button onClick={onTransfer} className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title={t('transfer_chat_tooltip')}><ArrowRightLeft size={18} /></button>
+              <button onClick={() => setIsZenMode(!isZenMode)} className={`p-2 rounded-lg transition-colors ${isZenMode ? 'text-blue-600 bg-blue-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`} title={isZenMode ? t('exit_zen_mode') : t('enter_zen_mode')}>{isZenMode ? <Minimize2 size={18} /> : <Maximize2 size={18} />}</button>
               <div className="h-6 w-px bg-gray-200 mx-1"></div>
               <button 
                 onClick={onResolve} 
                 disabled={isResolved}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 transition-colors ${isResolved ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700 shadow-sm'}`}
               >
-                  <Check size={14} /> {isResolved ? 'Resolved' : 'Resolve'}
+                  <Check size={14} /> {isResolved ? t('resolved_status') : t('resolve_action')}
               </button>
           </div>
       </div>
@@ -364,6 +461,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
               const isAi = msg.sender === MessageSender.AI;
               const isInternal = msg.isInternal;
               const isSystem = msg.sender === MessageSender.SYSTEM;
+              const isCard = msg.messageType && msg.messageType.startsWith('CARD_');
+
               // Use prop passed from parent (reactive) or fallback to localStorage/default
               const targetLang = currentAgentLanguage || localStorage.getItem('agent_language') || 'en';
               const translationContent = msg.translationData?.[targetLang];
@@ -373,48 +472,61 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                 return (
                    <div key={msg.id} className="w-full flex flex-col items-center gap-4 my-8 animate-in fade-in zoom-in-95 duration-500">
                       <div className="bg-amber-50 border border-amber-100 text-gray-700 text-xs px-5 py-4 rounded-xl shadow-sm max-w-xl w-full mx-auto relative">
-                          <div className="flex items-center gap-2 mb-2 border-b border-amber-200/50 pb-2"><ClipboardCheck size={14} className="text-amber-600"/><span className="font-bold text-amber-800 uppercase tracking-wide text-[10px]">Resolution Summary</span></div>
+                          <div className="flex items-center gap-2 mb-2 border-b border-amber-200/50 pb-2"><ClipboardCheck size={14} className="text-amber-600"/><span className="font-bold text-amber-800 uppercase tracking-wide text-[10px]">{t('resolution_summary')}</span></div>
                           <p className="whitespace-pre-wrap leading-relaxed">{renderWithMentions(shouldShowTranslation ? (translationContent as string) : msg.text)}</p>
                           {shouldShowTranslation && (
                              <div className="mt-2 pt-2 border-t border-amber-200/50 text-[10px] flex items-center gap-1.5 text-amber-600/70">
                                 <Globe size={10} />
-                                <span className="font-semibold">Translated from {msg.translationData?.originalText || 'Original'}</span>
+                                <span className="font-semibold">{t('translated_from')} {msg.translationData?.originalText || t('original_text')}</span>
                              </div>
                           )}
                       </div>
                       <div className="flex items-center w-full gap-4 opacity-70">
                          <div className="h-px bg-gray-300 flex-1"></div>
-                         <div className="flex items-center gap-2 text-gray-400 bg-gray-50 px-3 py-1 rounded-full border border-gray-200"><CheckCircle size={12} className="text-green-500" /><span className="text-[10px] font-bold uppercase tracking-wider">Ticket Resolved</span><span className="text-[10px] opacity-50">• {new Date(msg.timestamp).toLocaleString()}</span></div>
+                         <div className="flex items-center gap-2 text-gray-400 bg-gray-50 px-3 py-1 rounded-full border border-gray-200"><CheckCircle size={12} className="text-green-500" /><span className="text-[10px] font-bold uppercase tracking-wider">{t('ticket_resolved_status')}</span><span className="text-[10px] opacity-50">• {new Date(msg.timestamp).toLocaleString()}</span></div>
                          <div className="h-px bg-gray-300 flex-1"></div>
                       </div>
                    </div>
                 );
               }
 
+              // Handle card messages separately
+              if (isCard) {
+                return (
+                  <div key={msg.id} className={`flex flex-col ${isUser ? 'items-start' : 'items-end'}`}>
+                      <div className={`flex ${isUser ? 'justify-start' : 'justify-end'} w-full`}>
+                          <div className="relative">
+                              {renderMessageContent(msg, !!shouldShowTranslation, translationContent)}
+                              <div className="text-[10px] mt-1 opacity-70 flex items-center justify-end gap-1 text-gray-400">
+                                {isAi && <Bot size={10} />}
+                                {msg.sender === MessageSender.AGENT && <User size={10} />}
+                                {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+                );
+              }
+
               return (
                   <div key={msg.id} className={`flex flex-col ${isUser ? 'items-start' : 'items-end'}`}>
                       <div className={`flex ${isUser ? 'justify-start' : 'justify-end'} w-full`}>
-                          <div className={`max-w-[70%] rounded-2xl p-4 shadow-sm relative group ${isUser ? 'bg-white text-gray-800 rounded-tl-none border border-gray-100' : isAi ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-tr-none' : isInternal ? 'bg-yellow-100 text-yellow-900 border border-yellow-200 rounded-tr-none' : 'bg-blue-600 text-white rounded-tr-none'}`}>
-                              {isInternal && (<div className="mb-2 pb-1 border-b border-yellow-200 flex items-center gap-2 text-yellow-800/80"><EyeOff size={12} /> <span className="text-[10px] font-bold uppercase tracking-wider">Internal Note</span></div>)}
+                          <div className={`max-w-[70%] rounded-2xl p-4 shadow-sm relative group ${
+                            isUser ? 'bg-white text-gray-800 rounded-tl-none border border-gray-100' : 
+                            isAi ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-tr-none' : 
+                            isInternal ? 'bg-yellow-100 text-yellow-900 border border-yellow-200 rounded-tr-none' : 
+                            'bg-blue-600 text-white rounded-tr-none'
+                          }`}>
+                              {isInternal && (<div className="mb-2 pb-1 border-b border-yellow-200 flex items-center gap-2 text-yellow-800/80"><EyeOff size={12} /> <span className="text-[10px] font-bold uppercase tracking-wider">{t('internal_note_label')}</span></div>)}
                               {msg.attachments && msg.attachments.length > 0 && (<div className="mb-2 space-y-2">{msg.attachments.map(att => (<div key={att.id} className="rounded-lg overflow-hidden bg-black/10">{att.type === 'IMAGE' ? (<img src={att.url} alt="Attachment" className="max-w-full h-auto max-h-60 object-contain" />) : (<div className="flex items-center gap-3 p-3 bg-white/20"><FileTextIcon size={24} /><div className="flex flex-col overflow-hidden"><span className="text-sm font-medium truncate">{att.name}</span><span className="text-xs opacity-70">{att.size}</span></div></div>)}</div>))}</div>)}
-                              <p className="text-sm leading-relaxed whitespace-pre-wrap">{renderWithMentions(shouldShowTranslation ? (translationContent as string) : msg.text)}</p>
+                              {renderMessageContent(msg, !!shouldShowTranslation, translationContent)}
                               
                               {shouldShowTranslation && (
                                  <div className={`mt-2 pt-2 border-t text-[10px] flex items-center gap-1.5 ${isUser ? 'border-gray-100 text-gray-500' : 'border-white/20 text-blue-100'}`}>
                                     <Globe size={10} />
-                                    <span className="font-semibold">Translated from {msg.translationData?.originalText || 'Original'}</span>
+                                    <span className="font-semibold">{t('translated_from')} {msg.translationData?.originalText || t('original_text')}</span>
                                  </div>
                               )}
-
-                              {/* {!shouldShowTranslation && msg.translation && (
-                                 <div className={`mt-2 pt-2 border-t text-[10px] flex items-center gap-1.5 ${isUser ? 'border-gray-100 text-gray-500' : 'border-white/20 text-blue-100'}`}>
-                                    <Globe size={10} />
-                                    <span className="font-semibold">Translated to {msg.translation.originalText}</span>
-                                    {isUser && (
-                                       <span className="ml-auto underline cursor-pointer hover:text-blue-500">View Original</span>
-                                    )}
-                                 </div>
-                              )} */}
 
                               <div className={`text-[10px] mt-1 opacity-70 flex items-center justify-end gap-1 ${isInternal ? 'text-yellow-700' : (isUser ? 'text-gray-400' : 'text-blue-100')}`}>{isAi && <Bot size={10} />}{msg.sender === MessageSender.AGENT && <User size={10} />}{new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
                           </div>
@@ -429,8 +541,33 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       {/* Input Area */}
       <div className={`relative ${isZenMode ? 'max-w-3xl mx-auto w-full' : ''}`}>
           
-          {(showEmojiPicker || showSlashMenu || showMentionMenu) && (
+          {(showEmojiPicker || showSlashMenu || showMentionMenu || showProductSelector || showDiscountSelector || showGiftCardCreator) && (
               <div className="fixed inset-0 z-10" onClick={closeAllPopups}></div>
+          )}
+
+          {showProductSelector && (
+            <ProductSelector 
+                isOpen={showProductSelector}
+                onClose={() => setShowProductSelector(false)}
+                onSelect={handleProductSelect}
+                onSendCard={handleSendCard}
+            />
+          )}
+
+          {showDiscountSelector && (
+            <DiscountSelector
+                isOpen={showDiscountSelector}
+                onClose={() => setShowDiscountSelector(false)}
+                onSend={handleSendDiscountCard}
+            />
+          )}
+
+          {showGiftCardCreator && (
+            <GiftCardCreator
+                isOpen={showGiftCardCreator}
+                onClose={() => setShowGiftCardCreator(false)}
+                onSend={handleSendGiftCard}
+            />
           )}
 
           {showEmojiPicker && (
@@ -445,7 +582,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           
           {showSlashMenu && (
             <div className="absolute bottom-full mb-2 left-4 bg-white shadow-xl rounded-xl border border-gray-200 w-72 z-20 max-h-60 overflow-y-auto animate-in slide-in-from-bottom-2 duration-200">
-              <div className="px-3 py-2 border-b border-gray-100 bg-gray-50 text-xs font-bold text-gray-500 uppercase">Quick Replies</div>
+              <div className="px-3 py-2 border-b border-gray-100 bg-gray-50 text-xs font-bold text-gray-500 uppercase">{t('quick_replies_title')}</div>
               {systemQuickReplies.filter(r => r.label.toLowerCase().includes(slashFilter.toLowerCase()) || r.text.toLowerCase().includes(slashFilter.toLowerCase())).map(reply => (
                 <button key={reply.id} onClick={() => insertSlashCommand(reply.text)} className="w-full text-left px-4 py-2 hover:bg-blue-50 flex flex-col gap-0.5 border-b border-gray-50 last:border-0">
                   <span className="text-sm font-semibold text-gray-800">{reply.label}</span>
@@ -456,8 +593,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           )}
 
           {showMentionMenu && (
-             <div className="absolute bottom-full mb-2 left-10 bg白 shadow-xl rounded-xl border border-gray-200 w-64 z-20 max-h-60 overflow-y-auto animate-in slide-in-from-bottom-2 duration-200">
-               <div className="px-3 py-2 border-b border-gray-100 bg-gray-50 text-xs font-bold text-gray-500 uppercase">Mention Agent</div>
+             <div className="absolute bottom-full mb-2 left-10 bg-white shadow-xl rounded-xl border border-gray-200 w-64 z-20 max-h-60 overflow-y-auto animate-in slide-in-from-bottom-2 duration-200">
+               <div className="px-3 py-2 border-b border-gray-100 bg-gray-50 text-xs font-bold text-gray-500 uppercase">{t('mention_agent_title')}</div>
                {(mentionLoading ? [] : mentionableAgents).filter(a => a.name.toLowerCase().includes(mentionFilter.toLowerCase())).map(agent => (
                  <button key={agent.id} onClick={() => insertMention(agent)} className="w-full text-left px-4 py-2 hover:bg-blue-50 flex items-center gap-3 border-b border-gray-50 last:border-0">
                    <Avatar name={agent.name} src={agent.avatar} size={24} />
@@ -465,10 +602,10 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                  </button>
                ))}
                {(!mentionLoading && (mentionableAgents.filter(a => a.name.toLowerCase().includes(mentionFilter.toLowerCase())).length === 0)) && (
-                 <div className="p-3 text-xs text-gray-400 text-center">No agents found</div>
+                 <div className="p-3 text-xs text-gray-400 text-center">{t('no_agents_found')}</div>
                )}
                {mentionLoading && (
-                  <div className="p-3 text-xs text-gray-400 text-center">Loading...</div>
+                  <div className="p-3 text-xs text-gray-400 text-center">{t('loading_dots')}</div>
                )}
              </div>
           )}
@@ -476,7 +613,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       
       <div className={`p-4 border-t border-gray-200 shrink-0 transition-colors duration-300 ${isInternalMode || mentionedAgents.length > 0 ? 'bg-yellow-50' : 'bg-white'} ${isZenMode ? 'flex justify-center' : ''} relative z-10`}>
            <div className={`${isZenMode ? 'w-full max-w-3xl' : 'w-full'}`}>
-             {(isInternalMode || mentionedAgents.length > 0) && (<div className="flex items-center gap-2 mb-2 text-yellow-700 text-xs font-bold animate-in slide-in-from-bottom-2"><EyeOff size={14} /> Internal Whisper Mode Active (User cannot see this)</div>)}
+             {(isInternalMode || mentionedAgents.length > 0) && (<div className="flex items-center gap-2 mb-2 text-yellow-700 text-xs font-bold animate-in slide-in-from-bottom-2"><EyeOff size={14} /> {t('internal_whisper_mode')}</div>)}
              
              {attachments.length > 0 && (
                 <div className="flex gap-3 mb-3 overflow-x-auto pb-2 px-1">
@@ -519,14 +656,17 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                     <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileSelect} />
                     
                     <div className="flex items-center gap-0.5 mr-2 bg-gray-100 rounded-lg p-1">
-                        <button onClick={() => fileInputRef.current?.click()} disabled={isUploading} className={`p-1.5 text-gray-500 hover:text-gray-700 hover:bg-white rounded-md transition-all ${isUploading ? 'opacity-50 cursor-wait' : ''}`} title="Attach File">{isUploading ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} />}</button>
-                        <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} disabled={isResolved} className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-white rounded-md transition-all" title="Emoji"><Smile size={16} /></button>
+                        <button onClick={() => fileInputRef.current?.click()} disabled={isUploading} className={`p-1.5 text-gray-500 hover:text-gray-700 hover:bg-white rounded-md transition-all ${isUploading ? 'opacity-50 cursor-wait' : ''}`} title={t('attach_file_tooltip')}>{isUploading ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} />}</button>
+                        <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} disabled={isResolved} className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-white rounded-md transition-all" title={t('emoji_tooltip')}><Smile size={16} /></button>
+                        <button onClick={() => setShowProductSelector(true)} disabled={isResolved} className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-white rounded-md transition-all" title={t('products_tooltip')}><ShoppingBag size={16} /></button>
+                        <button onClick={() => setShowGiftCardCreator(true)} disabled={isResolved} className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-white rounded-md transition-all" title={t('send_gift_card_tooltip')}><Gift size={16} /></button>
+                        <button onClick={() => setShowDiscountSelector(true)} disabled={isResolved} className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-white rounded-md transition-all" title={t('send_discount_tooltip')}><Ticket size={16} /></button>
                         
                         <div className="w-px h-4 bg-gray-300 mx-1"></div>
                         
-                        <button onClick={() => setIsInternalMode(!isInternalMode)} disabled={isResolved || mentionedAgents.length > 0} className={`p-1.5 rounded-md transition-all ${isInternalMode || mentionedAgents.length > 0 ? 'text-yellow-600 bg-yellow-100' : 'text-gray-500 hover:text-gray-700 hover:bg-white'}`} title="Internal Whisper Mode"><EyeOff size={16} /></button>
-                        {!isInternalMode && inputText.trim().length > 3 && (
-                            <button onClick={handleMagicRewrite} disabled={isRewriting || isResolved} className="p-1.5 rounded-md text-purple-500 hover:bg-purple-100 hover:text-purple-700 transition-all" title="Magic Rewrite"><Wand2 size={16} /></button>
+                        <button onClick={() => setIsInternalMode(!isInternalMode)} disabled={isResolved || mentionedAgents.length > 0} className={`p-1.5 rounded-md transition-all ${isInternalMode || mentionedAgents.length > 0 ? 'text-yellow-600 bg-yellow-100' : 'text-gray-500 hover:text-gray-700 hover:bg-white'}`} title={t('internal_whisper_mode_tooltip')}><EyeOff size={16} /></button>
+                        {!isInternalMode && inputText.trim().length > 3 && canMagicRewrite && (
+                            <button onClick={handleMagicRewrite} disabled={isRewriting || isResolved} className="p-1.5 rounded-md text-purple-500 hover:bg-purple-100 hover:text-purple-700 transition-all" title={t('magic_rewrite_tooltip')}><Wand2 size={16} /></button>
                         )}
                     </div>
 

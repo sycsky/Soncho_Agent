@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"name": "ai_agent_web",
+			"path": "."
+		},
+		{
+			"name": "ai_kef",
+			"path": "../ai_kef"
+		}
+	]
+}

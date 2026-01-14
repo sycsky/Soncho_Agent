@@ -6,6 +6,14 @@ interface ApiResponse<T> {
   code: number;
   message: string;
   data: T;
+  success?: boolean;
+}
+
+class ApiError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ApiError';
+  }
 }
 
 const getToken = (): string | null => {
@@ -61,18 +69,27 @@ const api: ApiService = {
 
       // Handle non-OK HTTP status codes
       if (!response.ok) {
-        // Try to parse error response
+        let errorMessage = `HTTP ${response.status}: ${response.statusText || 'Unknown Error'}`;
+        
         try {
-          const errorResponse: ApiResponse<T> = await response.json();
-          const errorMessage = errorResponse.message || `HTTP ${response.status}: ${response.statusText}`;
-          notificationService.error(errorMessage);
-          throw new Error(errorMessage);
-        } catch (parseError) {
-          // If JSON parsing fails, use status text
-          const errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-          notificationService.error(errorMessage);
-          throw new Error(errorMessage);
+          const textBody = await response.text();
+          try {
+            const errorJson = JSON.parse(textBody);
+            // Support multiple error formats
+            errorMessage = errorJson.message || errorJson.error || errorMessage;
+          } catch (e) {
+            // Not JSON, use text body if short enough, otherwise default
+            if (textBody && textBody.length < 200) {
+              errorMessage = textBody;
+            }
+          }
+        } catch (e) {
+          // Failed to read text body, stick to default
         }
+
+        console.error(`API Error (${response.status}):`, errorMessage);
+        notificationService.error(errorMessage);
+        throw new ApiError(errorMessage);
       }
 
       const jsonResponse: ApiResponse<T> = await response.json();
@@ -83,13 +100,13 @@ const api: ApiService = {
         // Backend returned non-200 code in response body
         const errorMessage = jsonResponse.message || `API Error: ${jsonResponse.code}`;
         notificationService.error(errorMessage);
-        throw new Error(errorMessage);
+        throw new ApiError(errorMessage);
       }
     } catch (error) {
       // Network errors or other exceptions
       if (error instanceof Error) {
         // If it's already our thrown error, re-throw it
-        if (error.message.startsWith('HTTP') || error.message.startsWith('API Error')) {
+        if (error instanceof ApiError || error.message.startsWith('HTTP') || error.message.startsWith('API Error')) {
           throw error;
         }
         // Network error

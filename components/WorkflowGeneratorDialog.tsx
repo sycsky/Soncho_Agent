@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Wand2, Loader2, Bot } from 'lucide-react';
 import { workflowApi } from '../services/workflowApi';
 import { LlmModel } from '../types/workflow';
@@ -14,6 +15,7 @@ export const WorkflowGeneratorDialog: React.FC<WorkflowGeneratorDialogProps> = (
   onClose,
   onGenerate
 }) => {
+  const { t } = useTranslation();
   const [prompt, setPrompt] = useState('');
   const [selectedModelId, setSelectedModelId] = useState('');
   const [models, setModels] = useState<LlmModel[]>([]);
@@ -55,7 +57,7 @@ export const WorkflowGeneratorDialog: React.FC<WorkflowGeneratorDialogProps> = (
       onClose();
     } catch (err: any) {
       console.error('Generation failed', err);
-      setError(err.message || 'Failed to generate workflow');
+      setError(err.message || t('workflow_generator.error_generate'));
     } finally {
       setGenerating(false);
     }
@@ -73,8 +75,8 @@ export const WorkflowGeneratorDialog: React.FC<WorkflowGeneratorDialogProps> = (
               <Wand2 size={20} />
             </div>
             <div>
-              <h3 className="font-bold text-gray-800">Generate Workflow</h3>
-              <p className="text-xs text-purple-600/80">Describe what you want, AI builds it</p>
+              <h3 className="font-bold text-gray-800">{t('workflow_generator.title')}</h3>
+              <p className="text-xs text-purple-600/80">{t('workflow_generator.subtitle')}</p>
             </div>
           </div>
           <button 
@@ -95,7 +97,7 @@ export const WorkflowGeneratorDialog: React.FC<WorkflowGeneratorDialogProps> = (
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Select AI Model
+              {t('workflow_generator.select_model')}
             </label>
             {loading ? (
               <div className="w-full h-10 bg-gray-50 rounded-lg animate-pulse" />
@@ -112,7 +114,7 @@ export const WorkflowGeneratorDialog: React.FC<WorkflowGeneratorDialogProps> = (
                       {model.name} ({model.provider})
                     </option>
                   ))}
-                  {models.length === 0 && <option disabled>No enabled models found</option>}
+                  {models.length === 0 && <option disabled>{t('workflow_generator.no_models')}</option>}
                 </select>
               </div>
             )}
@@ -120,12 +122,12 @@ export const WorkflowGeneratorDialog: React.FC<WorkflowGeneratorDialogProps> = (
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Prompt
+              {t('workflow_generator.prompt')}
             </label>
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="E.g., Create a customer support workflow that identifies intent, searches knowledge base for answers, and transfers to human if sentiment is negative..."
+              placeholder={t('workflow_generator.prompt_placeholder')}
               className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:bg-white transition-all min-h-[120px] resize-none"
             />
           </div>

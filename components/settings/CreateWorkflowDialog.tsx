@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Loader2, Tag } from 'lucide-react';
 import { workflowApi } from '../../services/workflowApi';
 import { WorkflowCategory } from '../../types/workflow';
@@ -24,6 +25,7 @@ export const CreateWorkflowDialog: React.FC<CreateWorkflowDialogProps> = ({
   mode = 'create',
   workflowId
 }) => {
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
@@ -61,6 +63,7 @@ export const CreateWorkflowDialog: React.FC<CreateWorkflowDialogProps> = ({
       setAvailableCategories(categories);
     } catch (error) {
       console.error('Failed to load categories:', error);
+      // Optional: notificationService.error(t('failed_load_categories'));
     } finally {
       setIsLoadingCategories(false);
     }
@@ -84,6 +87,7 @@ export const CreateWorkflowDialog: React.FC<CreateWorkflowDialogProps> = ({
       onClose();
     } catch (error) {
       console.error(`Failed to ${mode} workflow:`, error);
+      // Optional: notificationService.error(t('failed_save_workflow'));
     } finally {
       setIsSubmitting(false);
     }
@@ -95,7 +99,7 @@ export const CreateWorkflowDialog: React.FC<CreateWorkflowDialogProps> = ({
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-100 shrink-0">
           <h3 className="text-xl font-bold text-gray-800">
-            {mode === 'create' ? 'Create New Workflow' : 'Edit Workflow Settings'}
+            {mode === 'create' ? t('workflow_editor.create_new_workflow') : t('workflow_editor.edit_workflow_settings')}
           </h3>
           <button 
             onClick={onClose} 
@@ -111,14 +115,14 @@ export const CreateWorkflowDialog: React.FC<CreateWorkflowDialogProps> = ({
           <form id="create-workflow-form" onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Workflow Name <span className="text-red-500">*</span>
+                {t('workflow_editor.workflow_name')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g. Customer Support Flow"
+                placeholder={t('workflow_editor.workflow_name_placeholder')}
                 required
                 autoFocus
                 disabled={isSubmitting}
@@ -173,7 +177,7 @@ export const CreateWorkflowDialog: React.FC<CreateWorkflowDialogProps> = ({
                   </div>
                 ) : (
                   <div className="text-center py-4 text-gray-400 text-xs italic">
-                    No categories available
+                    {t('workflow_editor.no_categories_available')}
                   </div>
                 )}
               </div>
@@ -189,7 +193,7 @@ export const CreateWorkflowDialog: React.FC<CreateWorkflowDialogProps> = ({
               className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               disabled={isSubmitting}
             >
-              Cancel
+              {t('cancel')}
             </button>
             <button
               type="submit"
@@ -198,7 +202,7 @@ export const CreateWorkflowDialog: React.FC<CreateWorkflowDialogProps> = ({
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting && <Loader2 className="animate-spin" size={16} />}
-              {mode === 'create' ? 'Create Workflow' : 'Save Changes'}
+              {mode === 'create' ? t('create_workflow') : t('save_changes')}
             </button>
         </div>
       </div>

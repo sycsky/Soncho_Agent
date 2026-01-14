@@ -3,8 +3,9 @@
   "name": "AI Agent Widget",
   "target": "body",
   "stylesheet": "ai-agent-widget.css",
+  "javascript": "ai-agent-widget.js",
   "settings": [
-     {
+    {
       "type": "text",
       "id": "api_base_url",
       "label": "API Base URL",
@@ -65,19 +66,19 @@
 {% endschema %}
 
 <script>
-  window.AI_CHAT_CONFIG = Object.assign(window.AI_CHAT_CONFIG || {}, {
-    apiBaseUrl: {{ block.settings.api_base_url | json }},
-    wsUrl: {{ block.settings.ws_url | json }},
-    mode: {{ block.settings.mode | json }},
-    userName: {{ block.settings.user_name | json }},
-    agentId: {{ block.settings.agent_id | json }},
-    primaryColor: {{ block.settings.primary_color | json }},
-    position: {{ block.settings.position | json }},
-    welcomeMessage: {{ block.settings.welcome_message | json }},
-    shop: {{ shop.permanent_domain | json }}
-  });
+  window.addEventListener('DOMContentLoaded', () => {
+    window.AI_CHAT_CONFIG = Object.assign(window.AI_CHAT_CONFIG || {}, {
+      apiBaseUrl: {{ block.settings.api_base_url | json }},
+      wsUrl: {{ block.settings.ws_url | json }},
+      mode: {{ block.settings.mode | json }},
+      userName: {{ block.settings.user_name | json }},
+      agentId: {{ block.settings.agent_id | json }},
+      primaryColor: {{ block.settings.primary_color | json }},
+      position: {{ block.settings.position | json }},
+      welcomeMessage: {{ block.settings.welcome_message | json }},
+      shop: {{ shop.permanent_domain | json }}
+    });
 
-  (() => {
     const scriptId = 'pms-chat-widget-script';
     const existingScript = document.getElementById(scriptId);
     if (existingScript) return;
@@ -98,5 +99,5 @@
       }
     };
     document.head.appendChild(script);
-  })();
+  });
 </script>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Agent, ChatSession, ChatStatus, Message, MessageSender, QuickReply, Attachment, KnowledgeEntry, Role, Notification, ChatGroup, UserProfile, SessionCategory } from './types';
-import { generateAIResponse, generateChatSummary, rewriteMessage, analyzeSentiment, suggestUserTags } from './services/geminiService';
+import { generateAIResponse, rewriteMessage, analyzeSentiment, suggestUserTags } from './services/geminiService';
 import api from './services/api';
 import websocketService, { ServerMessage } from './services/websocketService';
 import notificationService from './services/notificationService';
@@ -21,6 +22,7 @@ import { SettingsView } from './components/SettingsView';
 import { WorkflowView } from './components/WorkflowView';
 import sessionCategoryService from './services/sessionCategoryService';
 import sessionService, { SessionSummaryPreview } from './services/sessionService';
+import { billingApi, Subscription } from './services/billingApi';
 import TransferDialog from './components/TransferDialog';
 import { 
   CheckCircle, Check, AlertCircle, Info, PartyPopper, Zap, Play, Pause, X,
@@ -31,9 +33,10 @@ import { ShopifyAppProvider } from './components/shopify/ShopifyAppProvider';
 import { ShopifyDashboard } from './components/shopify/ShopifyDashboard';
 import { ShopifyInstall } from './components/shopify/ShopifyInstall';
 import { ShopifyBilling } from './components/shopify/ShopifyBilling';
-import { checkShopifyAuth, exchangeShopifyForAgentSession, getShopifyLaunchParams, initiateShopifyInstall, saveShopifyLaunchParams } from './services/shopifyAuthService';
+import { exchangeShopifyForAgentSession, getShopifyLaunchParams, initiateShopifyInstall, probeShopifyExchange, saveShopifyLaunchParams } from './services/shopifyAuthService';
 import { checkSubscriptionStatus, verifySubscription } from './services/shopifyBillingService';
 import { Button } from '@shopify/polaris';
+import { Toaster } from 'sonner';
 
 // Type for the successful login response data
 interface LoginResponse {
@@ -58,16 +61,18 @@ interface TransferNotification {
   timestamp: number;
 }
 
-const PERMISSION_DEFINITIONS = [
-    { key: 'viewAnalytics', label: 'View Analytics Dashboard', description: 'Allow access to system performance metrics and reports.', icon: 'BarChart' },
-    { key: 'manageKnowledgeBase', label: 'Manage Knowledge Base', description: 'Allow creating, editing, and deleting knowledge base entries.', icon: 'Database' },
-    { key: 'manageSystem', label: 'Manage System Settings', description: 'Allow configuration of global quick replies and system preferences.', icon: 'Settings' },
-    { key: 'manageTeam', label: 'Manage Team Members', description: 'Allow adding, editing, or removing agent accounts.', icon: 'Users' },
-    { key: 'deleteChats', label: 'Delete Chat History', description: 'Allow permanent deletion of customer chat logs.', icon: 'Trash2' },
-];
-
 function App() {
+  const { t } = useTranslation();
+
+  const PERMISSION_DEFINITIONS = useMemo(() => [
+    { key: 'viewAnalytics', label: t('permission_view_analytics_label'), description: t('permission_view_analytics_desc'), icon: 'BarChart' },
+    { key: 'manageKnowledgeBase', label: t('permission_manage_knowledge_base_label'), description: t('permission_manage_knowledge_base_desc'), icon: 'Database' },
+    { key: 'manageSystem', label: t('permission_manage_system_label'), description: t('permission_manage_system_desc'), icon: 'Settings' },
+    { key: 'manageTeam', label: t('permission_manage_team_label'), description: t('permission_manage_team_desc'), icon: 'Users' },
+    { key: 'deleteChats', label: t('permission_delete_chats_label'), description: t('permission_delete_chats_desc'), icon: 'Trash2' },
+  ], [t]);
   const [loadingState, setLoadingState] = useState<'INITIALIZING' | 'LOADING' | 'READY' | 'ERROR'>('INITIALIZING');
+  const [authError, setAuthError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isShopifyEmbedded, setIsShopifyEmbedded] = useState(false);
   const [isShopifyAuthenticated, setIsShopifyAuthenticated] = useState(false);
@@ -92,12 +97,13 @@ function App() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [chatGroups, setChatGroups] = useState<ChatGroup[]>([]);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  // const [notifications, setNotifications] = useState<Notification[]>([]); // Deprecated: using sonner
   const [systemQuickReplies, setSystemQuickReplies] = useState<QuickReply[]>([]);
   const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeEntry[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [categories, setCategories] = useState<SessionCategory[]>([]);
   const [transferNotifications, setTransferNotifications] = useState<TransferNotification[]>([]);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
 
   // UI States
   const [activeView, setActiveView] = useState<'DASHBOARD' | 'INBOX' | 'TEAM' | 'CUSTOMERS' | 'ANALYTICS' | 'SETTINGS' | 'WORKFLOW'>('INBOX');
@@ -153,17 +159,26 @@ function App() {
   const canManageSessionAgents = true;
 
   const showToast = (type: 'SUCCESS' | 'ERROR' | 'INFO', message: string) => {
-    const id = Date.now().toString();
-    setNotifications(prev => [...prev, { id, type, message }]);
-    setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== id));
-    }, 4000);
+    switch (type) {
+      case 'SUCCESS':
+        toast.success(message);
+        break;
+      case 'ERROR':
+        toast.error(message);
+        break;
+      case 'INFO':
+      default:
+        toast.info(message);
+        break;
+    }
   };
 
-  // Connect notification service to showToast on mount
-  useEffect(() => {
-    notificationService.setListener(showToast);
-  }, []);
+  // Connect notification service to showToast on mount - DEPRECATED
+  // NotificationService now uses sonner directly, but we keep this for compatibility if needed
+  // or just remove it. Since we modified NotificationService to ignore setListener, we can remove this.
+  // useEffect(() => {
+  //   notificationService.setListener(showToast);
+  // }, []);
 
   const handleWebSocketMessage = useCallback((message: ServerMessage) => {
     const messageId = Math.random().toString(36).substring(7);
@@ -184,6 +199,7 @@ function App() {
             agentId?: string;
             text: string;
             internal: boolean;
+            messageType?: string; // Add messageType
             translationData?: any;
             mentions: string[];
             attachments: Attachment[];
@@ -200,6 +216,7 @@ function App() {
                   backendMessage.senderType === 'SYSTEM' ? MessageSender.SYSTEM : MessageSender.USER,
           timestamp: new Date(backendMessage.createdAt).getTime(),
           isInternal: backendMessage.internal,
+          messageType: backendMessage.messageType, // Map messageType
           attachments: backendMessage.attachments,
           mentions: backendMessage.mentions,
           translation: backendMessage.translationData,
@@ -381,6 +398,14 @@ function App() {
         setCurrentUser(loggedInUser);
       }
 
+      // Fetch subscription data
+      try {
+        const subData = await billingApi.getCurrentSubscription();
+        setSubscription(subData);
+      } catch (error) {
+        console.error('Failed to fetch subscription:', error);
+      }
+
       // The full agent list for Team View will be loaded on demand.
       setAgents([]);
 
@@ -402,7 +427,7 @@ function App() {
       setLoadingState('READY');
     } catch (error) {
       console.error("Failed to fetch bootstrap data:", error);
-      showToast('ERROR', 'Could not load workspace data. Please try again.');
+      showToast('ERROR', t('error_load_workspace'));
       setLoadingState('ERROR');
       handleLogout();
     }
@@ -411,8 +436,8 @@ function App() {
   useEffect(() => {
     // ✅ 防止 Strict Mode 导致的重复调用
     if (isInitialized.current) {
-      console.log('⏭️ 跳过重复初始化 (Strict Mode)');
-      return;
+      // console.log('⏭️ 跳过重复初始化 (Strict Mode)');
+      // return;
     }
     isInitialized.current = true;
     
@@ -429,11 +454,6 @@ function App() {
       const confirmBilling = urlParams.get('confirm_billing');
       const planId = urlParams.get('plan_id');
       const chargeId = urlParams.get('charge_id');
-
-      if (!checkShopifyAuth(shop)) {
-        initiateShopifyInstall(shop);
-        return;
-      }
 
       const ensureBackendAgentSession = async (): Promise<boolean> => {
         const existingToken = localStorage.getItem('nexus_token');
@@ -453,6 +473,40 @@ function App() {
         }
 
         try {
+          const probe = await probeShopifyExchange(shop);
+          if (!probe.success) {
+            // Check specific error message from backend
+            // Backend returns { success: false, error: 'Shop not installed' } if not installed
+            // Backend returns { success: false, error: 'installed' } if installed but needs token exchange
+            
+            if (probe.error === 'Shop not installed') {
+              console.warn('Shopify probe: Shop not installed. Redirecting to install.');
+              return false; // Triggers ShopifyInstall component
+            }
+            
+            // If error is 'installed' (or any other error), we proceed to try App Bridge token exchange
+            // as a fallback/next step.
+            console.log('Shopify probe: Shop installed, proceeding to token exchange.');
+            
+          } else if (probe.token) {
+            const resolvedTenantId = probe.tenantId || tenantId || shop;
+            const agent: Agent = {
+              id: resolvedTenantId,
+              name: `Shopify (${probe.shop || shop})`,
+              roleId: 'default',
+              avatar: '',
+              status: 'ONLINE'
+            };
+
+            saveShopifyLaunchParams({ shop: probe.shop || shop, host: host || null, tenantId: probe.tenantId || tenantId || null });
+            localStorage.setItem('nexus_token', probe.token);
+            localStorage.setItem('nexus_user', JSON.stringify(agent));
+            setIsAuthenticated(true);
+            setCurrentUser(agent);
+            fetchBootstrapData(agent, probe.token);
+            return true;
+          }
+
           const session = await exchangeShopifyForAgentSession({
             shop,
             host: host || undefined,
@@ -464,8 +518,15 @@ function App() {
           setCurrentUser(session.agent);
           fetchBootstrapData(session.agent, session.token);
           return true;
-        } catch (e) {
+        } catch (e: any) {
           console.error('Failed to establish agent session for Shopify store:', e);
+          const msg = (e && typeof e === 'object' && 'message' in e) ? String((e as any).message) : String(e);
+          const normalized = msg || 'Unknown authentication error';
+          const likelyNeedsInstall =
+            /Missing Shopify session token/i.test(normalized) ||
+            /Token exchange failed/i.test(normalized) ||
+            /HTTP\s*(401|403|404)\b/i.test(normalized);
+          setAuthError(likelyNeedsInstall ? null : normalized);
           return false;
         }
       };
@@ -477,6 +538,7 @@ function App() {
         if (!hasAgentSession) {
           setIsShopifyAuthenticated(false);
           setCheckingSubscription(false);
+          setLoadingState('READY'); // Ensure we show the UI (ShopifyInstall)
           return;
         }
 
@@ -490,7 +552,7 @@ function App() {
           setIsSubscriptionActive(false);
         } finally {
           setCheckingSubscription(false);
-          setActiveView('DASHBOARD');
+          setActiveView('INBOX');
         }
       };
 
@@ -547,7 +609,7 @@ function App() {
       setAgents(teamAgents.content);
     } catch (error) {
       console.error("Failed to load team data:", error);
-      showToast('ERROR', 'Could not load team members.');
+      showToast('ERROR', t('failed_load_team'));
     }
   };
 
@@ -780,6 +842,7 @@ function App() {
                 backendMsg.senderType === 'AI' ? MessageSender.AI : MessageSender.SYSTEM,
         timestamp: new Date(backendMsg.createdAt).getTime(),
         isInternal: backendMsg.internal || false,
+        messageType: backendMsg.messageType, // Map messageType
         attachments: backendMsg.attachments || [],
         mentions: backendMsg.mentionAgentIds || [],
         translationData: backendMsg.translationData
@@ -958,13 +1021,26 @@ function App() {
   const handleSendMessage = (text: string, attachments: Attachment[], isInternal: boolean, isTranslationEnabled: boolean, mentions: string[]) => {
     if (!activeSessionId || !currentUser) return;
     
+    // Parse messageType for optimistic UI update
+    let messageType = 'TEXT';
+    let displayContent = text;
+    
+    if (text.startsWith('card#')) {
+        const parts = text.split('#', 3);
+        if (parts.length >= 3) {
+            messageType = parts[1];
+            displayContent = parts[2];
+        }
+    }
+
     // ✅ 立即在本地聊天框中插入消息
     const newMessage: Message = {
       id: `temp_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`, // 临时ID
-      text,
+      text: displayContent,
       sender: MessageSender.AGENT,
       timestamp: Date.now(),
       isInternal,
+      messageType, // Set parsed messageType
       attachments,
       mentions
     };
@@ -988,7 +1064,7 @@ function App() {
     // ✅ 发送到服务器
     websocketService.sendEvent('sendMessage', {
       sessionId: activeSessionId,
-      text,
+      text: text, // 传递包含 card# 前缀的原始文本，后端会自动解析 MessageType
       isInternal,
       attachments: attachments.map(att => ({
         type: att.type,
@@ -1037,10 +1113,10 @@ function App() {
       
       setShowResolveModal(false);
       setShowConfetti(true);
-      showToast('SUCCESS', 'Session resolved successfully');
+      showToast('SUCCESS', t('session_resolved_success'));
     } catch (error) {
       console.error('Failed to resolve session:', error);
-      showToast('ERROR', 'Failed to resolve session');
+      showToast('ERROR', t('failed_resolve_session'));
     } finally {
       setIsPreparingResolution(false);
     }
@@ -1117,7 +1193,7 @@ function App() {
       }));
     } catch (error) {
       console.error('Failed to update tags:', error);
-      showToast('ERROR', 'Failed to update tags');
+      showToast('ERROR', t('failed_update_tags'));
     }
   };
 
@@ -1141,7 +1217,7 @@ function App() {
       }));
     } catch (error) {
       console.error('Failed to update notes:', error);
-      showToast('ERROR', 'Failed to update notes');
+      showToast('ERROR', t('failed_update_notes'));
     }
   };
   
@@ -1163,7 +1239,7 @@ function App() {
   const handleAddSystemReply = async (label: string, text: string, category: string) => {
     try {
       if (!currentUser?.id) {
-        showToast('ERROR', 'User not authenticated');
+        showToast('ERROR', t('user_not_authenticated'));
         return;
       }
       
@@ -1173,26 +1249,26 @@ function App() {
         category
       }, currentUser.id);
       setSystemQuickReplies(prev => [...prev, newReply]);
-      showToast('SUCCESS', 'System reply added successfully');
+      showToast('SUCCESS', t('system_reply_added'));
     } catch (error) {
       console.error('Failed to add system reply:', error);
-      showToast('ERROR', 'Failed to add system reply');
+      showToast('ERROR', t('failed_add_system_reply'));
     }
   };
 
   const onDeleteSystemReply = async (id: string) => {
     try {
       if (!currentUser?.id) {
-        showToast('ERROR', 'User not authenticated');
+        showToast('ERROR', t('user_not_authenticated'));
         return;
       }
       
       await quickReplyServiceAPI.deleteQuickReply(id, currentUser.id);
       setSystemQuickReplies(prev => prev.filter(reply => reply.id !== id));
-      showToast('SUCCESS', 'System reply deleted successfully');
+      showToast('SUCCESS', t('system_reply_deleted'));
     } catch (error) {
       console.error('Failed to delete system reply:', error);
-      showToast('ERROR', 'Failed to delete system reply');
+      showToast('ERROR', t('failed_delete_system_reply'));
     }
   };
 
@@ -1203,20 +1279,55 @@ function App() {
   const onUpdateRole = (role: Role) => showToast('INFO', 'TODO: Update role');
 
   const handleMagicRewrite = async (text: string) => {
-    return await rewriteMessage(text);
+    return await rewriteMessage(text, activeSessionId || undefined);
+  };
+
+  const handleGenerateAiTags = async (userId: string) => {
+    if (!activeSessionId) return;
+    setIsGeneratingTags(true);
+    try {
+      const tags = await suggestUserTags([], "", activeSessionId);
+      
+      // Update local state
+      setSessions(prev => prev.map(s => {
+        if (s.userId === userId && s.user) {
+          return {
+            ...s,
+            user: {
+              ...s.user,
+              aiTags: tags
+            }
+          };
+        }
+        return s;
+      }));
+      
+      showToast('SUCCESS', t('ai_tags_generated'));
+    } catch (error) {
+      console.error('Failed to generate AI tags:', error);
+      showToast('ERROR', t('failed_generate_ai_tags'));
+    } finally {
+      setIsGeneratingTags(false);
+    }
   };
 
   const handleGenerateSummary = async () => {
     if (!activeSession) return;
     setIsGeneratingSummary(true);
     setShowSummaryModal(true);
-    const history = (activeSession.messages || []).map(m => ({
-        role: m.sender.toLowerCase(),
-        content: m.text
-    }));
-    const summary = await generateChatSummary(history);
-    setSummaryText(summary);
-    setIsGeneratingSummary(false);
+    try {
+      const result = await sessionService.previewSessionSummary(activeSession.id);
+      if (result.success) {
+        setSummaryText(result.summary);
+      } else {
+        setSummaryText(result.errorMessage || t('failed_generate_summary'));
+      }
+    } catch (error) {
+      console.error('Failed to generate summary:', error);
+      setSummaryText(t('failed_generate_summary'));
+    } finally {
+      setIsGeneratingSummary(false);
+    }
   };
   
   if (loadingState === 'INITIALIZING') {
@@ -1224,7 +1335,7 @@ function App() {
       <div className="h-screen w-full flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <Loader2 className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4" />
-          <p className="text-gray-500">Initializing workspace...</p>
+          <p className="text-gray-500">{t('initializing_workspace')}</p>
         </div>
       </div>
     );
@@ -1245,119 +1356,122 @@ function App() {
 
     return (
       <ShopifyAppProvider apiKey={apiKey} shopOrigin={shop || undefined} host={host || undefined}>
+        <Toaster position="top-center" richColors expand style={{ zIndex: 99999 }} />
         {!isShopifyAuthenticated ? (
-          <ShopifyInstall shop={shop || ''} />
+          <ShopifyInstall shop={shop || ''} error={authError} />
         ) : checkingSubscription ? (
           <div className="h-screen w-full flex items-center justify-center bg-gray-50">
              <div className="text-center">
                <Loader2 className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4" />
-               <p className="text-gray-500">Verifying subscription...</p>
+               <p className="text-gray-500">{t('verifying_subscription')}</p>
              </div>
           </div>
         ) : !isSubscriptionActive ? (
           <ShopifyBilling shop={shop || ''} />
         ) : (
-          <>
-            {activeView === 'DASHBOARD' && (
-              <ShopifyDashboard 
-                onOpenChat={() => setActiveView('INBOX')}
-                onOpenSettings={() => setActiveView('SETTINGS')}
-                onOpenKnowledge={() => setActiveView('WORKFLOW')}
-              />
-            )}
-            
-            {activeView === 'INBOX' && (
-               <div className="h-screen w-full bg-gray-50 p-4 overflow-hidden">
-                 <div className="mx-auto max-w-6xl h-[82vh] bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-                   <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white">
-                     <div className="flex items-center gap-3">
-                       <Button
-                         onClick={() => {
-                           setActiveSessionId(null);
-                           setShowMobileProfile(false);
-                           setActiveView('DASHBOARD');
-                         }}
-                       >
-                         Back to Dashboard
-                       </Button>
-                       <div className="text-sm font-semibold text-gray-800">Inbox</div>
-                     </div>
-                   </div>
+          <div className="h-screen bg-gray-50 overflow-hidden font-sans text-gray-900 p-4">
+            <div className="flex h-full w-full bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+              {/* Sidebar */}
+              <div className="hidden lg:block h-full shrink-0 border-r border-gray-200">
+                <Sidebar 
+                  activeView={activeView} 
+                  setActiveView={setActiveView}
+                  currentUser={currentUser}
+                  currentUserStatus={currentUserStatus}
+                  showProfileMenu={showProfileMenu}
+                  setShowProfileMenu={setShowProfileMenu}
+                  handleStatusChange={handleStatusChange}
+                  handleLogout={handleLogout}
+                  onLanguageChange={handleLanguageChange}
+                />
+              </div>
 
-                   <div className="flex-1 flex overflow-hidden">
-                     <div className="w-full lg:w-80 lg:shrink-0 h-full overflow-hidden border-r border-gray-200 bg-white">
-                       <ChatList 
-                         sessions={sessions}
-                         activeSessionId={activeSessionId}
-                         onSelectSession={handleSelectSession}
-                         groups={chatGroups}
-                         onCreateGroup={handleCreateGroup}
-                         onDeleteGroup={handleDeleteGroup}
-                         onMoveSession={handleMoveSession}
-                         onRenameGroup={handleRenameGroup}
-                         currentUserId={currentUser?.id || ''}
-                       />
-                     </div>
+              {/* Main Content Area */}
+              <div className="flex-1 h-full overflow-hidden relative">
+                  {activeView === 'DASHBOARD' && (
+                    <div className="h-full overflow-auto">
+                      <ShopifyDashboard 
+                        onOpenChat={() => setActiveView('INBOX')}
+                        onOpenSettings={() => setActiveView('SETTINGS')}
+                        onOpenKnowledge={() => setActiveView('WORKFLOW')}
+                      />
+                    </div>
+                  )}
+                  
+                  {activeView === 'INBOX' && (
+                     <div className="flex flex-col h-full">
+                       <div className="flex-1 flex overflow-hidden">
+                         <div className="w-full lg:w-80 lg:shrink-0 h-full overflow-hidden border-r border-gray-200 bg-white">
+                           <ChatList 
+                             sessions={sessions}
+                             activeSessionId={activeSessionId}
+                             onSelectSession={handleSelectSession}
+                             groups={chatGroups}
+                             onCreateGroup={handleCreateGroup}
+                             onDeleteGroup={handleDeleteGroup}
+                             onMoveSession={handleMoveSession}
+                             onRenameGroup={handleRenameGroup}
+                             currentUserId={currentUser?.id || ''}
+                           />
+                         </div>
 
-                     {activeSession ? (
-                       <div className="flex-1 h-full overflow-hidden bg-white">
-                         <ChatArea 
-                           session={activeSession}
-                           agents={agents}
-                           systemQuickReplies={systemQuickReplies}
-                           isZenMode={isZenMode}
-                           setIsZenMode={setIsZenMode}
-                           isAiTyping={isAiTyping}
-                           onSendMessage={handleSendMessage}
-                           onResolve={() => setShowResolveModal(true)}
-                           onTransfer={() => setShowTransferModal(true)}
-                           onSummary={() => setShowSummaryModal(true)}
-                           onToggleStatus={toggleSessionStatus}
-                           onMagicRewrite={handleMagicRewrite}
-                           sentiment={sentiment}
-                           isAnalyzingSentiment={isAnalyzingSentiment}
-                           currentAgentLanguage={currentAgentLanguage}
-                           onBack={() => setActiveSessionId(null)}
-                           onShowProfile={() => setShowMobileProfile(true)}
-                         />
-                       </div>
-                     ) : (
-                       <div className="hidden lg:flex flex-1 flex-col items-center justify-center bg-gray-50 text-gray-400">
-                         <MessageCircle size={48} className="mb-4 opacity-50" />
-                         <h2 className="text-xl font-semibold">No Conversation Selected</h2>
-                         <p className="text-sm mt-2">Please choose a conversation from the list.</p>
-                       </div>
-                     )}
+                         {activeSession ? (
+                           <div className="flex-1 h-full overflow-hidden bg-white">
+                             <ChatArea 
+                               session={activeSession}
+                               agents={agents}
+                               systemQuickReplies={systemQuickReplies}
+                               isZenMode={isZenMode}
+                               setIsZenMode={setIsZenMode}
+                               isAiTyping={isAiTyping}
+                               onSendMessage={handleSendMessage}
+                               onResolve={() => setShowResolveModal(true)}
+                               onTransfer={() => setShowTransferModal(true)}
+                               onSummary={handleGenerateSummary}
+                               onToggleStatus={toggleSessionStatus}
+                               onMagicRewrite={handleMagicRewrite}
+                               sentiment={sentiment}
+                               isAnalyzingSentiment={isAnalyzingSentiment}
+                               currentAgentLanguage={currentAgentLanguage}
+                               onBack={() => setActiveSessionId(null)}
+                              onShowProfile={() => setShowMobileProfile(true)}
+                              subscription={subscription}
+                            />
+                           </div>
+                         ) : (
+                           <div className="hidden lg:flex flex-1 flex-col items-center justify-center bg-gray-50 text-gray-400">
+                             <MessageCircle size={48} className="mb-4 opacity-50" />
+                             <h2 className="text-xl font-semibold">{t('no_conversation_selected')}</h2>
+                             <p className="text-sm mt-2">{t('choose_conversation_hint')}</p>
+                           </div>
+                         )}
 
-                     {activeSession && !isZenMode && (
-                       <div className="hidden lg:block w-80 shrink-0 h-full overflow-hidden border-l border-gray-200 bg-white">
-                         <UserProfilePanel
-                           user={activeSession.user}
-                           currentSession={activeSession}
-                           agents={agents}
-                           allQuickReplies={systemQuickReplies}
-                           agentId={currentUser?.id || ''}
-                           onUpdateTags={handleUpdateTags}
-                           onUpdateNotes={handleUpdateNotes}
-                           onQuickReply={(text) => handleSendMessage(text, [], false, false, [])}
-                           onAddSupportAgent={(agentId) => addSupportAgent(agentId)}
-                           onRemoveSupportAgent={(agentId) => removeSupportAgent(agentId)}
-                           onTransferChat={(agentId) => handleTransferChat(agentId)}
-                           canManageSessionAgents={canManageSessionAgents}
-                         />
+                         {activeSession && !isZenMode && (
+                           <div className="hidden lg:block w-80 shrink-0 h-full overflow-hidden border-l border-gray-200 bg-white">
+                             <UserProfilePanel
+                               user={activeSession.user}
+                               currentSession={activeSession}
+                               agents={agents}
+                               allQuickReplies={systemQuickReplies}
+                               agentId={currentUser?.id || ''}
+                               onUpdateTags={handleUpdateTags}
+                               onUpdateNotes={handleUpdateNotes}
+                               onQuickReply={(text) => handleSendMessage(text, [], false, false, [])}
+                               onAddSupportAgent={(agentId) => addSupportAgent(agentId)}
+                               onRemoveSupportAgent={(agentId) => removeSupportAgent(agentId)}
+                               onTransferChat={(agentId) => handleTransferChat(agentId)}
+                               canManageSessionAgents={canManageSessionAgents}
+                               subscription={subscription}
+                               onGenerateAiTags={handleGenerateAiTags}
+                               isGeneratingTags={isGeneratingTags}
+                             />
+                           </div>
+                         )}
                        </div>
-                     )}
-                   </div>
-                 </div>
-               </div>
-            )}
-    
-            {activeView === 'SETTINGS' && (
-               <div className="h-screen bg-gray-50 overflow-auto">
-                  <div className="p-4">
-                     <div className="mb-4">
-                        <Button onClick={() => setActiveView('DASHBOARD')}>Back to Dashboard</Button>
                      </div>
+                  )}
+          
+                  {activeView === 'SETTINGS' && (
                      <SettingsView  
                          systemQuickReplies={systemQuickReplies} 
                          knowledgeBase={knowledgeBase} 
@@ -1366,21 +1480,120 @@ function App() {
                          onAddKnowledge={onAddKnowledge}
                          onDeleteKnowledge={onDeleteKnowledge}
                      />
-                  </div>
-               </div>
-             )}
-     
-             {activeView === 'WORKFLOW' && (
-               <div className="h-screen bg-gray-50 overflow-auto">
-                  <div className="p-4">
-                     <div className="mb-4">
-                        <Button onClick={() => setActiveView('DASHBOARD')}>Back to Dashboard</Button>
-                     </div>
+                   )}
+           
+                   {activeView === 'WORKFLOW' && (
                      <WorkflowView />
+                   )}
+
+                   {activeView === 'TEAM' && (
+                     <div className="h-full overflow-auto">
+                        <div className="p-4">
+                           <TeamView />
+                        </div>
+                     </div>
+                   )}
+
+                   {activeView === 'CUSTOMERS' && (
+                     <div className="h-full overflow-auto">
+                        <div className="p-4">
+                           <CustomerView />
+                        </div>
+                     </div>
+                   )}
+
+                   {activeView === 'ANALYTICS' && (
+                     <div className="h-full overflow-auto">
+                        <div className="p-4">
+                           <AnalyticsView subscription={subscription} />
+                        </div>
+                     </div>
+                   )}
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Global Modals - Copied for Shopify Embedded View */}
+        {showResolveModal && (
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+               <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                  <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                    <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2"><ClipboardCheck className="text-green-600"/>{t('confirm_resolution')}</h3>
+                    <button onClick={() => setShowResolveModal(false)} className="text-gray-400 hover:text-gray-600"><X size={20}/></button>
+                  </div>
+                  <div className="p-6 max-h-[60vh] overflow-y-auto">
+                     {isGeneratingSummary ? (
+                         <div className="flex flex-col items-center justify-center text-gray-500 py-8 bg-gray-50 rounded-lg border border-dashed border-gray-200 mb-4">
+                             <Loader2 size={24} className="animate-spin mb-2" />
+                             <span className="text-sm">{t('generating_summary_preview')}</span>
+                         </div>
+                     ) : summaryPreview ? (
+                         <div className="mb-6">
+                             <div className="flex items-center gap-2 mb-2">
+                                <Sparkles size={16} className="text-purple-600" />
+                                <span className="text-sm font-bold text-gray-700">{t('ai_summary_preview')}</span>
+                                <span className="text-xs text-gray-400">({summaryPreview.messageCount} {t('messages_count')})</span>
+                            </div>
+                            
+                            {summaryPreview.success ? (
+                                <div className="bg-purple-50 border border-purple-100 rounded-lg p-4 text-sm text-gray-700 whitespace-pre-wrap">
+                                    {summaryPreview.summary}
+                                </div>
+                            ) : (
+                                <div className="bg-red-50 border border-red-100 rounded-lg p-4 text-sm text-red-600 flex items-center gap-2">
+                                    <AlertCircle size={16} />
+                                    {summaryPreview.errorMessage || t('failed_generate_summary')}
+                                </div>
+                            )}
+                         </div>
+                     ) : null}
+
+                     <label className="block text-xs font-bold text-gray-500 uppercase mb-2">{t('resolution_note_label')}</label>
+                     <textarea value={resolutionNote} onChange={e => setResolutionNote(e.target.value)} placeholder={t('resolution_note_placeholder')} className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 outline-none h-24 resize-none"></textarea>
+                  </div>
+                  <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
+                     <button onClick={() => setShowResolveModal(false)} className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-200 rounded-lg transition-colors">{t('cancel')}</button>
+                     <button 
+                       onClick={confirmResolution} 
+                       disabled={isPreparingResolution}
+                       className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-sm transition-colors flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                     >
+                       {isPreparingResolution ? <Loader2 size={16} className="animate-spin"/> : <Check size={16}/>}
+                       {t('confirm_and_resolve')}
+                     </button>
                   </div>
                </div>
-             )}
-          </>
+          </div>
+        )}
+        {showSummaryModal && (
+           <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+               <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                  <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                    <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2"><Sparkles className="text-purple-600"/>{t('ai_smart_summary')}</h3>
+                    <button onClick={() => setShowSummaryModal(false)} className="text-gray-400 hover:text-gray-600"><X size={20}/></button>
+                  </div>
+                  <div className="p-6 max-h-[60vh] overflow-y-auto">
+                      {isGeneratingSummary ? (
+                          <div className="flex flex-col items-center justify-center text-gray-500 py-12"><Loader2 size={24} className="animate-spin mb-4" /><span>{t('analyzing_conversation')}</span></div>
+                      ) : (
+                          <div className="prose prose-sm max-w-none whitespace-pre-wrap">{summaryText}</div>
+                      )}
+                  </div>
+               </div>
+            </div>
+        )}
+        {showTransferModal && activeSession && (
+           <TransferDialog 
+             sessionId={activeSession.id}
+             isOpen={showTransferModal}
+             currentUserId={currentUser?.id || ''}
+             currentPrimaryAgentId={activeSession.primaryAgentId}
+             onClose={() => setShowTransferModal(false)}
+             onTransferred={async () => {
+                 await loadSessionDetail(activeSession.id);
+                 showToast('SUCCESS', t('session_transferred_success'));
+               }}
+           />
         )}
       </ShopifyAppProvider>
     );
@@ -1392,6 +1605,7 @@ function App() {
 
   return (
     <div className="flex h-screen bg-white overflow-hidden font-sans text-gray-900">
+      <Toaster position="top-center" richColors expand style={{ zIndex: 2147483647 }} />
       {/* Sidebar (Desktop) */}
       <div className="hidden lg:block h-full shrink-0">
         <Sidebar 
@@ -1434,15 +1648,16 @@ function App() {
                 onSendMessage={handleSendMessage}
                 onResolve={() => setShowResolveModal(true)}
                 onTransfer={() => setShowTransferModal(true)}
-                onSummary={() => setShowSummaryModal(true)}
+                onSummary={handleGenerateSummary}
                 onToggleStatus={toggleSessionStatus}
                 onMagicRewrite={handleMagicRewrite}
                 sentiment={sentiment}
                 isAnalyzingSentiment={isAnalyzingSentiment}
                 currentAgentLanguage={currentAgentLanguage}
                 onBack={() => setActiveSessionId(null)}
-                onShowProfile={() => setShowMobileProfile(true)}
-              />
+               onShowProfile={() => setShowMobileProfile(true)}
+               subscription={subscription}
+             />
             </div>
           ) : (
             <div className="hidden lg:flex flex-1 flex-col items-center justify-center bg-gray-50 text-gray-400">
@@ -1499,13 +1714,14 @@ function App() {
                         setShowMobileProfile(false);
                       }}
                       canManageSessionAgents={canManageSessionAgents}
+                      subscription={subscription}
                     />
                </div>
             </div>
           )}
         </>
       ) : (
-        <div className="flex-1 overflow-auto pb-20 lg:pb-0 w-full">
+        <div className={`flex-1 w-full ${(activeView === 'WORKFLOW' || activeView === 'SETTINGS') ? 'h-full overflow-hidden' : 'overflow-auto pb-20 lg:pb-0'}`}>
           {activeView === 'TEAM' ? (
             <TeamView />
           ) : activeView === 'CUSTOMERS' ? (
@@ -1513,7 +1729,7 @@ function App() {
           ) : activeView === 'WORKFLOW' ? (
             <WorkflowView />
           ) : activeView === 'ANALYTICS' ? (
-            <AnalyticsView />
+            <AnalyticsView subscription={subscription} />
           ) : (
             <SettingsView  
                 systemQuickReplies={systemQuickReplies} 
@@ -1552,14 +1768,14 @@ function App() {
           >
             <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold shrink-0 overflow-hidden">
-                        {n.avatar ? <img src={n.avatar} className="w-full h-full object-cover"/> : (n.userName[0] || 'U')}
+                        <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold shrink-0 overflow-hidden">
+                            {n.avatar ? <img src={n.avatar} className="w-full h-full object-cover"/> : (n.userName[0] || 'U')}
+                        </div>
+                        <div>
+                            <h4 className="font-bold text-gray-900">{n.userName}</h4>
+                            <span className="text-xs text-indigo-600 font-medium bg-indigo-50 px-2 py-0.5 rounded-full">{t('transfer_request')}</span>
+                        </div>
                     </div>
-                    <div>
-                        <h4 className="font-bold text-gray-900">{n.userName}</h4>
-                        <span className="text-xs text-indigo-600 font-medium bg-indigo-50 px-2 py-0.5 rounded-full">Transfer Request</span>
-                    </div>
-                </div>
                 <button 
                     onClick={(e) => {
                         e.stopPropagation();
@@ -1581,8 +1797,8 @@ function App() {
         ))}
       </div>
 
-      {/* Global Notifications */}
-      <div className="fixed top-4 right-4 z-[100] w-80 space-y-3">
+      {/* Global Notifications - Deprecated: using sonner */}
+      {/* <div className="fixed top-4 right-4 z-[9999] w-80 space-y-3">
         {notifications.map(n => (
           <div key={n.id} className={`flex items-start gap-3 p-4 rounded-xl shadow-lg border animate-in slide-in-from-top-4 duration-300 ${
               n.type === 'SUCCESS' ? 'bg-green-50 border-green-200 text-green-800' :
@@ -1596,7 +1812,7 @@ function App() {
             <button onClick={() => setNotifications(prev => prev.filter(item => item.id !== n.id))} className="ml-auto opacity-70 hover:opacity-100"><X size={14}/></button>
           </div>
         ))}
-      </div>
+      </div> */}
       
       {/* Confetti */}
       {showConfetti && (
@@ -1612,21 +1828,21 @@ function App() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
              <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200">
                 <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-                  <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2"><ClipboardCheck className="text-green-600"/>Confirm Resolution</h3>
+                  <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2"><ClipboardCheck className="text-green-600"/>{t('confirm_resolution')}</h3>
                   <button onClick={() => setShowResolveModal(false)} className="text-gray-400 hover:text-gray-600"><X size={20}/></button>
                 </div>
                 <div className="p-6 max-h-[60vh] overflow-y-auto">
                    {isGeneratingSummary ? (
                        <div className="flex flex-col items-center justify-center text-gray-500 py-8 bg-gray-50 rounded-lg border border-dashed border-gray-200 mb-4">
                            <Loader2 size={24} className="animate-spin mb-2" />
-                           <span className="text-sm">Generating AI summary preview...</span>
+                           <span className="text-sm">{t('generating_summary_preview')}</span>
                        </div>
                    ) : summaryPreview ? (
                        <div className="mb-6">
                            <div className="flex items-center gap-2 mb-2">
                                <Sparkles size={16} className="text-purple-600" />
-                               <span className="text-sm font-bold text-gray-700">AI Summary Preview</span>
-                               <span className="text-xs text-gray-400">({summaryPreview.messageCount} messages)</span>
+                               <span className="text-sm font-bold text-gray-700">{t('ai_summary_preview')}</span>
+                               <span className="text-xs text-gray-400">({summaryPreview.messageCount} {t('messages_count')})</span>
                            </div>
                            
                            {summaryPreview.success ? (
@@ -1636,39 +1852,39 @@ function App() {
                            ) : (
                                <div className="bg-red-50 border border-red-100 rounded-lg p-4 text-sm text-red-600 flex items-center gap-2">
                                    <AlertCircle size={16} />
-                                   {summaryPreview.errorMessage || "Failed to generate summary"}
+                                   {summaryPreview.errorMessage || t('failed_generate_summary')}
                                </div>
                            )}
                        </div>
                    ) : null}
 
-                   <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Additional Resolution Note (Optional)</label>
-                   <textarea value={resolutionNote} onChange={e => setResolutionNote(e.target.value)} placeholder="e.g., User issue was resolved by clearing browser cache." className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 outline-none h-24 resize-none"></textarea>
+                   <label className="block text-xs font-bold text-gray-500 uppercase mb-2">{t('resolution_note_label')}</label>
+                   <textarea value={resolutionNote} onChange={e => setResolutionNote(e.target.value)} placeholder={t('resolution_note_placeholder')} className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 outline-none h-24 resize-none"></textarea>
                 </div>
                 <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
-                   <button onClick={() => setShowResolveModal(false)} className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-200 rounded-lg transition-colors">Cancel</button>
+                   <button onClick={() => setShowResolveModal(false)} className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-200 rounded-lg transition-colors">{t('cancel')}</button>
                    <button 
                      onClick={confirmResolution} 
                      disabled={isPreparingResolution}
                      className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-sm transition-colors flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                    >
                      {isPreparingResolution ? <Loader2 size={16} className="animate-spin"/> : <Check size={16}/>}
-                     Confirm & Resolve
+                     {t('confirm_and_resolve')}
                    </button>
                 </div>
              </div>
         </div>
       )}
       {showSummaryModal && (
-         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
              <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200">
                 <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-                  <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2"><Sparkles className="text-purple-600"/>AI Smart Summary</h3>
+                  <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2"><Sparkles className="text-purple-600"/>{t('ai_smart_summary')}</h3>
                   <button onClick={() => setShowSummaryModal(false)} className="text-gray-400 hover:text-gray-600"><X size={20}/></button>
                 </div>
                 <div className="p-6 max-h-[60vh] overflow-y-auto">
                     {isGeneratingSummary ? (
-                        <div className="flex flex-col items-center justify-center text-gray-500 py-12"><Loader2 size={24} className="animate-spin mb-4" /><span>Analyzing conversation...</span></div>
+                        <div className="flex flex-col items-center justify-center text-gray-500 py-12"><Loader2 size={24} className="animate-spin mb-4" /><span>{t('analyzing_conversation')}</span></div>
                     ) : (
                         <div className="prose prose-sm max-w-none whitespace-pre-wrap">{summaryText}</div>
                     )}
@@ -1685,7 +1901,7 @@ function App() {
            onClose={() => setShowTransferModal(false)}
            onTransferred={async () => {
              await loadSessionDetail(activeSession.id);
-             showToast('SUCCESS', '会话已转移，已刷新客服团队');
+             showToast('SUCCESS', t('session_transferred_success'));
            }}
          />
       )}

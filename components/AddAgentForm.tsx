@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Role } from '../types';
 
 interface AddAgentFormProps {
@@ -8,6 +9,7 @@ interface AddAgentFormProps {
 }
 
 export const AddAgentForm: React.FC<AddAgentFormProps> = ({ roles, onClose, onSubmit }) => {
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,10 +29,10 @@ export const AddAgentForm: React.FC<AddAgentFormProps> = ({ roles, onClose, onSu
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6">Add New Agent</h2>
+        <h2 className="text-2xl font-bold mb-6">{t('add_new_agent')}</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">Name</label>
+            <label className="block text-sm font-medium text-gray-700">{t('name')}</label>
             <input
               type="text"
               value={name}
@@ -40,7 +42,7 @@ export const AddAgentForm: React.FC<AddAgentFormProps> = ({ roles, onClose, onSu
             />
           </div>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <label className="block text-sm font-medium text-gray-700">{t('work_email')}</label>
             <input
               type="email"
               value={email}
@@ -60,7 +62,7 @@ export const AddAgentForm: React.FC<AddAgentFormProps> = ({ roles, onClose, onSu
             />
           </div>
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700">Role</label>
+            <label className="block text-sm font-medium text-gray-700">{t('role')}</label>
             <select
               value={roleId}
               onChange={(e) => setRoleId(e.target.value)}
@@ -80,13 +82,13 @@ export const AddAgentForm: React.FC<AddAgentFormProps> = ({ roles, onClose, onSu
               onClick={onClose}
               className="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300"
             >
-              Cancel
+              {t('cancel')}
             </button>
             <button
               type="submit"
               className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
             >
-              Add Agent
+              {t('add_agent')}
             </button>
           </div>
         </form>

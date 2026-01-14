@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Edit2, Trash2, CheckCircle, XCircle, AlertCircle, Calendar } from 'lucide-react';
 import { eventService, EventConfig } from '../../services/eventService';
 import { workflowApi } from '../../services/workflowApi';
 import { AiWorkflow } from '../../types/workflow';
 
 export const EventSettings: React.FC = () => {
+  const { t } = useTranslation();
   const [events, setEvents] = useState<EventConfig[]>([]);
   const [workflows, setWorkflows] = useState<AiWorkflow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,7 +41,7 @@ export const EventSettings: React.FC = () => {
       setError(null);
     } catch (err) {
       console.error('Error fetching data:', err);
-      setError('Failed to load events or workflows');
+      setError(t('failed_load_events'));
     } finally {
       setLoading(false);
     }
@@ -65,14 +67,14 @@ export const EventSettings: React.FC = () => {
   };
 
   const handleDeleteEvent = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this event?')) return;
+    if (!window.confirm(t('confirm_delete_event'))) return;
     
     try {
       await eventService.deleteEvent(id);
       setEvents(events.filter(e => e.id !== id));
     } catch (err) {
       console.error('Error deleting event:', err);
-      alert('Failed to delete event');
+      alert(t('failed_delete_event'));
     }
   };
 
@@ -92,7 +94,7 @@ export const EventSettings: React.FC = () => {
       setShowModal(false);
     } catch (err) {
       console.error('Error saving event:', err);
-      alert('Failed to save event');
+      alert(t('failed_save_event'));
     } finally {
       setSaving(false);
     }
@@ -108,15 +110,15 @@ export const EventSettings: React.FC = () => {
         <div>
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <Calendar className="text-blue-600" size={20} />
-            Event Configuration
+            {t('event_configuration')}
           </h3>
-          <p className="text-sm text-gray-500 mt-1">Manage system events and their associated workflows.</p>
+          <p className="text-sm text-gray-500 mt-1">{t('event_configuration_desc')}</p>
         </div>
         <button 
           onClick={handleAddEvent}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center gap-2"
         >
-          <Plus size={16} /> Add Event
+          <Plus size={16} /> {t('add_event')}
         </button>
       </div>
 
@@ -130,7 +132,7 @@ export const EventSettings: React.FC = () => {
       <div className="space-y-4">
         {events.length === 0 ? (
           <div className="text-center py-10 text-gray-500">
-            No events configured. Click "Add Event" to create one.
+            {t('no_events_configured')}
           </div>
         ) : (
           events.map(event => {
@@ -144,38 +146,38 @@ export const EventSettings: React.FC = () => {
                       <span className="text-xs font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-600">{event.name}</span>
                       {event.enabled ? (
                         <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded flex items-center gap-1">
-                          <CheckCircle size={10} /> Enabled
+                          <CheckCircle size={10} /> {t('enabled')}
                         </span>
                       ) : (
                         <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded flex items-center gap-1">
-                          <XCircle size={10} /> Disabled
+                          <XCircle size={10} /> {t('disabled')}
                         </span>
                       )}
                     </div>
                     <p className="text-sm text-gray-600 mb-2">{event.description}</p>
                     <div className="text-xs text-gray-500 flex items-center gap-2">
-                      <span className="font-medium">Workflow:</span> 
+                      <span className="font-medium">{t('workflow')}:</span> 
                       {workflow ? (
                         <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded">{workflow.name}</span>
                       ) : (
-                        <span className="text-gray-400 italic">No workflow assigned</span>
+                        <span className="text-gray-400 italic">{t('no_workflow_assigned')}</span>
                       )}
                       <span className="text-gray-300">|</span>
-                      <span>Sort Order: {event.sortOrder}</span>
+                      <span>{t('sort_order')}: {event.sortOrder}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <button 
                       onClick={() => handleEditEvent(event)}
                       className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                      title="Edit"
+                      title={t('edit')}
                     >
                       <Edit2 size={16} />
                     </button>
                     <button 
                       onClick={() => handleDeleteEvent(event.id!)}
                       className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                      title="Delete"
+                      title={t('delete')}
                     >
                       <Trash2 size={16} />
                     </button>
@@ -193,7 +195,7 @@ export const EventSettings: React.FC = () => {
           <div className="bg-white rounded-xl shadow-xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
               <h3 className="font-bold text-lg text-gray-800">
-                {modalMode === 'create' ? 'Create New Event' : 'Edit Event'}
+                {modalMode === 'create' ? t('add_event') : t('edit_event')}
               </h3>
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
                 <XCircle size={20} />
@@ -203,49 +205,49 @@ export const EventSettings: React.FC = () => {
             <form onSubmit={handleSave} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Internal Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('internal_name')}</label>
                   <input 
                     type="text" 
                     required
                     value={currentEvent.name}
                     onChange={e => setCurrentEvent({...currentEvent, name: e.target.value})}
-                    placeholder="e.g. order_created"
+                    placeholder={t('internal_name_placeholder')}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <p className="text-xs text-gray-400 mt-1">Unique identifier for system use</p>
+                  <p className="text-xs text-gray-400 mt-1">{t('internal_name_help')}</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('display_name')}</label>
                   <input 
                     type="text" 
                     required
                     value={currentEvent.displayName}
                     onChange={e => setCurrentEvent({...currentEvent, displayName: e.target.value})}
-                    placeholder="e.g. Order Created"
+                    placeholder={t('display_name_placeholder')}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('description')}</label>
                 <textarea 
                   value={currentEvent.description}
                   onChange={e => setCurrentEvent({...currentEvent, description: e.target.value})}
-                  placeholder="Describe when this event is triggered..."
+                  placeholder={t('description_placeholder')}
                   rows={3}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Trigger Workflow</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('trigger_workflow')}</label>
                 <select 
                   value={currentEvent.workflowId || ''}
                   onChange={e => setCurrentEvent({...currentEvent, workflowId: e.target.value})}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 >
-                  <option value="">Select a workflow...</option>
+                  <option value="">{t('select_workflow')}</option>
                   {workflows.map(wf => (
                     <option key={wf.id} value={wf.id}>{wf.name}</option>
                   ))}
@@ -261,11 +263,11 @@ export const EventSettings: React.FC = () => {
                     onChange={e => setCurrentEvent({...currentEvent, enabled: e.target.checked})}
                     className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                   />
-                  <label htmlFor="eventEnabled" className="text-sm font-medium text-gray-700">Enabled</label>
+                  <label htmlFor="eventEnabled" className="text-sm font-medium text-gray-700">{t('enabled')}</label>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <label htmlFor="sortOrder" className="text-sm font-medium text-gray-700">Sort Order:</label>
+                  <label htmlFor="sortOrder" className="text-sm font-medium text-gray-700">{t('sort_order')}</label>
                   <input 
                     type="number" 
                     id="sortOrder"
@@ -282,7 +284,7 @@ export const EventSettings: React.FC = () => {
                   onClick={() => setShowModal(false)}
                   className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  Cancel
+                  {t('cancel')}
                 </button>
                 <button 
                   type="submit" 
@@ -292,10 +294,10 @@ export const EventSettings: React.FC = () => {
                   {saving ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Saving...
+                      {t('saving')}
                     </>
                   ) : (
-                    'Save Event'
+                    t('save_event')
                   )}
                 </button>
               </div>

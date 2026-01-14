@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Loader2, ShieldCheck, AlertCircle } from 'lucide-react';
 import api from '../services/api';
 import { Agent } from '../types';
@@ -14,6 +15,7 @@ interface LoginScreenProps {
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('admin@nexus.com');
   const [password, setPassword] = useState('Admin@123');
   const [isLoading, setIsLoading] = useState(false);
@@ -28,7 +30,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       const response = await api.post<LoginResponse>('/auth/login', { email, password });
       onLoginSuccess(response);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
+      const errorMessage = err instanceof Error ? err.message : t('unknown_error');
       setError(errorMessage);
       setIsLoading(false);
     }
@@ -47,9 +49,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
           <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center text-white font-bold text-3xl shadow-lg shadow-blue-600/20 mb-6 transform rotate-3">
             N
           </div>
-          <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Welcome Back</h1>
+          <h1 className="text-2xl font-bold text-gray-800 tracking-tight">{t('welcome_back')}</h1>
           <p className="text-sm text-gray-500 mt-2 text-center max-w-[260px]">
-            Sign in to your NexusSupport Agent Workspace
+            {t('signin_text')}
           </p>
         </div>
 
@@ -57,7 +59,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
           <div className="bg-red-50 border-l-4 border-red-400 text-red-700 p-4 rounded-lg mb-6 flex items-start gap-3" role="alert">
             <AlertCircle size={20} className="shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold">Login Failed</p>
+              <p className="font-bold">{t('login_failed')}</p>
               <p className="text-sm">{error}</p>
             </div>
           </div>
@@ -65,7 +67,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
         <form onSubmit={handleLogin} className="space-y-5">
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Work Email</label>
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">{t('work_email')}</label>
             <input 
               type="email" 
               required
@@ -76,7 +78,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Password</label>
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">{t('password')}</label>
             <input 
               type="password" 
               required
@@ -90,9 +92,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
           <div className="flex items-center justify-between pt-1">
             <div className="flex items-center">
               <input id="remember-me" type="checkbox" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2" />
-              <label htmlFor="remember-me" className="ml-2 text-sm font-medium text-gray-500 cursor-pointer select-none">Remember me</label>
+              <label htmlFor="remember-me" className="ml-2 text-sm font-medium text-gray-500 cursor-pointer select-none">{t('remember_me')}</label>
             </div>
-            <a href="#" className="text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline">Forgot password?</a>
+            <a href="#" className="text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline">{t('forgot_password')}</a>
           </div>
 
           <button 
@@ -103,17 +105,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             {isLoading ? (
               <>
                 <Loader2 size={18} className="animate-spin" />
-                <span>Verifying Credentials...</span>
+                <span>{t('verifying')}</span>
               </>
             ) : (
-              'Sign In to Workspace'
+              t('sign_in_btn')
             )}
           </button>
         </form>
         
         <div className="mt-10 flex items-center justify-center gap-2 text-gray-400 text-xs border-t border-gray-100 pt-6">
           <ShieldCheck size={14} className="text-green-500" />
-          <span>Secure 256-bit SSL Connection</span>
+          <span>{t('secure_ssl')}</span>
         </div>
       </div>
     </div>

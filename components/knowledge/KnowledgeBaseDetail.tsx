@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Search, Plus, FileText, RefreshCw, Trash2, Edit, ExternalLink, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 import { KnowledgeBase, KnowledgeDocument, SearchResult } from '../../types';
 import knowledgeBaseApi, { Page } from '../../services/knowledgeBaseApi';
@@ -14,6 +15,7 @@ export const KnowledgeBaseDetail: React.FC<KnowledgeBaseDetailProps> = ({
   knowledgeBase,
   onBack,
 }) => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'DOCUMENTS' | 'TEST'>('DOCUMENTS');
   const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
   const [loading, setLoading] = useState(false);
@@ -49,10 +51,10 @@ export const KnowledgeBaseDetail: React.FC<KnowledgeBaseDetailProps> = ({
   const handleAddDocument = async (data: any) => {
     try {
       await knowledgeBaseApi.addDocument(knowledgeBase.id, data);
-      notificationService.success('Document added successfully');
+      notificationService.success(t('doc_added_success'));
       fetchDocuments();
     } catch (error) {
-      notificationService.error('Failed to add document');
+      notificationService.error(t('doc_added_failed'));
     }
   };
 
@@ -60,31 +62,31 @@ export const KnowledgeBaseDetail: React.FC<KnowledgeBaseDetailProps> = ({
     if (!editingDoc) return;
     try {
       await knowledgeBaseApi.updateDocument(knowledgeBase.id, editingDoc.id, data);
-      notificationService.success('Document updated successfully');
+      notificationService.success(t('doc_updated_success'));
       fetchDocuments();
     } catch (error) {
-      notificationService.error('Failed to update document');
+      notificationService.error(t('doc_updated_failed'));
     }
   };
 
   const handleDeleteDocument = async (docId: string) => {
-    if (!window.confirm('Are you sure you want to delete this document?')) return;
+    if (!window.confirm(t('confirm_delete_doc'))) return;
     try {
       await knowledgeBaseApi.deleteDocument(knowledgeBase.id, docId);
-      notificationService.success('Document deleted');
+      notificationService.success(t('doc_deleted_success'));
       fetchDocuments();
     } catch (error) {
-      notificationService.error('Failed to delete document');
+      notificationService.error(t('doc_deleted_failed'));
     }
   };
 
   const handleReprocessDocument = async (docId: string) => {
     try {
       await knowledgeBaseApi.reprocessDocument(knowledgeBase.id, docId);
-      notificationService.success('Document reprocessing started');
+      notificationService.success(t('doc_reprocess_started'));
       fetchDocuments();
     } catch (error) {
-      notificationService.error('Failed to reprocess document');
+      notificationService.error(t('doc_reprocess_failed'));
     }
   };
 
@@ -103,7 +105,7 @@ export const KnowledgeBaseDetail: React.FC<KnowledgeBaseDetailProps> = ({
       setTestResult(result);
     } catch (error) {
       console.error('Search error:', error);
-      notificationService.error('Search failed');
+      notificationService.error(t('search_failed'));
     } finally {
       setSearching(false);
     }
@@ -118,6 +120,15 @@ export const KnowledgeBaseDetail: React.FC<KnowledgeBaseDetailProps> = ({
     }
   };
 
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'COMPLETED': return t('status_completed');
+      case 'PROCESSING': return t('status_processing');
+      case 'FAILED': return t('status_failed');
+      default: return t('status_pending');
+    }
+  };
+
   return (
     <div className="h-full flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       {/* Header */}
@@ -129,9 +140,9 @@ export const KnowledgeBaseDetail: React.FC<KnowledgeBaseDetailProps> = ({
           <div>
             <h2 className="text-lg font-bold text-gray-800">{knowledgeBase.name}</h2>
             <p className="text-xs text-gray-500 flex items-center gap-2">
-              <span>{knowledgeBase.documentCount} Documents</span>
+              <span>{t('docs_count', { count: knowledgeBase.documentCount })}</span>
               <span>•</span>
-              <span>{knowledgeBase.vectorDimension} Dimensions</span>
+              <span>{knowledgeBase.vectorDimension} {t('dim')}</span>
             </p>
           </div>
         </div>
@@ -140,13 +151,13 @@ export const KnowledgeBaseDetail: React.FC<KnowledgeBaseDetailProps> = ({
             onClick={() => setActiveTab('DOCUMENTS')}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === 'DOCUMENTS' ? 'bg-white shadow text-purple-600' : 'text-gray-600 hover:bg-gray-100'}`}
           >
-            Documents
+            {t('documents_tab')}
           </button>
           <button
             onClick={() => setActiveTab('TEST')}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === 'TEST' ? 'bg-white shadow text-purple-600' : 'text-gray-600 hover:bg-gray-100'}`}
           >
-            Test Search
+            {t('test_search_tab')}
           </button>
         </div>
       </div>
@@ -156,34 +167,34 @@ export const KnowledgeBaseDetail: React.FC<KnowledgeBaseDetailProps> = ({
         {activeTab === 'DOCUMENTS' && (
           <div className="h-full flex flex-col">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-semibold text-gray-700">Document List</h3>
+              <h3 className="font-semibold text-gray-700">{t('document_list')}</h3>
               <button
                 onClick={() => { setEditingDoc(undefined); setIsDocDialogOpen(true); }}
                 className="bg-purple-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 flex items-center gap-2"
               >
-                <Plus size={16} /> Add Document
+                <Plus size={16} /> {t('add_document')}
               </button>
             </div>
 
             <div className="flex-1 overflow-y-auto border border-gray-200 rounded-lg">
               {loading ? (
-                <div className="flex items-center justify-center h-32 text-gray-500">Loading documents...</div>
+                <div className="flex items-center justify-center h-32 text-gray-500">{t('loading_documents')}</div>
               ) : documents.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-64 text-gray-500">
                   <FileText size={48} className="text-gray-300 mb-4" />
-                  <p>No documents yet.</p>
+                  <p>{t('no_documents_yet')}</p>
                 </div>
               ) : (
                 <table className="w-full text-sm text-left">
                   <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-200">
                     <tr>
                       <th className="px-4 py-3 w-8"></th>
-                      <th className="px-4 py-3">Title</th>
-                      <th className="px-4 py-3 w-32">Type</th>
-                      <th className="px-4 py-3 w-32">Chunks</th>
-                      <th className="px-4 py-3 w-32">Status</th>
-                      <th className="px-4 py-3 w-40">Updated</th>
-                      <th className="px-4 py-3 w-24">Actions</th>
+                      <th className="px-4 py-3">{t('table_title')}</th>
+                      <th className="px-4 py-3 w-32">{t('table_type')}</th>
+                      <th className="px-4 py-3 w-32">{t('table_chunks')}</th>
+                      <th className="px-4 py-3 w-32">{t('table_status')}</th>
+                      <th className="px-4 py-3 w-40">{t('table_updated')}</th>
+                      <th className="px-4 py-3 w-24">{t('actions')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -204,7 +215,7 @@ export const KnowledgeBaseDetail: React.FC<KnowledgeBaseDetailProps> = ({
                               doc.status === 'COMPLETED' ? 'text-green-600' :
                               doc.status === 'FAILED' ? 'text-red-600' :
                               'text-gray-600'
-                            }`}>{doc.status}</span>
+                            }`}>{getStatusText(doc.status)}</span>
                           </div>
                         </td>
                         <td className="px-4 py-3 text-gray-500 text-xs">
@@ -215,21 +226,21 @@ export const KnowledgeBaseDetail: React.FC<KnowledgeBaseDetailProps> = ({
                             <button
                               onClick={() => handleReprocessDocument(doc.id)}
                               className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
-                              title="Reprocess"
+                              title={t('reprocess')}
                             >
                               <RefreshCw size={14} />
                             </button>
                             <button
                               onClick={() => { setEditingDoc(doc); setIsDocDialogOpen(true); }}
                               className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
-                              title="Edit"
+                              title={t('edit')}
                             >
                               <Edit size={14} />
                             </button>
                             <button
                               onClick={() => handleDeleteDocument(doc.id)}
                               className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
-                              title="Delete"
+                              title={t('delete')}
                             >
                               <Trash2 size={14} />
                             </button>
@@ -270,14 +281,14 @@ export const KnowledgeBaseDetail: React.FC<KnowledgeBaseDetailProps> = ({
         {activeTab === 'TEST' && (
           <div className="h-full flex flex-col max-w-4xl mx-auto w-full">
             <div className="mb-8">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Semantic Search Test</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">{t('semantic_search_test')}</h3>
               <div className="relative">
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleTestSearch(e)}
-                  placeholder="Enter a query to test retrieval..."
+                  placeholder={t('search_placeholder')}
                   className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
                 <Search className="absolute left-4 top-3.5 text-gray-400" size={20} />
@@ -287,7 +298,7 @@ export const KnowledgeBaseDetail: React.FC<KnowledgeBaseDetailProps> = ({
                   disabled={searching || !searchQuery.trim()}
                   className="absolute right-2 top-2 px-4 py-1.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
                 >
-                  {searching ? 'Searching...' : 'Search'}
+                  {searching ? t('searching') : t('search')}
                 </button>
               </div>
             </div>
@@ -298,15 +309,15 @@ export const KnowledgeBaseDetail: React.FC<KnowledgeBaseDetailProps> = ({
                   {/* Summary Cards */}
                   <div className="grid grid-cols-3 gap-4">
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                      <div className="text-xs font-medium text-blue-600 uppercase mb-1">Total Documents</div>
+                      <div className="text-xs font-medium text-blue-600 uppercase mb-1">{t('total_documents')}</div>
                       <div className="text-2xl font-bold text-blue-800">{testResult.documentCount}</div>
                     </div>
                     <div className="bg-green-50 p-4 rounded-lg border border-green-100">
-                      <div className="text-xs font-medium text-green-600 uppercase mb-1">Matches Found</div>
+                      <div className="text-xs font-medium text-green-600 uppercase mb-1">{t('matches_found')}</div>
                       <div className="text-2xl font-bold text-green-800">{testResult.resultCount}</div>
                     </div>
                     <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
-                      <div className="text-xs font-medium text-purple-600 uppercase mb-1">Search Time</div>
+                      <div className="text-xs font-medium text-purple-600 uppercase mb-1">{t('search_time')}</div>
                       <div className="text-2xl font-bold text-purple-800">{testResult.searchTimeMs}ms</div>
                     </div>
                   </div>
@@ -314,7 +325,7 @@ export const KnowledgeBaseDetail: React.FC<KnowledgeBaseDetailProps> = ({
                   {/* Search Results */}
                   <div className="space-y-4">
                     <h4 className="font-semibold text-gray-700 flex items-center gap-2">
-                      <span>Retrieval Results</span>
+                      <span>{t('retrieval_results')}</span>
                       <span className="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">Top {testResult.results.length}</span>
                     </h4>
                     
@@ -323,7 +334,7 @@ export const KnowledgeBaseDetail: React.FC<KnowledgeBaseDetailProps> = ({
                         <div className="flex justify-between items-start mb-3">
                           <div className="flex items-center gap-3">
                             <div className="flex flex-col items-center justify-center bg-purple-50 text-purple-700 rounded-lg w-12 h-12 border border-purple-100">
-                              <span className="text-xs font-bold">Score</span>
+                              <span className="text-xs font-bold">{t('score')}</span>
                               <span className="text-sm font-bold">{result.scoreFormatted}</span>
                             </div>
                             <div>
@@ -332,7 +343,7 @@ export const KnowledgeBaseDetail: React.FC<KnowledgeBaseDetailProps> = ({
                             </div>
                           </div>
                           <span className="bg-gray-100 text-gray-500 text-xs font-mono px-2 py-1 rounded">
-                            Rank #{index + 1}
+                            {t('rank')} #{index + 1}
                           </span>
                         </div>
                         <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600 leading-relaxed border border-gray-100">
@@ -345,8 +356,8 @@ export const KnowledgeBaseDetail: React.FC<KnowledgeBaseDetailProps> = ({
                   {/* Context Preview */}
                   <div className="bg-gray-900 rounded-xl overflow-hidden">
                     <div className="px-4 py-3 border-b border-gray-800 bg-gray-950 flex justify-between items-center">
-                      <span className="text-gray-100 font-mono text-sm font-bold">LLM Context Preview</span>
-                      <span className="text-xs text-gray-500">What the AI sees</span>
+                      <span className="text-gray-100 font-mono text-sm font-bold">{t('llm_context_preview')}</span>
+                      <span className="text-xs text-gray-500">{t('what_the_ai_sees')}</span>
                     </div>
                     <div className="p-4 overflow-x-auto">
                       <pre className="text-xs text-green-400 font-mono whitespace-pre-wrap">{testResult.context}</pre>
@@ -356,7 +367,7 @@ export const KnowledgeBaseDetail: React.FC<KnowledgeBaseDetailProps> = ({
               ) : (
                 <div className="text-center text-gray-400 mt-12">
                   <Search size={48} className="mx-auto mb-4 opacity-20" />
-                  <p>Enter a query to see how the system retrieves context from your documents.</p>
+                  <p>{t('search_test_hint')}</p>
                 </div>
               )}
             </div>

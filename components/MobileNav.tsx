@@ -92,12 +92,12 @@ export const MobileNav: React.FC<MobileNavProps> = ({
            <div className="absolute bottom-14 right-0 mb-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50 animate-in slide-in-from-bottom-2 duration-200 flex flex-col max-h-[480px]">
              {menuView === 'MAIN' ? (
                <>
-                 <div className="p-4 border-b border-gray-100 bg-gray-50"><p className="font-bold text-gray-800">{currentUser.name}</p><p className="text-xs text-gray-500">{currentUser.email || 'No email provided'}</p></div>
+                 <div className="p-4 border-b border-gray-100 bg-gray-50"><p className="font-bold text-gray-800">{currentUser.name}</p><p className="text-xs text-gray-500">{currentUser.email || t('no_email_provided')}</p></div>
                  <div className="p-2 space-y-1">
-                    <div className="px-3 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Set Status</div>
-                    <button onClick={() => handleStatusChange('ONLINE')} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700"><div className="w-2.5 h-2.5 rounded-full bg-green-500"></div> Online{currentUserStatus === 'ONLINE' && <Check size={14} className="ml-auto text-green-600"/>}</button>
-                    <button onClick={() => handleStatusChange('BUSY')} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700"><div className="w-2.5 h-2.5 rounded-full bg-yellow-500"></div> Busy{currentUserStatus === 'BUSY' && <Check size={14} className="ml-auto text-yellow-600"/>}</button>
-                    <button onClick={() => handleStatusChange('IDLE')} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700"><div className="w-2.5 h-2.5 rounded-full bg-gray-400"></div> Idle / Away{currentUserStatus === 'IDLE' && <Check size={14} className="ml-auto text-gray-500"/>}</button>
+                    <div className="px-3 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">{t('set_status_title')}</div>
+                    <button onClick={() => handleStatusChange('ONLINE')} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700"><div className="w-2.5 h-2.5 rounded-full bg-green-500"></div> {t('status_online')}{currentUserStatus === 'ONLINE' && <Check size={14} className="ml-auto text-green-600"/>}</button>
+                    <button onClick={() => handleStatusChange('BUSY')} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700"><div className="w-2.5 h-2.5 rounded-full bg-yellow-500"></div> {t('status_busy')}{currentUserStatus === 'BUSY' && <Check size={14} className="ml-auto text-yellow-600"/>}</button>
+                    <button onClick={() => handleStatusChange('IDLE')} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700"><div className="w-2.5 h-2.5 rounded-full bg-gray-400"></div> {t('status_idle')}{currentUserStatus === 'IDLE' && <Check size={14} className="ml-auto text-gray-500"/>}</button>
                  </div>
                  <div className="p-2 space-y-1 border-t border-gray-100">
                     <button 
@@ -106,13 +106,13 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                     >
                        <Languages size={16} className="text-gray-500 group-hover:text-blue-500"/>
                        <div className="flex-1 text-left">
-                         <div className="text-xs text-gray-500">Language</div>
-                         <div className="font-medium truncate">{languages.find(l => l.code === selectedLanguage)?.name || 'Select Language'}</div>
+                         <div className="text-xs text-gray-500">{t('language_label')}</div>
+                         <div className="font-medium truncate">{languages.find(l => l.code === selectedLanguage)?.name || t('select_language_title')}</div>
                        </div>
                        <ChevronRight size={16} className="text-gray-400"/>
                     </button>
                  </div>
-                 <div className="p-2 border-t border-gray-100 mt-auto"><button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors"><LogOut size={16} /> Sign Out</button></div>
+                 <div className="p-2 border-t border-gray-100 mt-auto"><button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors"><LogOut size={16} /> {t('sign_out_button')}</button></div>
                </>
              ) : (
                <>
@@ -120,14 +120,14 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                    <button onClick={() => setMenuView('MAIN')} className="p-1 hover:bg-gray-200 rounded-lg transition-colors">
                      <ChevronLeft size={18} className="text-gray-600"/>
                    </button>
-                   <span className="font-bold text-gray-800 text-sm">Select Language</span>
+                   <span className="font-bold text-gray-800 text-sm">{t('select_language_title')}</span>
                  </div>
                  <div className="p-2 border-b border-gray-100">
                    <div className="relative">
                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
                      <input 
                        type="text" 
-                       placeholder="Search language..." 
+                       placeholder={t('search_language_placeholder')} 
                        value={languageSearch}
                        onChange={(e) => setLanguageSearch(e.target.value)}
                        className="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
@@ -138,7 +138,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                  <div className="overflow-y-auto p-1 max-h-[300px]">
                    {isLanguagesLoading ? (
                       <div className="flex items-center justify-center py-8 text-gray-500 gap-2">
-                         <Loader2 size={16} className="animate-spin" /> Loading...
+                         <Loader2 size={16} className="animate-spin" /> {t('loading_languages')}
                       </div>
                    ) : (
                      languages
@@ -158,7 +158,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                        ))
                    )}
                    {!isLanguagesLoading && languages.filter(l => l.name.toLowerCase().includes(languageSearch.toLowerCase())).length === 0 && (
-                      <div className="py-8 text-center text-gray-400 text-xs">No languages found</div>
+                      <div className="py-8 text-center text-gray-400 text-xs">{t('no_languages_found')}</div>
                    )}
                  </div>
                </>

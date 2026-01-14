@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import customerServiceAPI, { Customer, CustomerChannel, CreateCustomerRequest, CustomerRole, CreateRoleRequest } from '../services/customerService';
 import notificationService from '../services/notificationService';
 import { 
@@ -26,6 +27,7 @@ import {
 } from 'lucide-react';
 
 export const CustomerView: React.FC = () => {
+  const { t } = useTranslation();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [roles, setRoles] = useState<CustomerRole[]>([]);
   const [loading, setLoading] = useState(false);
@@ -75,7 +77,7 @@ export const CustomerView: React.FC = () => {
   const handleCreateCustomer = async (request: CreateCustomerRequest) => {
     try {
       await customerServiceAPI.createCustomer(request);
-      notificationService.success('Customer created successfully');
+      notificationService.success(t('customer_page.create_success'));
       setShowCreateForm(false);
       loadCustomers();
     } catch (error) {
@@ -84,11 +86,11 @@ export const CustomerView: React.FC = () => {
   };
 
   const handleDeleteCustomer = async (customerId: string) => {
-    if (!confirm('Are you sure you want to delete this customer?')) return;
+    if (!confirm(t('customer_page.delete_confirm'))) return;
 
     try {
       await customerServiceAPI.deleteCustomer(customerId);
-      notificationService.success('Customer deleted successfully');
+      notificationService.success(t('customer_page.delete_success'));
       loadCustomers();
     } catch (error) {
       console.error('Failed to delete customer:', error);
@@ -116,20 +118,20 @@ export const CustomerView: React.FC = () => {
     <div className="p-8 max-w-7xl mx-auto w-full relative animate-in fade-in duration-300">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-          <Users className="text-blue-600" /> Customer Management
+          <Users className="text-blue-600" /> {t('customer_page.title')}
         </h2>
         <div className="flex gap-3">
           <button
             onClick={() => setShowRoleManager(true)}
             className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 font-medium flex items-center gap-2 shadow-sm transition-colors"
           >
-            <Settings size={16} /> Manage Roles
+            <Settings size={16} /> {t('customer_page.manage_roles')}
           </button>
           <button
             onClick={() => setShowCreateForm(true)}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium flex items-center gap-2 shadow-sm transition-colors"
           >
-            <Plus size={16} /> Add Customer
+            <Plus size={16} /> {t('customer_page.add_customer')}
           </button>
         </div>
       </div>
@@ -141,7 +143,7 @@ export const CustomerView: React.FC = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
             <input
               type="text"
-              placeholder="Search by name..."
+              placeholder={t('customer_page.search_placeholder')}
               value={searchName}
               onChange={(e) => setSearchName(e.target.value)}
               className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow"
@@ -154,7 +156,7 @@ export const CustomerView: React.FC = () => {
               onChange={(e) => setFilterChannel(e.target.value as CustomerChannel | '')}
               className="pl-9 pr-8 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white appearance-none cursor-pointer hover:border-gray-300 transition-colors"
             >
-              <option value="">All Channels</option>
+              <option value="">{t('customer_page.all_channels')}</option>
               {Object.values(CustomerChannel).map((channel) => (
                 <option key={channel} value={channel}>
                   {channel}
@@ -168,9 +170,9 @@ export const CustomerView: React.FC = () => {
               onChange={(e) => setFilterActive(e.target.value === '' ? '' : e.target.value === 'true')}
               className="pl-4 pr-8 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white appearance-none cursor-pointer hover:border-gray-300 transition-colors"
             >
-              <option value="">All Status</option>
-              <option value="true">Active</option>
-              <option value="false">Inactive</option>
+              <option value="">{t('customer_page.all_status')}</option>
+              <option value="true">{t('customer_page.active')}</option>
+              <option value="false">{t('customer_page.inactive')}</option>
             </select>
           </div>
         </div>
@@ -181,26 +183,26 @@ export const CustomerView: React.FC = () => {
         {loading ? (
           <div className="p-12 text-center text-gray-500 flex flex-col items-center">
             <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-            Loading customers...
+            {t('customer_page.loading')}
           </div>
         ) : customers.length === 0 ? (
           <div className="p-12 text-center text-gray-400">
             <Users size={48} className="mx-auto mb-4 opacity-20" />
-            <p>No customers found</p>
+            <p>{t('customer_page.no_customers')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Channel</th>
-                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Name</th>
-                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Contact</th>
-                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Role</th>
-                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Tags</th>
-                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Status</th>
-                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Last Interaction</th>
-                  <th className="text-right py-3 px-6 text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">{t('customer_page.table.channel')}</th>
+                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">{t('customer_page.table.name')}</th>
+                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">{t('customer_page.table.contact')}</th>
+                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">{t('customer_page.table.role')}</th>
+                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">{t('customer_page.table.tags')}</th>
+                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">{t('customer_page.table.status')}</th>
+                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase">{t('customer_page.table.last_interaction')}</th>
+                  <th className="text-right py-3 px-6 text-xs font-semibold text-gray-500 uppercase">{t('customer_page.table.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -255,7 +257,7 @@ export const CustomerView: React.FC = () => {
                         }`}
                       >
                         <span className={`w-1.5 h-1.5 rounded-full ${customer.active ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                        {customer.active ? 'Active' : 'Inactive'}
+                        {customer.active ? t('customer_page.active') : t('customer_page.inactive')}
                       </span>
                     </td>
                     <td className="py-4 px-6 text-sm text-gray-500">
@@ -299,7 +301,7 @@ export const CustomerView: React.FC = () => {
       {totalPages > 1 && (
         <div className="flex justify-between items-center mt-6">
           <span className="text-sm text-gray-600">
-            Page {currentPage + 1} of {totalPages}
+            {t('customer_page.pagination.page_info', { current: currentPage + 1, total: totalPages })}
           </span>
           <div className="flex items-center gap-2">
             <button
@@ -371,24 +373,24 @@ const CreateCustomerModal: React.FC<{
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-          <h3 className="font-bold text-gray-800">Add Customer</h3>
+          <h3 className="font-bold text-gray-800">{t('customer_page.add_customer')}</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X size={20} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('customer_page.table.name')} <span className="text-red-500">*</span></label>
             <input
               required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="Customer Name"
+              placeholder={t('customer_page.form.name_placeholder')}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Channel <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('customer_page.table.channel')} <span className="text-red-500">*</span></label>
             <select
               value={formData.primaryChannel}
               onChange={(e) => setFormData({ ...formData, primaryChannel: e.target.value as CustomerChannel })}
@@ -402,22 +404,22 @@ const CreateCustomerModal: React.FC<{
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('customer_page.form.email')}</label>
             <input
               type="email"
               value={formData.email || ''}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="email@example.com"
+              placeholder={t('customer_page.form.email_placeholder')}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('customer_page.form.phone')}</label>
             <input
               value={formData.phone || ''}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="+1 234 567 890"
+              placeholder={t('customer_page.form.phone_placeholder')}
             />
           </div>
           <div className="flex justify-end gap-3 mt-6 pt-2">
@@ -426,13 +428,13 @@ const CreateCustomerModal: React.FC<{
               onClick={onClose}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
             >
-              Cancel
+              {t('customer_page.form.cancel')}
             </button>
             <button
               type="submit"
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
             >
-              Create
+              {t('customer_page.form.create')}
             </button>
           </div>
         </form>
