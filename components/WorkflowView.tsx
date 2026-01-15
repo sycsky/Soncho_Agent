@@ -1,7 +1,7 @@
 import React, { useCallback, useRef, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { 
+import {
   ReactFlow, 
   MiniMap, 
   Controls, 
@@ -522,8 +522,7 @@ const TransferNode = ({ id, data, selected }: NodeProps) => {
   );
 };
 
-const AgentNode = ({ id, data, selected }: NodeProps) => {
-  const { t } = useTranslation();
+const FlowNode = ({ id, data, selected }: NodeProps) => {
   const config = data.config as any;
   const workflowName = config?.workflowName || t('workflow_editor.select_workflow');
 
@@ -534,7 +533,7 @@ const AgentNode = ({ id, data, selected }: NodeProps) => {
         <div className="bg-purple-100 p-1 rounded-lg text-purple-600">
           <Bot size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || t('workflow_editor.agent_node')}</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Flow'}</span>
       </div>
       <div className="p-3 bg-gray-50 border-b border-gray-100">
         <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
@@ -551,8 +550,7 @@ const AgentNode = ({ id, data, selected }: NodeProps) => {
   );
 };
 
-const AgentEndNode = ({ id, data, selected }: NodeProps) => {
-  const { t } = useTranslation();
+const FlowEndNode = ({ id, data, selected }: NodeProps) => {
   return (
     <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[200px] group hover:border-gray-400 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
       <NodeMenu nodeId={id} />
@@ -560,18 +558,17 @@ const AgentEndNode = ({ id, data, selected }: NodeProps) => {
         <div className="bg-gray-200 p-1 rounded-lg text-gray-600">
           <Square size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || t('workflow_editor.agent_end_node')}</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Flow End'}</span>
       </div>
       <div className="p-4">
-        <div className="text-xs text-gray-500">{t('workflow_editor.agent_execution_end')}</div>
+        <div className="text-xs text-gray-500">Flow Execution End</div>
       </div>
       <Handle type="target" position={Position.Left} className="!bg-gray-500" />
     </div>
   );
 };
 
-const AgentUpdateNode = ({ id, data, selected }: NodeProps) => {
-  const { t } = useTranslation();
+const FlowUpdateNode = ({ id, data, selected }: NodeProps) => {
   return (
     <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[200px] group hover:border-yellow-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
       <NodeMenu nodeId={id} />
@@ -579,13 +576,42 @@ const AgentUpdateNode = ({ id, data, selected }: NodeProps) => {
         <div className="bg-yellow-100 p-1 rounded-lg text-yellow-600">
           <Edit2 size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || t('workflow_editor.agent_update_node')}</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Flow Update'}</span>
       </div>
       <div className="p-4">
-        <div className="text-xs text-gray-500">{t('workflow_editor.update_agent_state')}</div>
+        <div className="text-xs text-gray-500">Update Flow State</div>
       </div>
       <Handle type="target" position={Position.Left} className="!bg-gray-400" />
       <Handle type="source" position={Position.Right} className="!bg-yellow-500" />
+    </div>
+  );
+};
+
+const AgentNode = ({ id, data, selected }: NodeProps) => {
+  const config = data.config as any;
+  const modelDisplay = useModelName(config?.modelId || config?.model, config?.modelDisplayName);
+  const goal = config?.goal || 'Autonomous Goal';
+
+  return (
+    <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[240px] group hover:border-pink-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
+      <NodeMenu nodeId={id} />
+      <div className="bg-pink-50 px-4 py-2 rounded-t-xl border-b border-pink-100 flex items-center gap-2">
+        <div className="bg-pink-100 p-1 rounded-lg text-pink-600">
+          <Wand2 size={14} />
+        </div>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Agent'}</span>
+      </div>
+      <div className="p-3 bg-gray-50 border-b border-gray-100">
+        <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
+          <Bot size={12} />
+          <span>{modelDisplay}</span>
+        </div>
+      </div>
+      <div className="p-4">
+        <p className="text-xs text-gray-500 line-clamp-2">{goal}</p>
+      </div>
+      <Handle type="target" position={Position.Left} className="!bg-gray-400" />
+      <Handle type="source" position={Position.Right} className="!bg-pink-500" />
     </div>
   );
 };
@@ -1108,7 +1134,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
   };
   
   useEffect(() => {
-    if (node && (node.type === 'intent' || node.type === 'llm' || node.type === 'imageTextSplit' || node.type === 'setSessionMetadata' || node.type === 'translation')) {
+    if (node && (node.type === 'intent' || node.type === 'llm' || node.type === 'agent' || node.type === 'imageTextSplit' || node.type === 'setSessionMetadata' || node.type === 'translation')) {
       workflowApi.getAllModels()
         .then(data => {
             const enabledModels = data.filter((m: LlmModel) => m.enabled);
@@ -1117,7 +1143,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
         .catch(err => console.error('Failed to fetch models', err));
     }
 
-    if (node && (node.type === 'llm' || node.type === 'tool')) {
+    if (node && (node.type === 'llm' || node.type === 'tool' || node.type === 'agent')) {
         aiToolApi.getTools()
             .then(data => setTools(data))
             .catch(err => console.error('Failed to fetch tools', err));
@@ -1166,7 +1192,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
         .catch(err => console.error('Failed to fetch knowledge bases', err));
     }
 
-    if (node && node.type === 'agent') {
+    if (node && node.type === 'flow') {
         workflowApi.getAllWorkflows()
             .then(data => setWorkflows(data))
             .catch(err => console.error('Failed to fetch workflows', err));
@@ -1332,13 +1358,13 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                 <X size={18} />
               </button>
             </div>
-            
+
             <div className="p-4 overflow-y-auto flex-1 space-y-4">
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.node_label')}</label>
-                <input 
-                  type="text" 
-                  value={node.data.label || ''} 
+                <input
+                  type="text"
+                  value={node.data.label || ''}
                   onChange={(e) => handleChange('label', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -1448,34 +1474,6 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
           </div>
         )}
 
-        {node.type === 'agent' && (
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.select_workflow')}</label>
-            <select 
-              value={node.data.config?.workflowId || ''}
-              onChange={(e) => {
-                  const selectedId = e.target.value;
-                  const selectedWorkflow = workflows.find(w => w.id === selectedId);
-                  onChange({
-                      ...node.data,
-                      config: {
-                          ...node.data.config,
-                          workflowId: selectedId,
-                          workflowName: selectedWorkflow?.name || ''
-                      }
-                  });
-              }}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="" disabled>{t('workflow_editor.select_a_workflow')}</option>
-              {workflows
-                .filter(w => w.id !== currentWorkflowId)
-                .map(workflow => (
-                <option key={workflow.id} value={workflow.id}>{workflow.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
 
         {node.type === 'tool' && (
           <div>
@@ -2130,6 +2128,137 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
           </>
         )}
 
+        {node.type === 'agent' && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Model</label>
+              <select
+                value={node.data.config?.modelId || node.data.config?.model || ''}
+                onChange={(e) => handleConfigChange('modelId', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="" disabled>Select a model</option>
+                {llmModels.length > 0 ? (
+                    llmModels.map(model => (
+                      <option key={model.id} value={model.id}>{model.name} ({model.provider})</option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                      <option value="gpt-4">gpt-4</option>
+                      <option value="claude-3-opus">claude-3-opus</option>
+                    </>
+                  )}
+              </select>
+            </div>
+
+            <div>
+               <label className="block text-xs font-medium text-gray-500 mb-1">Goal / Instruction</label>
+               <textarea
+                 value={node.data.config?.goal || ''}
+                 onChange={(e) => handleConfigChange('goal', e.target.value)}
+                 rows={4}
+                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                 placeholder="Describe what the agent should achieve..."
+               />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Max Iterations</label>
+              <input
+                type="number"
+                min="1"
+                max="50"
+                value={node.data.config?.maxIterations || 10}
+                onChange={(e) => handleConfigChange('maxIterations', parseInt(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">History Messages Count</label>
+              <input
+                type="number"
+                min="0"
+                value={node.data.config?.readCount ?? 10}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  handleConfigChange('readCount', isNaN(val) ? 0 : Math.max(0, val));
+                }}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="10"
+              />
+              <p className="text-[10px] text-gray-400 mt-1">Number of historical messages to use</p>
+            </div>
+
+            <div>
+                <div className="flex justify-between items-center mb-2">
+                    <label className="block text-xs font-medium text-gray-500">Tools</label>
+                    <button
+                        onClick={() => setShowToolDialog(true)}
+                        className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                    >
+                        <Plus size={12} /> Add Tool
+                    </button>
+                </div>
+
+                <div className="space-y-2">
+                    {(() => {
+                        const currentToolIds = node.data.config?.tools || [];
+                        const addedTools = tools.filter(t => currentToolIds.includes(t.id));
+
+                        if (addedTools.length === 0) {
+                            return (
+                                <div className="text-center py-4 bg-gray-50 rounded-lg border border-dashed border-gray-200 text-xs text-gray-400">
+                                    No tools added yet
+                                </div>
+                            );
+                        }
+
+                        return addedTools.map(tool => (
+                            <div key={tool.id} className="flex items-center gap-2 p-2 bg-white border border-gray-200 rounded-lg shadow-sm group">
+                                <div className="w-8 h-8 rounded bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0">
+                                    <Settings size={14} />
+                                </div>
+                                <div className="flex-1 overflow-hidden">
+                                    <div className="text-xs font-medium text-gray-700 truncate">{tool.displayName}</div>
+                                    <div className="text-[10px] text-gray-400 truncate">{tool.name}</div>
+                                </div>
+                                <button
+                                    onClick={() => handleRemoveTool(tool.id)}
+                                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors opacity-0 group-hover:opacity-100"
+                                    title="Remove tool"
+                                >
+                                    <Trash2 size={14} />
+                                </button>
+                            </div>
+                        ));
+                    })()}
+                </div>
+
+                <ToolSelectionDialog
+                    isOpen={showToolDialog}
+                    onClose={() => setShowToolDialog(false)}
+                    availableTools={tools.filter(t => !(node.data.config?.tools || []).includes(t.id))}
+                    onConfirm={handleAddTools}
+                />
+            </div>
+
+             <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Temperature: {node.data.config?.temperature || 0.7}</label>
+              <input
+                type="range"
+                min="0"
+                max="2"
+                step="0.1"
+                value={node.data.config?.temperature || 0.7}
+                onChange={(e) => handleConfigChange('temperature', parseFloat(e.target.value))}
+                className="w-full"
+              />
+            </div>
+          </div>
+        )}
+
         {node.type === 'reply' && (
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.reply_text')}</label>
@@ -2766,9 +2895,10 @@ const nodeTypes = {
   translation: TranslationNode,
   reply: ReplyNode,
   human_transfer: TransferNode,
+  flow: FlowNode,
+  flow_end: FlowEndNode,
+  flow_update: FlowUpdateNode,
   agent: AgentNode,
-  agent_end: AgentEndNode,
-  agent_update: AgentUpdateNode,
   tool: ToolNode,
 
   imageTextSplit: ImageTextSplitNode,
@@ -2988,14 +3118,14 @@ const Sidebar = () => {
         <h3 className="text-sm font-bold text-gray-800">{t('workflow_editor.components')}</h3>
         <p className="text-xs text-gray-500">{t('workflow_editor.drag_to_add')}</p>
       </div>
-      
+
       <div className="p-3 overflow-y-auto custom-scrollbar flex-1 space-y-6">
         {categories.map((group, index) => (
             <div key={index}>
                 <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">{group.title}</h4>
                 <div className="space-y-2">
                     {group.items.map((item) => (
-                        <div 
+                        <div
                           key={item.type}
                           className={`flex items-center gap-2 p-2 ${item.bg} border ${item.border} rounded-md cursor-grab active:cursor-grabbing hover:shadow-sm transition-all`}
                           onDragStart={(event) => {
@@ -3610,7 +3740,7 @@ const WorkflowList = ({ onSelect }: { onSelect: (id: string) => void }) => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                 <input 
                     type="text" 
-                    placeholder={t('workflow_editor.search_workflows')} 
+                    placeholder={t('workflow_editor.search_workflows')}
                     className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
             </div>
