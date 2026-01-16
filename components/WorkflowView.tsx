@@ -603,7 +603,7 @@ const AgentNode = ({ id, data, selected }: NodeProps) => {
         </div>
       </div>
       <div className="p-3 bg-white border-b border-gray-100">
-        <div className="text-[10px] font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">{t('workflow.agentNode.goalInstruction', 'Goal / Instruction')}</div>
+        <div className="text-[10px] font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Goal / Instruction</div>
         <p className="text-xs text-gray-600 line-clamp-3 break-words whitespace-pre-wrap">{goal}</p>
       </div>
 
@@ -611,24 +611,21 @@ const AgentNode = ({ id, data, selected }: NodeProps) => {
         <div className="px-3 py-2 bg-white border-b border-gray-100">
           <div className="text-[10px] font-semibold text-gray-400 mb-1.5 uppercase tracking-wider flex items-center gap-1">
             <Hammer size={10} />
-            {t('workflow.agentNode.tools', 'Tools')}
+              Tools
           </div>
           <div className="flex flex-col gap-1.5">
-            {boundTools.slice(0, 3).map(tool => (
+            {boundTools.slice(0, 5).map(tool => (
               <div key={tool.id} className="flex items-center gap-1.5 bg-pink-50/50 border border-pink-100 px-2 py-1 rounded text-xs text-gray-600">
                 <div className="w-1 h-1 rounded-full bg-pink-400"></div>
                 <span className="truncate font-medium">{tool.displayName || tool.name}</span>
               </div>
             ))}
-            {boundTools.length > 3 && (
-              <div className="text-[10px] text-gray-500 pl-1 font-medium">{t('workflow.agentNode.more', '+{count} more').replace('{count}', String(boundTools.length - 3))}</div>
-            )}
           </div>
         </div>
       )}
 
       <div className="p-3 bg-gray-50 rounded-b-xl text-[10px] text-gray-400 leading-relaxed border-t border-gray-100">
-        {t('workflow.agentNode.description', 'Plan steps and call tools to complete the goal.')}
+          Plan steps and call tools to complete the goal.
       </div>
       <Handle type="target" position={Position.Left} className="!bg-gray-400" />
       <Handle type="source" position={Position.Right} className="!bg-pink-500" />
@@ -3020,15 +3017,15 @@ const Sidebar = () => {
   return (
     <div className="absolute top-20 left-4 w-52 bg-white rounded-xl shadow-xl border border-gray-200 p-3 z-20 flex flex-col gap-3 h-[calc(100vh-120px)]">
       <div className="pb-2 border-b border-gray-100">
-        <h3 className="text-xs font-bold text-gray-800">{t('workflow.ui.components', 'Components')}</h3>
-        <p className="text-[11px] text-gray-500">{t('workflow.ui.dragToAdd', 'Drag to add')}</p>
+        <h3 className="text-xs font-bold text-gray-800">Components</h3>
+        <p className="text-[11px] text-gray-500">Drag to add</p>
       </div>
       
       <div className="flex-1 overflow-y-auto pr-1 space-y-3">
         {sections.map(section => (
           <details key={section.title} open className="rounded-lg border border-gray-100 bg-gray-50/40 px-2 py-1">
             <summary className="cursor-pointer select-none list-none flex items-center justify-between py-1">
-              <span className="text-[11px] font-semibold text-gray-600">{t(`workflow.ui.${section.title.toLowerCase()}`, section.title)}</span>
+              <span className="text-[11px] font-semibold text-gray-600">section.title</span>
               <ChevronRight size={12} className="text-gray-400" />
             </summary>
             <div className="space-y-2 pb-2">
@@ -3522,11 +3519,11 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
               onContextMenu={(e) => e.preventDefault()}
             >
               <div className="px-3 py-2 border-b border-gray-100 bg-gray-50">
-                <div className="text-xs font-bold text-gray-800">{t('workflow.ui.quickAdd', 'Quick Add')}</div>
+                <div className="text-xs font-bold text-gray-800">Quick Add</div>
               </div>
 
               <div className="py-1 max-h-[360px] overflow-y-auto">
-                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{t('workflow.ui.basic', 'Basic')}</div>
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Basic</div>
                 <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('start', 'Start')}>
                   <Play size={14} className="text-blue-600" />
                   <span>Start</span>
@@ -3544,7 +3541,7 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
                   <span>Transfer to Human</span>
                 </button>
 
-                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{t('workflow.ui.routing', 'Routing')}</div>
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Routing</div>
                 <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('intent', 'Intent Recognition')}>
                   <GitBranch size={14} className="text-green-600" />
                   <span>Intent Recognition</span>
@@ -3554,7 +3551,7 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
                   <span>Condition Check</span>
                 </button>
 
-                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{t('workflow.ui.ai', 'AI')}</div>
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">AI</div>
                 <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('llm', 'LLM Generation')}>
                   <Bot size={14} className="text-indigo-600" />
                   <span>LLM Generation</span>
@@ -3568,7 +3565,7 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
                   <span>Tool Execution</span>
                 </button>
 
-                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{t('workflow.ui.data', 'Data')}</div>
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Data</div>
                 <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('knowledge', 'Knowledge Retrieval')}>
                   <Database size={14} className="text-orange-600" />
                   <span>Knowledge Retrieval</span>
@@ -3590,7 +3587,7 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
                   <span>Param Extraction</span>
                 </button>
 
-                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{t('workflow.ui.advanced', 'Advanced')}</div>
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Advanced</div>
                 <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('flow', 'Flow')}>
                   <Bot size={14} className="text-purple-600" />
                   <span>Flow</span>
