@@ -524,6 +524,7 @@ const TransferNode = ({ id, data, selected }: NodeProps) => {
 
 const FlowNode = ({ id, data, selected }: NodeProps) => {
   const config = data.config as any;
+  const { t } = useTranslation();
   const workflowName = config?.workflowName || t('workflow_editor.select_workflow');
 
   return (
@@ -588,27 +589,50 @@ const FlowUpdateNode = ({ id, data, selected }: NodeProps) => {
 };
 
 const AgentNode = ({ id, data, selected }: NodeProps) => {
+  const { t } = useTranslation();
+  const tools = useTools();
   const config = data.config as any;
   const modelDisplay = useModelName(config?.modelId || config?.model, config?.modelDisplayName);
-  const goal = config?.goal || 'Autonomous Goal';
+
+  const configuredTools = (config?.tools || []).map((toolId: string) => 
+    tools.find(t => t.id === toolId)
+  ).filter(Boolean) as AiTool[];
 
   return (
-    <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[240px] group hover:border-pink-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
+    <div className={`bg-white rounded-xl shadow-lg border p-0 w-[300px] group hover:border-pink-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
       <NodeMenu nodeId={id} />
       <div className="bg-pink-50 px-4 py-2 rounded-t-xl border-b border-pink-100 flex items-center gap-2">
         <div className="bg-pink-100 p-1 rounded-lg text-pink-600">
           <Wand2 size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Agent'}</span>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || t('workflow_editor.nodes.agent')}</span>
       </div>
       <div className="p-3 bg-gray-50 border-b border-gray-100">
         <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
           <Bot size={12} />
-          <span>{modelDisplay}</span>
+          <span>{modelDisplay || t('workflow_editor.select_model')}</span>
         </div>
       </div>
-      <div className="p-4">
-        <p className="text-xs text-gray-500 line-clamp-2">{goal}</p>
+        
+      {configuredTools.length > 0 && (
+          <div className="px-3 py-2 bg-white border-b border-gray-100">
+             <div className="text-[10px] font-semibold text-gray-400 mb-1.5 uppercase tracking-wider flex items-center gap-1">
+                <Hammer size={10} />
+                {t('workflow_editor.tools')}
+             </div>
+             <div className="flex flex-col gap-1.5">
+                {configuredTools.map((tool: AiTool) => (
+                    <div key={tool.id} className="flex items-center gap-1.5 bg-indigo-50/50 border border-indigo-100 px-2 py-1 rounded text-xs text-gray-600">
+                        <div className="w-1 h-1 rounded-full bg-indigo-400"></div>
+                        <span className="truncate max-w-[180px] font-medium">{tool.displayName || tool.name}</span>
+                    </div>
+                ))}
+             </div>
+          </div>
+      )}
+
+      <div className="p-3 bg-gray-50 rounded-b-xl text-[10px] text-gray-400 leading-relaxed border-t border-gray-100">
+        {t('workflow_editor.agent_desc')}
       </div>
       <Handle type="target" position={Position.Left} className="!bg-gray-400" />
       <Handle type="source" position={Position.Right} className="!bg-pink-500" />
@@ -988,6 +1012,8 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
             handleConfigChange('systemPrompt', newValue);
         } else if (activeField === 'customPrompt') {
             handleConfigChange('customPrompt', newValue);
+        } else if (activeField === 'goal') {
+            handleConfigChange('goal', newValue);
         } else if (activeField.startsWith('message-')) {
             const index = parseInt(activeField.split('-')[1]);
             handleUpdateMessage(index, 'content', newValue);
@@ -1120,6 +1146,8 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
           handleConfigChange('customPrompt', value);
       } else if (field === 'targetText') {
           handleConfigChange('targetText', value);
+      } else if (field === 'goal') {
+          handleConfigChange('goal', value);
       }
       
       if (showVarMenu && activeField === field && cursorPosition !== undefined) {
@@ -1372,7 +1400,31 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
 
         <div className="h-px bg-gray-100 my-2"></div>
 
-        {/* Node specific fields */}
+        {node.type === 'flow' && (
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.select_workflow')}</label>
+            <select
+              value={node.data.config?.workflowId || ''}
+              onChange={(e) => {
+                  const selectedId = e.target.value;
+                  const selectedWorkflow = workflows.find(w => w.id === selectedId);
+                  // Update config with workflowId AND workflowName so the node can display it
+                  handleConfigChange('workflowId', selectedId);
+                  if (selectedWorkflow) {
+                       handleConfigChange('workflowName', selectedWorkflow.name);
+                  }
+              }}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+               <option value="" disabled>{t('workflow_editor.select_workflow_placeholder')}</option>
+               {workflows.map(wf => (
+                   <option key={wf.id} value={wf.id}>{wf.name}</option>
+               ))}
+            </select>
+            <p className="text-[10px] text-gray-400 mt-1">{t('workflow_editor.execute_another_workflow')}</p>
+          </div>
+        )}
+
         {node.type === 'intent' && (
           <div className="space-y-4">
             <div>
@@ -2154,13 +2206,19 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
 
             <div>
                <label className="block text-xs font-medium text-gray-500 mb-1">Goal / Instruction</label>
-               <textarea
-                 value={node.data.config?.goal || ''}
-                 onChange={(e) => handleConfigChange('goal', e.target.value)}
-                 rows={4}
-                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                 placeholder="Describe what the agent should achieve..."
-               />
+               <div className="relative">
+                 <TiptapEditor
+                   ref={el => textareaRefs.current['goal'] = el}
+                   value={node.data.config?.goal || ''}
+                   onChange={(val, selection) => handleEditorChange('goal', val, selection)}
+                   onSlash={(rect, index) => handleEditorSlash('goal', rect, index)}
+                   placeholder="Describe what the agent should achieve..."
+                   className="min-h-[150px]"
+                 />
+                 <p className="text-[10px] text-gray-400 mt-1">
+                   {t('workflow_editor.type_slash_for_vars') || "Type '/' to insert variables"}
+                 </p>
+               </div>
             </div>
 
             <div>
@@ -3016,6 +3074,15 @@ const Sidebar = () => {
             border: 'border-teal-100',
             iconBg: 'bg-teal-100',
             iconColor: 'text-teal-600'
+        },
+        {
+            type: 'agent',
+            label: t('workflow_editor.nodes.agent'),
+            icon: <Bot size={16}/>,
+            bg: 'bg-purple-50',
+            border: 'border-purple-100',
+            iconBg: 'bg-purple-100',
+            iconColor: 'text-purple-600'
         }
       ]
     },
@@ -3082,16 +3149,16 @@ const Sidebar = () => {
                 iconColor: 'text-orange-600'
             },
             {
-                type: 'agent',
-                label: t('workflow_editor.nodes.transfer'),
-                icon: <Bot size={16}/>,
+                type: 'flow',
+                label: t('workflow_editor.nodes.flow'),
+                icon: <Layout size={16}/>,
                 bg: 'bg-purple-50',
                 border: 'border-purple-100',
                 iconBg: 'bg-purple-100',
                 iconColor: 'text-purple-600'
             },
             {
-                type: 'agent_end',
+                type: 'flow_end',
                 label: t('workflow_editor.agent_end'),
                 icon: <Square size={16}/>,
                 bg: 'bg-gray-50',
@@ -3100,7 +3167,7 @@ const Sidebar = () => {
                 iconColor: 'text-gray-600'
             },
             {
-                type: 'agent_update',
+                type: 'flow_update',
                 label: t('workflow_editor.agent_update'),
                 icon: <Edit2 size={16}/>,
                 bg: 'bg-yellow-50',

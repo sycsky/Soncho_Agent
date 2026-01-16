@@ -8,7 +8,7 @@ interface ProductSelectorProps {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (product: Product) => void;
-  onSendCard: (product: Product | Product[]) => void;
+  onSendCard: (product: Product | Product[], recommendation?: string) => void;
 }
 
 export const ProductSelector: React.FC<ProductSelectorProps> = ({ isOpen, onClose, onSelect, onSendCard }) => {
@@ -16,6 +16,7 @@ export const ProductSelector: React.FC<ProductSelectorProps> = ({ isOpen, onClos
   const [query, setQuery] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
+  const [recommendation, setRecommendation] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasNextPage, setHasNextPage] = useState(false);

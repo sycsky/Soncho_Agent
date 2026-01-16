@@ -114,8 +114,18 @@ const copyToClipboard = async (text: string, t: any) => {
 
 export const ProductCard: React.FC<ProductCardProps> = ({ data }) => {
   const { t } = useTranslation();
-  // Always treat data as an array. If it's a single object (legacy), wrap it.
-  const products = Array.isArray(data) ? data : [data];
+  
+  let products: ProductData[] = [];
+  let recommendation = "";
+
+  if (Array.isArray(data)) {
+    products = data;
+  } else if (data && typeof data === 'object' && 'products' in data) {
+    products = (data as any).products;
+    recommendation = (data as any).recommendation;
+  } else {
+    products = [data as ProductData];
+  }
 
   const handleProductClick = (product: ProductData) => {
     if (product.url) {
@@ -160,6 +170,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ data }) => {
   // CSS grid will handle 1 item (via :has selector or default behavior)
   return (
     <div className="product-combo-container">
+      {recommendation && (
+        <div className="bg-blue-50 text-blue-800 p-3 rounded-lg mb-2 text-sm border border-blue-100 shadow-sm">
+          {recommendation}
+        </div>
+      )}
       <div className="product-grid">
         {products.map((product, index) => (
           <div 

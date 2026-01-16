@@ -22,6 +22,9 @@ import { ProductCard, GiftCard, DiscountCard, OrderCard } from './MessageCards';
 import { DiscountSelector } from './DiscountSelector';
 import { GiftCardCreator } from './GiftCardCreator';
 import { Subscription } from '../services/billingApi';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import './ChatArea.css';
 
 interface ChatAreaProps {
   session: ChatSession;
@@ -47,24 +50,6 @@ interface ChatAreaProps {
 const EMOJIS = ['😀', '😂', '😍', '😭', '😡', '👍', '👎', '🎉', '🔥', '❤️', '👀', '✅', '❌', '👋', '🙏', '💯'];
 
   // Helper to parse and render mentions in chat history
-const renderWithMentions = (text: string): React.ReactNode => {
-  const regex = /@\[(.*?)\]\(user:(.*?)\)/g;
-  const parts = text.split(regex);
-  
-  return parts.map((part, i) => {
-    if (i % 3 === 1) { // This is the name part
-      return (
-        <span key={i} className="bg-blue-100 text-blue-700 font-semibold rounded px-1 py-0.5">
-          @{part}
-        </span>
-      );
-    }
-    if (i % 3 === 2) { // This is the ID part, we skip it
-      return null;
-    }
-    return part; // This is the normal text part
-  });
-};
 
 export const ChatArea: React.FC<ChatAreaProps> = ({
   session,
@@ -147,11 +132,11 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       }, 0);
   };
 
-  const handleSendCard = (product: Product | Product[]) => {
+  const handleSendCard = (product: Product | Product[], recommendation?: string) => {
       // Normalize to array
       const productList = Array.isArray(product) ? product : [product];
       
-      const cardData = productList.map(p => ({
+      const products = productList.map(p => ({
             id: p.id,
             title: p.title,
             price: p.price,
@@ -162,6 +147,11 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             variantId: p.variantId, // Ensure variantId is passed
             discounts: p.applicableDiscounts || [] // Pass discounts to card
       }));
+
+      const cardData = {
+          products,
+          recommendation: recommendation || ''
+      };
       
       // Format: card#TYPE#JSON
       const payload = `card#CARD_PRODUCT#${JSON.stringify(cardData)}`;
@@ -203,7 +193,34 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             return <div className="text-red-500 text-xs">{t('error_rendering_card')}</div>;
         }
     }
-    return <p className="text-sm leading-relaxed whitespace-pre-wrap">{renderWithMentions(shouldShowTranslation ? (translationContent as string) : msg.text)}</p>;
+
+    const contentToRender = shouldShowTranslation ? (translationContent as string) : msg.text;
+    
+    // Pre-process mentions to be markdown links
+    // Format: @[name](user:id) -> [@name](mention:id)
+    const processedContent = (contentToRender || '').replace(/@\[(.*?)\]\(user:(.*?)\)/g, '[@$1](mention:$2)');
+
+    return (
+      <div className="markdown-body">
+         <ReactMarkdown 
+            remarkPlugins={[remarkGfm]}
+            components={{
+                a: ({node, href, children, ...props}) => {
+                    if (href && href.startsWith('mention:')) {
+                        return (
+                            <span className="bg-blue-100 text-blue-700 font-semibold rounded px-1 py-0.5 no-underline">
+                                {children}
+                            </span>
+                        );
+                    }
+                    return <a href={href} {...props} target="_blank" rel="noopener noreferrer">{children}</a>;
+                }
+            }}
+         >
+            {processedContent}
+         </ReactMarkdown>
+      </div>
+    );
   };
 
   const isResolved = session.status === ChatStatus.RESOLVED;
@@ -473,7 +490,11 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                    <div key={msg.id} className="w-full flex flex-col items-center gap-4 my-8 animate-in fade-in zoom-in-95 duration-500">
                       <div className="bg-amber-50 border border-amber-100 text-gray-700 text-xs px-5 py-4 rounded-xl shadow-sm max-w-xl w-full mx-auto relative">
                           <div className="flex items-center gap-2 mb-2 border-b border-amber-200/50 pb-2"><ClipboardCheck size={14} className="text-amber-600"/><span className="font-bold text-amber-800 uppercase tracking-wide text-[10px]">{t('resolution_summary')}</span></div>
-                          <p className="whitespace-pre-wrap leading-relaxed">{renderWithMentions(shouldShowTranslation ? (translationContent as string) : msg.text)}</p>
+                          <div className="markdown-body">
+                             <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {shouldShowTranslation ? (translationContent as string) : msg.text}
+                             </ReactMarkdown>
+                          </div>
                           {shouldShowTranslation && (
                              <div className="mt-2 pt-2 border-t border-amber-200/50 text-[10px] flex items-center gap-1.5 text-amber-600/70">
                                 <Globe size={10} />
