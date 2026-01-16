@@ -33,6 +33,7 @@ import { WorkflowGeneratorDialog } from './WorkflowGeneratorDialog';
 import { SystemPromptEnhancer } from './SystemPromptEnhancer';
 import TiptapEditor, { TiptapEditorRef } from './TiptapEditor';
 import { getLayoutedElements } from '../utils/layout';
+import { t } from '../i18n';
 
 // Helper hook to resolve model name from ID if display name is missing
 const useModelName = (modelId?: string, modelDisplayName?: string) => {
@@ -450,23 +451,27 @@ const TranslationNode = ({ id, data, selected }: NodeProps) => {
 
 const ReplyNode = ({ id, data, selected }: NodeProps) => {
   return (
-    <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[240px] group hover:border-blue-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
+    <div className={`bg-white rounded-xl shadow-lg border p-0 w-[240px] max-w-[240px] group hover:border-blue-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
       <NodeMenu nodeId={id} />
       <div className="bg-blue-50 px-4 py-2 rounded-t-xl border-b border-blue-100 flex items-center gap-2">
         <div className="bg-blue-100 p-1 rounded-lg text-blue-600">
           <MessageSquare size={14} />
         </div>
-        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Direct Reply'}</span>
+        <span className="font-semibold text-gray-700 text-sm flex-1 min-w-0 truncate" title={(data as any).label || 'Direct Reply'}>
+          {(data as any).label || 'Direct Reply'}
+        </span>
       </div>
       <div className="p-3 bg-gray-50 border-b border-gray-100">
          <div className="text-[10px] uppercase font-bold text-gray-400 mb-1">Response Source</div>
          <div className="flex items-center gap-2 text-xs text-gray-600 bg-white px-2 py-1 rounded border border-gray-200">
-            {(data as any).source || 'LLM Output'}
+            <span className="flex-1 min-w-0 truncate" title={(data as any).source || 'LLM Output'}>
+              {(data as any).source || 'LLM Output'}
+            </span>
          </div>
       </div>
       {(data as any).config?.text && (
           <div className="p-4 bg-gray-50/50">
-            <p className="text-xs text-gray-500 italic">"{(data as any).config.text}"</p>
+            <p className="text-xs text-gray-500 italic line-clamp-3 break-words">"{(data as any).config.text}"</p>
           </div>
       )}
       <Handle type="target" position={Position.Left} className="!bg-gray-400" />
@@ -579,9 +584,12 @@ const AgentNode = ({ id, data, selected }: NodeProps) => {
   const config = data.config as any;
   const modelDisplay = useModelName(config?.modelId || config?.model, config?.modelDisplayName);
   const goal = config?.goal || 'Autonomous Goal';
+  const tools = useTools();
+  const boundToolIds = config?.tools || [];
+  const boundTools = tools.filter(t => boundToolIds.includes(t.id));
 
   return (
-    <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[240px] group hover:border-pink-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
+    <div className={`bg-white rounded-xl shadow-lg border p-0 w-[260px] max-w-[260px] group hover:border-pink-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
       <NodeMenu nodeId={id} />
       <div className="bg-pink-50 px-4 py-2 rounded-t-xl border-b border-pink-100 flex items-center gap-2">
         <div className="bg-pink-100 p-1 rounded-lg text-pink-600">
@@ -595,8 +603,33 @@ const AgentNode = ({ id, data, selected }: NodeProps) => {
           <span>{modelDisplay}</span>
         </div>
       </div>
-      <div className="p-4">
-        <p className="text-xs text-gray-500 line-clamp-2">{goal}</p>
+      <div className="p-3 bg-white border-b border-gray-100">
+        <div className="text-[10px] font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">{t('workflow.agentNode.goalInstruction', 'Goal / Instruction')}</div>
+        <p className="text-xs text-gray-600 line-clamp-3 break-words whitespace-pre-wrap">{goal}</p>
+      </div>
+
+      {boundTools.length > 0 && (
+        <div className="px-3 py-2 bg-white border-b border-gray-100">
+          <div className="text-[10px] font-semibold text-gray-400 mb-1.5 uppercase tracking-wider flex items-center gap-1">
+            <Hammer size={10} />
+            {t('workflow.agentNode.tools', 'Tools')}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            {boundTools.slice(0, 3).map(tool => (
+              <div key={tool.id} className="flex items-center gap-1.5 bg-pink-50/50 border border-pink-100 px-2 py-1 rounded text-xs text-gray-600">
+                <div className="w-1 h-1 rounded-full bg-pink-400"></div>
+                <span className="truncate font-medium">{tool.displayName || tool.name}</span>
+              </div>
+            ))}
+            {boundTools.length > 3 && (
+              <div className="text-[10px] text-gray-500 pl-1 font-medium">{t('workflow.agentNode.more', '+{count} more').replace('{count}', String(boundTools.length - 3))}</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="p-3 bg-gray-50 rounded-b-xl text-[10px] text-gray-400 leading-relaxed border-t border-gray-100">
+        {t('workflow.agentNode.description', 'Plan steps and call tools to complete the goal.')}
       </div>
       <Handle type="target" position={Position.Left} className="!bg-gray-400" />
       <Handle type="source" position={Position.Right} className="!bg-pink-500" />
@@ -1106,6 +1139,8 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
           handleConfigChange('customPrompt', value);
       } else if (field === 'targetText') {
           handleConfigChange('targetText', value);
+      } else if (field === 'goal') {
+          handleConfigChange('goal', value);
       }
       
       if (showVarMenu && activeField === field && cursorPosition !== undefined) {
@@ -2141,12 +2176,13 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
 
             <div>
                <label className="block text-xs font-medium text-gray-500 mb-1">Goal / Instruction</label>
-               <textarea 
-                 value={node.data.config?.goal || ''} 
-                 onChange={(e) => handleConfigChange('goal', e.target.value)}
-                 rows={4}
-                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                 placeholder="Describe what the agent should achieve..."
+               <TiptapEditor
+                  ref={el => textareaRefs.current['goal'] = el}
+                  value={node.data.config?.goal || ''} 
+                  onChange={(val, selection) => handleEditorChange('goal', val, selection)}
+                  onSlash={(rect, index) => handleEditorSlash('goal', rect, index)}
+                  placeholder="Describe what the agent should achieve. Type '/' to insert variable..."
+                  className="min-h-[150px]"
                />
             </div>
 
@@ -2894,203 +2930,125 @@ const edgeTypes = {
 
 // Sidebar Component for Draggable Nodes
 const Sidebar = () => {
-  const onDragStart = (event: React.DragEvent, nodeType: string, label: string) => {
+  const onDragStart = (event: React.DragEvent, nodeType: string, label: string, config?: any) => {
     event.dataTransfer.setData('application/reactflow', nodeType);
     event.dataTransfer.setData('application/reactflow/label', label);
+    if (config) {
+      event.dataTransfer.setData('application/reactflow/config', JSON.stringify(config));
+    }
     event.dataTransfer.effectAllowed = 'move';
   };
 
+  const sections: Array<{
+    title: string;
+    items: Array<{
+      type: string;
+      label: string;
+      Icon: any;
+      itemClassName: string;
+      iconClassName: string;
+      getConfig?: () => any;
+    }>;
+  }> = [
+    {
+      title: 'Basic',
+      items: [
+        { type: 'start', label: 'Start', Icon: Play, itemClassName: 'bg-blue-50 border-blue-100', iconClassName: 'bg-blue-100 text-blue-600' },
+        { type: 'end', label: 'End', Icon: Square, itemClassName: 'bg-red-50 border-red-100', iconClassName: 'bg-red-100 text-red-600' },
+        { type: 'reply', label: 'Direct Reply', Icon: MessageSquare, itemClassName: 'bg-blue-50 border-blue-100', iconClassName: 'bg-blue-100 text-blue-600' },
+        { type: 'human_transfer', label: 'Transfer to Human', Icon: Headphones, itemClassName: 'bg-pink-50 border-pink-100', iconClassName: 'bg-pink-100 text-pink-600' },
+      ],
+    },
+    {
+      title: 'Routing',
+      items: [
+        {
+          type: 'intent',
+          label: 'Intent Recognition',
+          Icon: GitBranch,
+          itemClassName: 'bg-green-50 border-green-100',
+          iconClassName: 'bg-green-100 text-green-600',
+          getConfig: () => ({ intents: [] })
+        },
+        {
+          type: 'condition',
+          label: 'Condition Check',
+          Icon: Split,
+          itemClassName: 'bg-teal-50 border-teal-100',
+          iconClassName: 'bg-teal-100 text-teal-600',
+          getConfig: () => ({
+            conditions: [
+              {
+                id: Math.random().toString(36).substring(7),
+                sourceValue: '',
+                conditionType: 'contains',
+                inputValue: ''
+              }
+            ]
+          })
+        },
+      ],
+    },
+    {
+      title: 'AI',
+      items: [
+        { type: 'llm', label: 'LLM Generation', Icon: Bot, itemClassName: 'bg-indigo-50 border-indigo-100', iconClassName: 'bg-indigo-100 text-indigo-600' },
+        { type: 'agent', label: 'Agent', Icon: Wand2, itemClassName: 'bg-pink-50 border-pink-100', iconClassName: 'bg-pink-100 text-pink-600' },
+        { type: 'tool', label: 'Tool Execution', Icon: Hammer, itemClassName: 'bg-orange-50 border-orange-100', iconClassName: 'bg-orange-100 text-orange-600' },
+        { type: 'translation', label: 'Translation', Icon: Languages, itemClassName: 'bg-orange-50 border-orange-100', iconClassName: 'bg-orange-100 text-orange-600' },
+      ],
+    },
+    {
+      title: 'Data',
+      items: [
+        { type: 'knowledge', label: 'Knowledge Retrieval', Icon: Database, itemClassName: 'bg-orange-50 border-orange-100', iconClassName: 'bg-orange-100 text-orange-600' },
+        { type: 'setSessionMetadata', label: 'Set Metadata', Icon: Tags, itemClassName: 'bg-fuchsia-50 border-fuchsia-100', iconClassName: 'bg-fuchsia-100 text-fuchsia-600' },
+        { type: 'variable', label: 'Variable Setting', Icon: Braces, itemClassName: 'bg-cyan-50 border-cyan-100', iconClassName: 'bg-cyan-100 text-cyan-600' },
+        { type: 'parameter_extraction', label: 'Param Extraction', Icon: ListFilter, itemClassName: 'bg-violet-50 border-violet-100', iconClassName: 'bg-violet-100 text-violet-600' },
+      ],
+    },
+    {
+      title: 'Advanced',
+      items: [
+        { type: 'flow', label: 'Flow', Icon: Bot, itemClassName: 'bg-purple-50 border-purple-100', iconClassName: 'bg-purple-100 text-purple-600' },
+        { type: 'flow_end', label: 'Flow End', Icon: Square, itemClassName: 'bg-gray-50 border-gray-100', iconClassName: 'bg-gray-200 text-gray-600' },
+        { type: 'flow_update', label: 'Flow Update', Icon: Edit2, itemClassName: 'bg-yellow-50 border-yellow-100', iconClassName: 'bg-yellow-100 text-yellow-600' },
+        { type: 'imageTextSplit', label: 'Image-Text Split', Icon: Split, itemClassName: 'bg-teal-50 border-teal-100', iconClassName: 'bg-teal-100 text-teal-600' },
+      ],
+    },
+  ];
+
   return (
-    <div className="absolute top-20 left-4 w-60 bg-white rounded-xl shadow-xl border border-gray-200 p-4 z-20 flex flex-col gap-4">
+    <div className="absolute top-20 left-4 w-52 bg-white rounded-xl shadow-xl border border-gray-200 p-3 z-20 flex flex-col gap-3 h-[calc(100vh-120px)]">
       <div className="pb-2 border-b border-gray-100">
-        <h3 className="text-sm font-bold text-gray-800">Components</h3>
-        <p className="text-xs text-gray-500">Drag to add to workflow</p>
+        <h3 className="text-xs font-bold text-gray-800">{t('workflow.ui.components', 'Components')}</h3>
+        <p className="text-[11px] text-gray-500">{t('workflow.ui.dragToAdd', 'Drag to add')}</p>
       </div>
       
-      <div className="space-y-3">
-        <div 
-          className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'start', 'Start')}
-          draggable
-        >
-          <div className="bg-blue-100 p-1.5 rounded text-blue-600"><Play size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Start</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-red-50 border border-red-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'end', 'End')}
-          draggable
-        >
-          <div className="bg-red-100 p-1.5 rounded text-red-600"><Square size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">End</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-green-50 border border-green-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => {
-            onDragStart(event, 'intent', 'Intent Recognition');
-            // Add default empty intents for new nodes
-            event.dataTransfer.setData('application/reactflow/config', JSON.stringify({
-              intents: []
-            }));
-          }}
-          draggable
-        >
-          <div className="bg-green-100 p-1.5 rounded text-green-600"><GitBranch size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Intent Recognition</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-teal-50 border border-teal-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => {
-            onDragStart(event, 'condition', 'Condition Check');
-             event.dataTransfer.setData('application/reactflow/config', JSON.stringify({
-              conditions: [
-                  {
-                    id: Math.random().toString(36).substring(7),
-                    sourceValue: '',
-                    conditionType: 'contains',
-                    inputValue: ''
-                  }
-              ]
-            }));
-          }}
-          draggable
-        >
-          <div className="bg-teal-100 p-1.5 rounded text-teal-600"><Split size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Condition Check</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-orange-50 border border-orange-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'knowledge', 'Knowledge Retrieval')}
-          draggable
-        >
-          <div className="bg-orange-100 p-1.5 rounded text-orange-600"><Database size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Knowledge Retrieval</span>
-        </div>
-
-
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-indigo-50 border border-indigo-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'llm', 'LLM Generation')}
-          draggable
-        >
-          <div className="bg-indigo-100 p-1.5 rounded text-indigo-600"><Bot size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">LLM Generation</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-orange-50 border border-orange-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'translation', 'Translation')}
-          draggable
-        >
-          <div className="bg-orange-100 p-1.5 rounded text-orange-600"><Languages size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Translation</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'reply', 'Direct Reply')}
-          draggable
-        >
-          <div className="bg-blue-100 p-1.5 rounded text-blue-600"><MessageSquare size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Direct Reply</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-pink-50 border border-pink-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'human_transfer', 'Transfer to Human')}
-          draggable
-        >
-          <div className="bg-pink-100 p-1.5 rounded text-pink-600"><Headphones size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Transfer to Human</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-purple-50 border border-purple-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'flow', 'Flow')}
-          draggable
-        >
-          <div className="bg-purple-100 p-1.5 rounded text-purple-600"><Bot size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Flow</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'flow_end', 'Flow End')}
-          draggable
-        >
-          <div className="bg-gray-200 p-1.5 rounded text-gray-600"><Square size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Flow End</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'flow_update', 'Flow Update')}
-          draggable
-        >
-          <div className="bg-yellow-100 p-1.5 rounded text-yellow-600"><Edit2 size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Flow Update</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-pink-50 border border-pink-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'agent', 'Agent')}
-          draggable
-        >
-          <div className="bg-pink-100 p-1.5 rounded text-pink-600"><Wand2 size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Agent</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-orange-50 border border-orange-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'tool', 'Tool Execution')}
-          draggable
-        >
-          <div className="bg-orange-100 p-1.5 rounded text-orange-600"><Hammer size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Tool Execution</span>
-        </div>
-
-
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-teal-50 border border-teal-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'imageTextSplit', 'Image-Text Split')}
-          draggable
-        >
-          <div className="bg-teal-100 p-1.5 rounded text-teal-600"><Split size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Image-Text Split</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-fuchsia-50 border border-fuchsia-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'setSessionMetadata', 'Set Metadata')}
-          draggable
-        >
-          <div className="bg-fuchsia-100 p-1.5 rounded text-fuchsia-600"><Tags size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Set Metadata</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-violet-50 border border-violet-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'parameter_extraction', 'Param Extraction')}
-          draggable
-        >
-          <div className="bg-violet-100 p-1.5 rounded text-violet-600"><ListFilter size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Param Extraction</span>
-        </div>
-
-        <div 
-          className="flex items-center gap-3 p-3 bg-cyan-50 border border-cyan-100 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
-          onDragStart={(event) => onDragStart(event, 'variable', 'Variable Setting')}
-          draggable
-        >
-          <div className="bg-cyan-100 p-1.5 rounded text-cyan-600"><Braces size={16}/></div>
-          <span className="text-sm font-medium text-gray-700">Variable Setting</span>
-        </div>
+      <div className="flex-1 overflow-y-auto pr-1 space-y-3">
+        {sections.map(section => (
+          <details key={section.title} open className="rounded-lg border border-gray-100 bg-gray-50/40 px-2 py-1">
+            <summary className="cursor-pointer select-none list-none flex items-center justify-between py-1">
+              <span className="text-[11px] font-semibold text-gray-600">{t(`workflow.ui.${section.title.toLowerCase()}`, section.title)}</span>
+              <ChevronRight size={12} className="text-gray-400" />
+            </summary>
+            <div className="space-y-2 pb-2">
+              {section.items.map(item => (
+                <div
+                  key={`${section.title}-${item.type}`}
+                  className={`flex items-center gap-2 p-2 border rounded-lg cursor-grab active:cursor-grabbing hover:shadow-sm transition-all ${item.itemClassName}`}
+                  onDragStart={(event) => onDragStart(event, item.type, item.label, item.getConfig ? item.getConfig() : undefined)}
+                  draggable
+                >
+                  <div className={`p-1 rounded ${item.iconClassName}`}>
+                    <item.Icon size={14} />
+                  </div>
+                  <span className="text-xs font-medium text-gray-700 truncate">{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </details>
+        ))}
       </div>
     </div>
   );
@@ -3111,6 +3069,46 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
   const [showTestDialog, setShowTestDialog] = useState(false);
   const [showGeneratorDialog, setShowGeneratorDialog] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [paneContextMenu, setPaneContextMenu] = useState<null | { top: number; left: number; flowPosition: { x: number; y: number } }>(null);
+
+  const closePaneContextMenu = useCallback(() => {
+    setPaneContextMenu(null);
+  }, []);
+
+  const getDefaultConfigForNodeType = useCallback((type: string) => {
+    if (type === 'intent') {
+      return { intents: [] };
+    }
+    if (type === 'condition') {
+      return {
+        conditions: [
+          {
+            id: Math.random().toString(36).substring(7),
+            sourceValue: '',
+            conditionType: 'contains',
+            inputValue: ''
+          }
+        ]
+      };
+    }
+    return undefined;
+  }, []);
+
+  const handleQuickAddNode = useCallback((type: string, label: string) => {
+    if (!paneContextMenu) return;
+    const config = getDefaultConfigForNodeType(type);
+    const newNode = {
+      id: `${type}-${Math.random().toString(36).substring(2, 9)}`,
+      type,
+      position: paneContextMenu.flowPosition,
+      data: {
+        label,
+        config
+      }
+    };
+    setNodes((nds) => nds.concat(newNode));
+    closePaneContextMenu();
+  }, [closePaneContextMenu, getDefaultConfigForNodeType, paneContextMenu, setNodes]);
 
   const handleGenerateWorkflow = async (prompt: string, modelId: string) => {
     try {
@@ -3186,11 +3184,26 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: any) => {
     setSelectedNodeId(node.id);
-  }, []);
+    closePaneContextMenu();
+  }, [closePaneContextMenu]);
 
   const onPaneClick = useCallback(() => {
     setSelectedNodeId(null);
-  }, []);
+    closePaneContextMenu();
+  }, [closePaneContextMenu]);
+
+  const onPaneContextMenu = useCallback((event: React.MouseEvent) => {
+    event.preventDefault();
+    const flowPosition = screenToFlowPosition({
+      x: event.clientX,
+      y: event.clientY
+    });
+    const menuWidth = 240;
+    const menuHeight = 360;
+    const left = Math.min(event.clientX, window.innerWidth - menuWidth - 12);
+    const top = Math.min(event.clientY, window.innerHeight - menuHeight - 12);
+    setPaneContextMenu({ top, left, flowPosition });
+  }, [screenToFlowPosition]);
 
   const onNodeDataChange = useCallback((newData: any) => {
     setNodes((nds) =>
@@ -3475,6 +3488,7 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
           onConnect={onConnect}
           onNodeClick={onNodeClick}
           onPaneClick={onPaneClick}
+          onPaneContextMenu={onPaneContextMenu}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           onDragOver={onDragOver}
@@ -3493,6 +3507,112 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
           <MiniMap />
           <Background gap={12} size={1} />
         </ReactFlow>
+        {paneContextMenu && createPortal(
+          <div
+            className="fixed inset-0 z-[60]"
+            onClick={closePaneContextMenu}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              closePaneContextMenu();
+            }}
+          >
+            <div
+              className="absolute w-60 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden"
+              style={{ top: paneContextMenu.top, left: paneContextMenu.left }}
+              onClick={(e) => e.stopPropagation()}
+              onContextMenu={(e) => e.preventDefault()}
+            >
+              <div className="px-3 py-2 border-b border-gray-100 bg-gray-50">
+                <div className="text-xs font-bold text-gray-800">{t('workflow.ui.quickAdd', 'Quick Add')}</div>
+              </div>
+
+              <div className="py-1 max-h-[360px] overflow-y-auto">
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{t('workflow.ui.basic', 'Basic')}</div>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('start', 'Start')}>
+                  <Play size={14} className="text-blue-600" />
+                  <span>Start</span>
+                </button>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('end', 'End')}>
+                  <Square size={14} className="text-red-600" />
+                  <span>End</span>
+                </button>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('reply', 'Direct Reply')}>
+                  <MessageSquare size={14} className="text-blue-600" />
+                  <span>Direct Reply</span>
+                </button>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('human_transfer', 'Transfer to Human')}>
+                  <Headphones size={14} className="text-pink-600" />
+                  <span>Transfer to Human</span>
+                </button>
+
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{t('workflow.ui.routing', 'Routing')}</div>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('intent', 'Intent Recognition')}>
+                  <GitBranch size={14} className="text-green-600" />
+                  <span>Intent Recognition</span>
+                </button>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('condition', 'Condition Check')}>
+                  <Split size={14} className="text-teal-600" />
+                  <span>Condition Check</span>
+                </button>
+
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{t('workflow.ui.ai', 'AI')}</div>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('llm', 'LLM Generation')}>
+                  <Bot size={14} className="text-indigo-600" />
+                  <span>LLM Generation</span>
+                </button>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('agent', 'Agent')}>
+                  <Wand2 size={14} className="text-pink-600" />
+                  <span>Agent</span>
+                </button>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('tool', 'Tool Execution')}>
+                  <Hammer size={14} className="text-orange-600" />
+                  <span>Tool Execution</span>
+                </button>
+
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{t('workflow.ui.data', 'Data')}</div>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('knowledge', 'Knowledge Retrieval')}>
+                  <Database size={14} className="text-orange-600" />
+                  <span>Knowledge Retrieval</span>
+                </button>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('translation', 'Translation')}>
+                  <Languages size={14} className="text-orange-600" />
+                  <span>Translation</span>
+                </button>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('setSessionMetadata', 'Set Metadata')}>
+                  <Tags size={14} className="text-fuchsia-600" />
+                  <span>Set Metadata</span>
+                </button>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('variable', 'Variable Setting')}>
+                  <Braces size={14} className="text-cyan-600" />
+                  <span>Variable Setting</span>
+                </button>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('parameter_extraction', 'Param Extraction')}>
+                  <ListFilter size={14} className="text-violet-600" />
+                  <span>Param Extraction</span>
+                </button>
+
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{t('workflow.ui.advanced', 'Advanced')}</div>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('flow', 'Flow')}>
+                  <Bot size={14} className="text-purple-600" />
+                  <span>Flow</span>
+                </button>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('flow_end', 'Flow End')}>
+                  <Square size={14} className="text-gray-600" />
+                  <span>Flow End</span>
+                </button>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('flow_update', 'Flow Update')}>
+                  <Edit2 size={14} className="text-yellow-600" />
+                  <span>Flow Update</span>
+                </button>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('imageTextSplit', 'Image-Text Split')}>
+                  <Split size={14} className="text-teal-600" />
+                  <span>Image-Text Split</span>
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
         {selectedNode && (
             <PropertyPanel 
             node={selectedNode} 
