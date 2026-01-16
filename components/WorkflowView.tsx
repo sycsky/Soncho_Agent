@@ -33,7 +33,6 @@ import { WorkflowGeneratorDialog } from './WorkflowGeneratorDialog';
 import { SystemPromptEnhancer } from './SystemPromptEnhancer';
 import TiptapEditor, { TiptapEditorRef } from './TiptapEditor';
 import { getLayoutedElements } from '../utils/layout';
-import { t } from '../i18n';
 
 // Helper hook to resolve model name from ID if display name is missing
 const useModelName = (modelId?: string, modelDisplayName?: string) => {
