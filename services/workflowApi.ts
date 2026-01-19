@@ -120,6 +120,14 @@ export const workflowApi = {
     return handleResponse<void>(response);
   },
 
+  getExecutionLogByMessageId: async (messageId: string): Promise<any> => {
+    const response = await fetch(`${API_BASE}/ai-workflows/execution-log?messageId=${messageId}`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return handleResponse<any>(response);
+  },
+
   validateWorkflow: async (data: { nodesJson: string; edgesJson: string }): Promise<{ valid: boolean; errors: string[] }> => {
     const response = await fetch(`${API_BASE}/ai-workflows/validate`, {
       method: 'POST',

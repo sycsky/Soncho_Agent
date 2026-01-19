@@ -33,6 +33,8 @@ export interface Message {
   isInternal?: boolean; // For notes
   attachments?: Attachment[];
   mentions?: string[]; // Array of mentioned agent IDs
+  metadata?: Record<string, any>; // For additional metadata like workflow execution details
+  agentMetadata?: Record<string, any>; // Backend agent-specific metadata
   translation?: {
     isTranslated: boolean;
     targetLanguage: string;

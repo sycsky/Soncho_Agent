@@ -1920,40 +1920,6 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
            </div>
         )}
 
-        {node.type === 'variable' && (
-           <div className="space-y-4">
-              <div className="p-4 bg-cyan-50 rounded-lg border border-cyan-100 mb-4">
-                 <p className="text-xs text-cyan-800">
-                   Sets a workflow variable from a source field.
-                 </p>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Variable Name</label>
-                <input 
-                  type="text" 
-                  value={node.data.config?.variableName || ''}
-                  onChange={(e) => handleConfigChange('variableName', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                  placeholder="e.g. user_id"
-                />
-                <p className="text-[10px] text-gray-400 mt-1">The name of the variable to set.</p>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Source Field</label>
-                <input 
-                  type="text" 
-                  value={node.data.config?.sourceField || ''}
-                  onChange={(e) => handleConfigChange('sourceField', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                  placeholder="e.g. {{LLM.text}}"
-                />
-                <p className="text-[10px] text-gray-400 mt-1">The value or variable reference to assign.</p>
-              </div>
-           </div>
-        )}
-
         {node.type === 'llm' && (
           <>
              <div>
