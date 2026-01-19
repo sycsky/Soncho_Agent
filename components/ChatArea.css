@@ -1,0 +1,122 @@
+/* Markdown Styles */
+.markdown-body {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.markdown-body p {
+  margin-bottom: 8px;
+}
+
+.markdown-body p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4, .markdown-body h5, .markdown-body h6 {
+  margin-top: 16px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.markdown-body h1 { font-size: 1.5em; }
+.markdown-body h2 { font-size: 1.3em; }
+.markdown-body h3 { font-size: 1.1em; }
+
+.markdown-body ul, .markdown-body ol {
+  padding-left: 20px;
+  margin-bottom: 8px;
+  list-style-type: disc;
+}
+
+.markdown-body ol {
+  list-style-type: decimal;
+}
+
+.markdown-body li {
+  margin-bottom: 4px;
+}
+
+.markdown-body code {
+  font-family: monospace;
+  background-color: rgba(0, 0, 0, 0.1);
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.markdown-body pre {
+  background-color: #f6f8fa;
+  padding: 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin-bottom: 12px;
+}
+
+.markdown-body pre code {
+  background-color: transparent;
+  padding: 0;
+  font-size: 0.9em;
+  color: #24292e;
+}
+
+.markdown-body a {
+  color: #2563eb; /* Tailwind blue-600 */
+  text-decoration: none;
+}
+
+.markdown-body a:hover {
+  text-decoration: underline;
+}
+
+.markdown-body blockquote {
+  border-left: 4px solid #e5e7eb;
+  padding-left: 12px;
+  color: #6b7280; /* Tailwind gray-500 */
+  margin-bottom: 12px;
+}
+
+.markdown-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+}
+
+.markdown-body th, .markdown-body td {
+  border: 1px solid #e5e7eb;
+  padding: 6px 12px;
+  text-align: left;
+}
+
+.markdown-body th {
+  background-color: #f9fafb; /* Tailwind gray-50 */
+  font-weight: 600;
+}
+
+/* Adjust text color for dark backgrounds (AI/User bubbles) if needed */
+.text-white .markdown-body code {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.text-white .markdown-body pre {
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+.text-white .markdown-body pre code {
+    color: white;
+}
+
+.text-white .markdown-body a {
+    color: #93c5fd; /* Tailwind blue-300 */
+}
+
+.text-white .markdown-body blockquote {
+    border-left-color: rgba(255,255,255,0.3);
+    color: rgba(255,255,255,0.8);
+}
+
+.text-white .markdown-body th {
+    background-color: rgba(255,255,255,0.1);
+    color: white;
+}

@@ -460,7 +460,7 @@ const TranslationNode = ({ id, data, selected }: NodeProps) => {
 const ReplyNode = ({ id, data, selected }: NodeProps) => {
   const { t } = useTranslation();
   return (
-    <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[240px] group hover:border-blue-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
+    <div className={`bg-white rounded-xl shadow-lg border p-0 w-[240px] max-w-[240px] group hover:border-blue-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
       <NodeMenu nodeId={id} />
       <div className="bg-blue-50 px-4 py-2 rounded-t-xl border-b border-blue-100 flex items-center gap-2">
         <div className="bg-blue-100 p-1 rounded-lg text-blue-600">
@@ -594,7 +594,7 @@ const AgentNode = ({ id, data, selected }: NodeProps) => {
   const config = data.config as any;
   const modelDisplay = useModelName(config?.modelId || config?.model, config?.modelDisplayName);
 
-  const configuredTools = (config?.tools || []).map((toolId: string) => 
+  const configuredTools = (config?.tools || []).map((toolId: string) =>
     tools.find(t => t.id === toolId)
   ).filter(Boolean) as AiTool[];
 
@@ -613,7 +613,7 @@ const AgentNode = ({ id, data, selected }: NodeProps) => {
           <span>{modelDisplay || t('workflow_editor.select_model')}</span>
         </div>
       </div>
-        
+
       {configuredTools.length > 0 && (
           <div className="px-3 py-2 bg-white border-b border-gray-100">
              <div className="text-[10px] font-semibold text-gray-400 mb-1.5 uppercase tracking-wider flex items-center gap-1">
@@ -1965,8 +1965,8 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
 
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.variable_name')}</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={node.data.config?.variableName || ''}
                   onChange={(e) => handleConfigChange('variableName', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
@@ -1977,8 +1977,8 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
 
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.source_field')}</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={node.data.config?.sourceField || ''}
                   onChange={(e) => handleConfigChange('sourceField', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
@@ -2972,8 +2972,12 @@ const edgeTypes = {
 const Sidebar = () => {
   const { t } = useTranslation();
   const onDragStart = (event: React.DragEvent, nodeType: string, label: string) => {
+  const onDragStart = (event: React.DragEvent, nodeType: string, label: string, config?: any) => {
     event.dataTransfer.setData('application/reactflow', nodeType);
     event.dataTransfer.setData('application/reactflow/label', label);
+    if (config) {
+      event.dataTransfer.setData('application/reactflow/config', JSON.stringify(config));
+    }
     event.dataTransfer.effectAllowed = 'move';
   };
 
@@ -3229,6 +3233,46 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
   const [showTestDialog, setShowTestDialog] = useState(false);
   const [showGeneratorDialog, setShowGeneratorDialog] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [paneContextMenu, setPaneContextMenu] = useState<null | { top: number; left: number; flowPosition: { x: number; y: number } }>(null);
+
+  const closePaneContextMenu = useCallback(() => {
+    setPaneContextMenu(null);
+  }, []);
+
+  const getDefaultConfigForNodeType = useCallback((type: string) => {
+    if (type === 'intent') {
+      return { intents: [] };
+    }
+    if (type === 'condition') {
+      return {
+        conditions: [
+          {
+            id: Math.random().toString(36).substring(7),
+            sourceValue: '',
+            conditionType: 'contains',
+            inputValue: ''
+          }
+        ]
+      };
+    }
+    return undefined;
+  }, []);
+
+  const handleQuickAddNode = useCallback((type: string, label: string) => {
+    if (!paneContextMenu) return;
+    const config = getDefaultConfigForNodeType(type);
+    const newNode = {
+      id: `${type}-${Math.random().toString(36).substring(2, 9)}`,
+      type,
+      position: paneContextMenu.flowPosition,
+      data: {
+        label,
+        config
+      }
+    };
+    setNodes((nds) => nds.concat(newNode));
+    closePaneContextMenu();
+  }, [closePaneContextMenu, getDefaultConfigForNodeType, paneContextMenu, setNodes]);
 
   const handleGenerateWorkflow = async (prompt: string, modelId: string) => {
     try {
@@ -3304,11 +3348,26 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: any) => {
     setSelectedNodeId(node.id);
-  }, []);
+    closePaneContextMenu();
+  }, [closePaneContextMenu]);
 
   const onPaneClick = useCallback(() => {
     setSelectedNodeId(null);
-  }, []);
+    closePaneContextMenu();
+  }, [closePaneContextMenu]);
+
+  const onPaneContextMenu = useCallback((event: React.MouseEvent) => {
+    event.preventDefault();
+    const flowPosition = screenToFlowPosition({
+      x: event.clientX,
+      y: event.clientY
+    });
+    const menuWidth = 240;
+    const menuHeight = 360;
+    const left = Math.min(event.clientX, window.innerWidth - menuWidth - 12);
+    const top = Math.min(event.clientY, window.innerHeight - menuHeight - 12);
+    setPaneContextMenu({ top, left, flowPosition });
+  }, [screenToFlowPosition]);
 
   const onNodeDataChange = useCallback((newData: any) => {
     setNodes((nds) =>
@@ -3593,6 +3652,7 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
           onConnect={onConnect}
           onNodeClick={onNodeClick}
           onPaneClick={onPaneClick}
+          onPaneContextMenu={onPaneContextMenu}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           onDragOver={onDragOver}
@@ -3611,6 +3671,112 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
           <MiniMap />
           <Background gap={12} size={1} />
         </ReactFlow>
+        {paneContextMenu && createPortal(
+          <div
+            className="fixed inset-0 z-[60]"
+            onClick={closePaneContextMenu}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              closePaneContextMenu();
+            }}
+          >
+            <div
+              className="absolute w-60 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden"
+              style={{ top: paneContextMenu.top, left: paneContextMenu.left }}
+              onClick={(e) => e.stopPropagation()}
+              onContextMenu={(e) => e.preventDefault()}
+            >
+              <div className="px-3 py-2 border-b border-gray-100 bg-gray-50">
+                <div className="text-xs font-bold text-gray-800">Quick Add</div>
+              </div>
+
+              <div className="py-1 max-h-[360px] overflow-y-auto">
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Basic</div>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('start', 'Start')}>
+                  <Play size={14} className="text-blue-600" />
+                  <span>Start</span>
+                </button>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('end', 'End')}>
+                  <Square size={14} className="text-red-600" />
+                  <span>End</span>
+                </button>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('reply', 'Direct Reply')}>
+                  <MessageSquare size={14} className="text-blue-600" />
+                  <span>Direct Reply</span>
+                </button>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('human_transfer', 'Transfer to Human')}>
+                  <Headphones size={14} className="text-pink-600" />
+                  <span>Transfer to Human</span>
+                </button>
+
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Routing</div>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('intent', 'Intent Recognition')}>
+                  <GitBranch size={14} className="text-green-600" />
+                  <span>Intent Recognition</span>
+                </button>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('condition', 'Condition Check')}>
+                  <Split size={14} className="text-teal-600" />
+                  <span>Condition Check</span>
+                </button>
+
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">AI</div>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('llm', 'LLM Generation')}>
+                  <Bot size={14} className="text-indigo-600" />
+                  <span>LLM Generation</span>
+                </button>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('agent', 'Agent')}>
+                  <Wand2 size={14} className="text-pink-600" />
+                  <span>Agent</span>
+                </button>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('tool', 'Tool Execution')}>
+                  <Hammer size={14} className="text-orange-600" />
+                  <span>Tool Execution</span>
+                </button>
+
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Data</div>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('knowledge', 'Knowledge Retrieval')}>
+                  <Database size={14} className="text-orange-600" />
+                  <span>Knowledge Retrieval</span>
+                </button>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('translation', 'Translation')}>
+                  <Languages size={14} className="text-orange-600" />
+                  <span>Translation</span>
+                </button>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('setSessionMetadata', 'Set Metadata')}>
+                  <Tags size={14} className="text-fuchsia-600" />
+                  <span>Set Metadata</span>
+                </button>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('variable', 'Variable Setting')}>
+                  <Braces size={14} className="text-cyan-600" />
+                  <span>Variable Setting</span>
+                </button>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('parameter_extraction', 'Param Extraction')}>
+                  <ListFilter size={14} className="text-violet-600" />
+                  <span>Param Extraction</span>
+                </button>
+
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Advanced</div>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('flow', 'Flow')}>
+                  <Bot size={14} className="text-purple-600" />
+                  <span>Flow</span>
+                </button>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('flow_end', 'Flow End')}>
+                  <Square size={14} className="text-gray-600" />
+                  <span>Flow End</span>
+                </button>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('flow_update', 'Flow Update')}>
+                  <Edit2 size={14} className="text-yellow-600" />
+                  <span>Flow Update</span>
+                </button>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('imageTextSplit', 'Image-Text Split')}>
+                  <Split size={14} className="text-teal-600" />
+                  <span>Image-Text Split</span>
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
         {selectedNode && (
             <PropertyPanel 
             node={selectedNode} 

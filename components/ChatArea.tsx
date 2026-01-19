@@ -10,10 +10,13 @@ import {
   Eye, EyeOff, Wand2, Loader2, Sparkles, ArrowRightLeft, 
   Maximize2, Minimize2, Check, Languages, Globe, ClipboardCheck, ArrowLeft,
   FileText as FileTextIcon,
+  Activity,
+  AlertCircle,
   ShoppingBag,
   Gift,
   Ticket
 } from 'lucide-react';
+import { workflowApi } from '../services/workflowApi';
 import { DEFAULT_AVATAR } from '../constants';
 import Avatar from './Avatar';
 import { ProductSelector } from './ProductSelector';
@@ -25,6 +28,7 @@ import { Subscription } from '../services/billingApi';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import './ChatArea.css';
+import { WorkflowExecutionDetails } from './WorkflowExecutionDetails';
 
 interface ChatAreaProps {
   session: ChatSession;
@@ -112,6 +116,32 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   const [showDiscountSelector, setShowDiscountSelector] = useState(false);
   const [showGiftCardCreator, setShowGiftCardCreator] = useState(false);
 
+  // Workflow execution log state
+  const [activeWorkflowMsgId, setActiveWorkflowMsgId] = useState<string | null>(null);
+  const [workflowLog, setWorkflowLog] = useState<any>(null);
+  const [loadingWorkflow, setLoadingWorkflow] = useState(false);
+
+  const handleFetchWorkflowLog = async (msgId: string) => {
+      if (activeWorkflowMsgId === msgId) {
+          setActiveWorkflowMsgId(null);
+          setWorkflowLog(null);
+          return;
+      }
+
+      setLoadingWorkflow(true);
+      setActiveWorkflowMsgId(msgId);
+      setWorkflowLog(null);
+
+      try {
+          const log = await workflowApi.getExecutionLogByMessageId(msgId);
+          setWorkflowLog(log);
+      } catch (error) {
+          console.error("Failed to fetch workflow log:", error);
+      } finally {
+          setLoadingWorkflow(false);
+      }
+  };
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -125,7 +155,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       });
       setInputText(prev => prev ? `${prev}\n${productText}` : productText);
       setShowProductSelector(false);
-      
+
       // Focus textarea
       setTimeout(() => {
           textareaRef.current?.focus();
@@ -135,7 +165,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   const handleSendCard = (product: Product | Product[], recommendation?: string) => {
       // Normalize to array
       const productList = Array.isArray(product) ? product : [product];
-      
+
       const products = productList.map(p => ({
             id: p.id,
             title: p.title,
@@ -152,10 +182,10 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           products,
           recommendation: recommendation || ''
       };
-      
+
       // Format: card#TYPE#JSON
       const payload = `card#CARD_PRODUCT#${JSON.stringify(cardData)}`;
-      
+
       onSendMessage(payload, [], false, isTranslationEnabled, []);
       setShowProductSelector(false);
   };
@@ -195,14 +225,14 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     }
 
     const contentToRender = shouldShowTranslation ? (translationContent as string) : msg.text;
-    
+
     // Pre-process mentions to be markdown links
     // Format: @[name](user:id) -> [@name](mention:id)
     const processedContent = (contentToRender || '').replace(/@\[(.*?)\]\(user:(.*?)\)/g, '[@$1](mention:$2)');
 
     return (
       <div className="markdown-body">
-         <ReactMarkdown 
+         <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             components={{
                 a: ({node, href, children, ...props}) => {
@@ -378,10 +408,10 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     setShowGiftCardCreator(false);
   };
 
-  const placeholderText = isRewriting ? t('magic_rewrite_progress') 
-    : isInternalMode || mentionedAgents.length > 0 ? t('internal_note_placeholder') 
-    : isResolved ? t('ticket_resolved_placeholder') 
-    : session.status === ChatStatus.AI_HANDLING ? t('take_over_placeholder') 
+  const placeholderText = isRewriting ? t('magic_rewrite_progress')
+    : isInternalMode || mentionedAgents.length > 0 ? t('internal_note_placeholder')
+    : isResolved ? t('ticket_resolved_placeholder')
+    : session.status === ChatStatus.AI_HANDLING ? t('take_over_placeholder')
     : t('type_message_placeholder');
 
   return (
@@ -541,7 +571,20 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                               {isInternal && (<div className="mb-2 pb-1 border-b border-yellow-200 flex items-center gap-2 text-yellow-800/80"><EyeOff size={12} /> <span className="text-[10px] font-bold uppercase tracking-wider">{t('internal_note_label')}</span></div>)}
                               {msg.attachments && msg.attachments.length > 0 && (<div className="mb-2 space-y-2">{msg.attachments.map(att => (<div key={att.id} className="rounded-lg overflow-hidden bg-black/10">{att.type === 'IMAGE' ? (<img src={att.url} alt="Attachment" className="max-w-full h-auto max-h-60 object-contain" />) : (<div className="flex items-center gap-3 p-3 bg-white/20"><FileTextIcon size={24} /><div className="flex flex-col overflow-hidden"><span className="text-sm font-medium truncate">{att.name}</span><span className="text-xs opacity-70">{att.size}</span></div></div>)}</div>))}</div>)}
                               {renderMessageContent(msg, !!shouldShowTranslation, translationContent)}
-                              
+
+                              {/* Workflow Trace Button */}
+                              {isUser && (
+                                <div className="mt-2 pt-2 border-t border-gray-100">
+                                  <button
+                                    onClick={() => handleFetchWorkflowLog(msg.id)}
+                                    className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-blue-500 transition-colors"
+                                  >
+                                    <Activity size={12} />
+                                    View Trace
+                                  </button>
+                                </div>
+                              )}
+
                               {shouldShowTranslation && (
                                  <div className={`mt-2 pt-2 border-t text-[10px] flex items-center gap-1.5 ${isUser ? 'border-gray-100 text-gray-500' : 'border-white/20 text-blue-100'}`}>
                                     <Globe size={10} />
@@ -567,7 +610,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           )}
 
           {showProductSelector && (
-            <ProductSelector 
+            <ProductSelector
                 isOpen={showProductSelector}
                 onClose={() => setShowProductSelector(false)}
                 onSelect={handleProductSelect}
@@ -702,6 +745,50 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             </div>
          </div>
       </div>
+      {/* Workflow Log Modal */}
+      {activeWorkflowMsgId && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setActiveWorkflowMsgId(null)}>
+          <div className="bg-white w-full max-w-4xl max-h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 border border-gray-200" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+               <div className="flex items-center gap-3">
+                 <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                   <Activity size={20} />
+                 </div>
+                 <div>
+                   <h3 className="font-bold text-gray-800">Workflow Trace</h3>
+                   <div className="text-xs text-gray-500">
+                     Message ID: {activeWorkflowMsgId}
+                   </div>
+                 </div>
+               </div>
+               <button
+                 onClick={() => setActiveWorkflowMsgId(null)}
+                 className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+               >
+                 <X size={20} />
+               </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6 bg-gray-50/30">
+               {loadingWorkflow ? (
+                  <div className="flex flex-col items-center justify-center h-64 gap-3 text-gray-400">
+                    <Loader2 size={32} className="animate-spin text-blue-500" />
+                    <span className="text-sm font-medium">Loading workflow execution trace...</span>
+                  </div>
+               ) : workflowLog ? (
+                  <WorkflowExecutionDetails workflowInfo={workflowLog} />
+               ) : (
+                  <div className="flex flex-col items-center justify-center h-64 gap-3 text-gray-400">
+                    <AlertCircle size={32} className="text-gray-300" />
+                    <span className="text-sm italic">No workflow execution trace found for this message.</span>
+                  </div>
+               )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
