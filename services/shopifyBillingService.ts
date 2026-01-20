@@ -1,3 +1,4 @@
+import api from './api';
 
 export interface PricingPlan {
   id: string;
@@ -12,8 +13,8 @@ export interface PricingPlan {
 
 export const SHOPIFY_PLANS: PricingPlan[] = [
   {
-    id: 'PLAN_FREE',
-    name: 'Free Tier',
+    id: 'FREE',
+    name: 'Free Starter',
     price: 0,
     interval: 'EVERY_30_DAYS',
     currency: 'USD',
@@ -25,32 +26,44 @@ export const SHOPIFY_PLANS: PricingPlan[] = [
     ]
   },
   {
-    id: 'PLAN_PRO',
-    name: 'Pro',
-    price: 29,
+    id: 'BASIC',
+    name: 'Basic Growth',
+    price: 19,
     interval: 'EVERY_30_DAYS',
     currency: 'USD',
     features: [
-      'Unlimited conversations',
-      'Advanced AI Agent (GPT-4)',
-      'Priority Chat Support',
-      'Advanced Analytics',
-      'Custom Branding'
+      '500 conversations/month',
+      'Magic Rewrite',
+      'Historical Analytics',
+      '3 Team Seats'
+    ]
+  },
+  {
+    id: 'PRO',
+    name: 'Pro Business',
+    price: 59,
+    interval: 'EVERY_30_DAYS',
+    currency: 'USD',
+    features: [
+      '2000 conversations/month',
+      'Advanced Analytics & Sentiment',
+      'Smart Summary & AI Tags',
+      '10 Team Seats',
+      'Priority Support'
     ],
     recommended: true
   },
   {
-    id: 'PLAN_ENTERPRISE',
-    name: 'Enterprise',
-    price: 99,
+    id: 'ENTERPRISE',
+    name: 'Enterprise Scale',
+    price: 199,
     interval: 'EVERY_30_DAYS',
     currency: 'USD',
     features: [
+      'Unlimited conversations',
+      'Unlimited Team Seats',
       'Dedicated Account Manager',
-      'Custom AI Training',
-      'API Access',
-      'SLA Guarantee',
-      'Multi-store Support'
+      'SLA Guarantee'
     ]
   }
 ];
@@ -61,51 +74,56 @@ export interface SubscriptionStatus {
   trialDaysRemaining?: number;
 }
 
-// Mock storage key
-const SUBSCRIPTION_KEY = 'shopify_app_subscription';
+const API_BASE = '/shopify/billing';
 
 export const checkSubscriptionStatus = async (shop: string): Promise<SubscriptionStatus> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 600));
-
-  const storedSub = localStorage.getItem(`${SUBSCRIPTION_KEY}_${shop}`);
-  
-  if (storedSub) {
-    return JSON.parse(storedSub);
+  try {
+    const data = await api.get<SubscriptionStatus>(`${API_BASE}/current?shop=${encodeURIComponent(shop)}`);
+    console.log('[ShopifyBilling] checkSubscriptionStatus response:', data);
+    return data;
+  } catch (error) {
+    console.error('[ShopifyBilling] Failed to check subscription status:', error);
+    return { active: false };
   }
-
-  // Default to inactive for new users
-  return { active: false };
 };
 
 export const createSubscription = async (shop: string, planId: string): Promise<{ confirmationUrl: string }> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 800));
-
-  console.log(`Creating subscription for ${shop} on plan ${planId}`);
-
-  // In a real app, this would call your backend to create a recurring application charge
-  // and return the confirmation_url from Shopify.
-  
-  // For this demo, we'll simulate a successful charge flow by returning a mock URL
-  // The App would redirect here, user approves, then Shopify redirects back to your app
-  
-  return {
-    confirmationUrl: `/?shop=${shop}&charge_id=mock_charge_123&plan_id=${planId}&confirm_billing=true`
-  };
+  try {
+    // Append plan_id to returnUrl so we can detect it when redirected back
+    // Use URL object to safely append params
+    const returnUrlObj = new URL(window.location.href);
+    returnUrlObj.searchParams.set('plan_id', planId);
+    const returnUrl = returnUrlObj.toString();
+    
+    return await api.post<{ confirmationUrl: string }>(`${API_BASE}/subscription?shop=${encodeURIComponent(shop)}`, {
+      planId,
+      returnUrl
+    });
+  } catch (error) {
+    console.error('Failed to create subscription:', error);
+    throw error;
+  }
 };
 
 export const verifySubscription = async (shop: string, chargeId: string, planId: string): Promise<boolean> => {
-    // Simulate verifying the charge with backend
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Save mock subscription
-    const status: SubscriptionStatus = {
-        active: true,
-        planId: planId,
-        trialDaysRemaining: 7
-    };
-    
-    localStorage.setItem(`${SUBSCRIPTION_KEY}_${shop}`, JSON.stringify(status));
+  try {
+    const response = await api.post<{ success: boolean }>(`${API_BASE}/verify?shop=${encodeURIComponent(shop)}`, {
+      chargeId,
+      planId
+    });
+    return response.success;
+  } catch (error) {
+    console.error('Failed to verify subscription:', error);
+    return false;
+  }
+};
+
+export const cancelSubscription = async (shop: string): Promise<boolean> => {
+  try {
+    await api.post(`${API_BASE}/cancel?shop=${encodeURIComponent(shop)}`, {});
     return true;
+  } catch (error) {
+    console.error('Failed to cancel subscription:', error);
+    return false;
+  }
 };

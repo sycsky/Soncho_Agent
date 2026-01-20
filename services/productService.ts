@@ -89,7 +89,7 @@ export const getProducts = async (query: string = '', limit: number = 10, cursor
       return { products: [], pageInfo: { hasNextPage: false, endCursor: null } };
     }
 
-    const shopDomain = sessionStorage.getItem('shopify_shop');
+    const shopDomain = localStorage.getItem('shopify_shop');
 
     const products = edges.map(({ node }) => {
       let price = '0.00';

@@ -14,6 +14,9 @@ interface MobileNavProps {
   handleStatusChange: (status: 'ONLINE' | 'BUSY' | 'IDLE') => void;
   handleLogout: () => void;
   onLanguageChange?: (lang: string) => void;
+  hasPermission?: (permissionKey: string) => boolean;
+  isShopifyEmbedded?: boolean;
+  onSwitchAgent?: () => void;
 }
 
 export const MobileNav: React.FC<MobileNavProps> = ({
@@ -25,8 +28,12 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   currentUserStatus,
   handleStatusChange,
   handleLogout,
-  onLanguageChange
+  onLanguageChange,
+  hasPermission,
+  isShopifyEmbedded,
+  onSwitchAgent
 }) => {
+  const { t } = useTranslation();
   const [languages, setLanguages] = useState<Language[]>([]);
   const [isLanguagesLoading, setIsLanguagesLoading] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState(currentUser.language || '');
@@ -70,10 +77,18 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   return (
     <div className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-gray-900 flex items-center justify-between px-6 z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
       <button onClick={() => setActiveView('INBOX')} className={`p-2 rounded-xl transition-all ${activeView === 'INBOX' ? 'text-blue-500' : 'text-gray-400'}`}><MessageCircle size={24} /></button>
-      <button onClick={() => setActiveView('CUSTOMERS')} className={`p-2 rounded-xl transition-all ${activeView === 'CUSTOMERS' ? 'text-blue-500' : 'text-gray-400'}`}><UserCircle size={24} /></button>
-      <button onClick={() => setActiveView('TEAM')} className={`p-2 rounded-xl transition-all ${activeView === 'TEAM' ? 'text-blue-500' : 'text-gray-400'}`}><Users size={24} /></button>
-      <button onClick={() => setActiveView('WORKFLOW')} className={`p-2 rounded-xl transition-all ${activeView === 'WORKFLOW' ? 'text-blue-500' : 'text-gray-400'}`}><GitBranch size={24} /></button>
-      <button onClick={() => setActiveView('ANALYTICS')} className={`p-2 rounded-xl transition-all ${activeView === 'ANALYTICS' ? 'text-blue-500' : 'text-gray-400'}`}><BarChart size={24} /></button>
+      {(!hasPermission || hasPermission('accessCustomerManagement')) && (
+        <button onClick={() => setActiveView('CUSTOMERS')} className={`p-2 rounded-xl transition-all ${activeView === 'CUSTOMERS' ? 'text-blue-500' : 'text-gray-400'}`}><UserCircle size={24} /></button>
+      )}
+      {(!hasPermission || hasPermission('manageTeam')) && (
+        <button onClick={() => setActiveView('TEAM')} className={`p-2 rounded-xl transition-all ${activeView === 'TEAM' ? 'text-blue-500' : 'text-gray-400'}`}><Users size={24} /></button>
+      )}
+      {(!hasPermission || hasPermission('designWorkflow')) && (
+        <button onClick={() => setActiveView('WORKFLOW')} className={`p-2 rounded-xl transition-all ${activeView === 'WORKFLOW' ? 'text-blue-500' : 'text-gray-400'}`}><GitBranch size={24} /></button>
+      )}
+      {(!hasPermission || hasPermission('accessSystemStatistics')) && (
+        <button onClick={() => setActiveView('ANALYTICS')} className={`p-2 rounded-xl transition-all ${activeView === 'ANALYTICS' ? 'text-blue-500' : 'text-gray-400'}`}><BarChart size={24} /></button>
+      )}
       <button onClick={() => setActiveView('SETTINGS')} className={`p-2 rounded-xl transition-all ${activeView === 'SETTINGS' ? 'text-blue-500' : 'text-gray-400'}`}><Settings size={24} /></button>
       
       <div className="relative">
@@ -100,6 +115,24 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                     <button onClick={() => handleStatusChange('IDLE')} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700"><div className="w-2.5 h-2.5 rounded-full bg-gray-400"></div> {t('status_idle')}{currentUserStatus === 'IDLE' && <Check size={14} className="ml-auto text-gray-500"/>}</button>
                  </div>
                  <div className="p-2 space-y-1 border-t border-gray-100">
+                    {isShopifyEmbedded && onSwitchAgent && (
+                      <button 
+                        onClick={() => {
+                          if (onSwitchAgent) {
+                            onSwitchAgent();
+                            setShowProfileMenu(false);
+                          }
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700 group"
+                      >
+                         <Users size={16} className="text-gray-500 group-hover:text-blue-500"/>
+                         <div className="flex-1 text-left">
+                           <div className="text-xs text-gray-500">{t('switch_agent')}</div>
+                           <div className="font-medium truncate">{t('switch_agent_desc')}</div>
+                         </div>
+                         <ChevronRight size={16} className="text-gray-400"/>
+                      </button>
+                    )}
                     <button 
                       onClick={() => setMenuView('LANGUAGES')}
                       className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700 group"

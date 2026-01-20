@@ -7,6 +7,7 @@ export interface Subscription {
   currentPeriodEnd: string;
   aiUsage: number;
   seatUsage: number;
+  cancelAtPeriodEnd?: boolean;
   
   // Feature flags
   supportAnalyticsHistory: boolean;

@@ -34,7 +34,7 @@ export interface CreateRoleRequest {
 export interface UpdateRoleRequest {
   name?: string;
   description?: string;
-  permissions?: string[];
+  permissions?: Record<string, boolean>;
 }
 
 // API Functions

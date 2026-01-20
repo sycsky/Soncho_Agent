@@ -57,6 +57,14 @@
 4.  **基础设施 (`components/shopify/ShopifyAppProvider.tsx`)**:
     *   新增 Polaris Provider 封装组件，为后续开发嵌入式页面做准备。
 
+### 3.3 登录行为（Shopify Embedded）
+1.  **不再自动换取店铺 Admin Token**：
+    *   若店铺已安装但本地无坐席 Token，直接进入登录页。
+2.  **登录时携带 Shopify Session**：
+    *   前端通过 App Bridge 取得 session token，登录接口先校验 session 以设置租户上下文，再执行账号密码校验。
+3.  **账号选择**：
+    *   登录页可直接选择该店铺下的坐席账号，无需输入邮箱。
+
 ## 4. 后续开发建议 (Next Steps)
 
 1.  **后端开发**:

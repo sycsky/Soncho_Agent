@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loader2, ShieldCheck, AlertCircle } from 'lucide-react';
 import api from '../services/api';
 import { Agent } from '../types';
+import { fetchShopifyAgents, getShopifySessionToken } from '../services/shopifyAuthService';
 
 // Type for the successful login response data
 interface LoginResponse {
@@ -12,14 +13,57 @@ interface LoginResponse {
 
 interface LoginScreenProps {
   onLoginSuccess: (data: LoginResponse) => void;
+  shopifyMode?: boolean;
+  shopifyShop?: string;
+  shopifyHost?: string;
 }
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, shopifyMode, shopifyShop, shopifyHost }) => {
   const { t } = useTranslation();
   const [email, setEmail] = useState('admin@nexus.com');
   const [password, setPassword] = useState('Admin@123');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [selectedAgentId, setSelectedAgentId] = useState<string>('');
+  const [loadingAgents, setLoadingAgents] = useState(false);
+
+  useEffect(() => {
+    if (shopifyMode) {
+      setEmail('');
+      setPassword('');
+    }
+  }, [shopifyMode]);
+
+  useEffect(() => {
+    if (!shopifyMode) {
+      return;
+    }
+
+    const loadAgents = async () => {
+      if (!shopifyShop || !shopifyHost) {
+        setError(t('shopify_missing_context'));
+        return;
+      }
+
+      setLoadingAgents(true);
+      setError(null);
+      try {
+        const list = await fetchShopifyAgents({ shop: shopifyShop, host: shopifyHost });
+        setAgents(list);
+        if (list.length > 0) {
+          setSelectedAgentId(list[0].id);
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : t('unknown_error');
+        setError(errorMessage);
+      } finally {
+        setLoadingAgents(false);
+      }
+    };
+
+    loadAgents();
+  }, [shopifyMode, shopifyShop, shopifyHost, t]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,8 +71,24 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     setError(null);
     
     try {
-      const response = await api.post<LoginResponse>('/auth/login', { email, password });
-      onLoginSuccess(response);
+      if (shopifyMode) {
+        if (!selectedAgentId) {
+          setError(t('shopify_login_missing_agent'));
+          setIsLoading(false);
+          return;
+        }
+        const sessionToken = await getShopifySessionToken();
+        const response = await api.post<LoginResponse>('/auth/login', {
+          agentId: selectedAgentId,
+          password,
+          shopifySessionToken: sessionToken,
+          shop: shopifyShop
+        });
+        onLoginSuccess(response);
+      } else {
+        const response = await api.post<LoginResponse>('/auth/login', { email, password });
+        onLoginSuccess(response);
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : t('unknown_error');
       setError(errorMessage);
@@ -66,17 +126,42 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
         )}
 
         <form onSubmit={handleLogin} className="space-y-5">
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">{t('work_email')}</label>
-            <input 
-              type="email" 
-              required
-              className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-3.5 outline-none transition-all placeholder-gray-400" 
-              placeholder="agent@nexushub.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
+          {shopifyMode ? (
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">{t('select_agent_label')}</label>
+              <select
+                className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-3.5 outline-none transition-all"
+                value={selectedAgentId}
+                onChange={(e) => setSelectedAgentId(e.target.value)}
+                disabled={loadingAgents}
+                required
+              >
+                {loadingAgents && (
+                  <option value="">{t('loading')}</option>
+                )}
+                {!loadingAgents && agents.length === 0 && (
+                  <option value="">{t('no_other_agents')}</option>
+                )}
+                {!loadingAgents && agents.map(agent => (
+                  <option key={agent.id} value={agent.id}>
+                    {agent.name}{agent.email ? ` (${agent.email})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">{t('work_email')}</label>
+              <input 
+                type="email" 
+                required
+                className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-3.5 outline-none transition-all placeholder-gray-400" 
+                placeholder="agent@nexushub.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+          )}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">{t('password')}</label>
             <input 

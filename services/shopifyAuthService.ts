@@ -17,12 +17,12 @@ export const checkShopifyAuth = (shop: string): boolean => {
 
 export const isShopifyInstalled = (shop: string): boolean => {
   if (!shop) return false;
-  return sessionStorage.getItem(`${SHOPIFY_INSTALLED_KEY_PREFIX}${shop}`) === '1';
+  return localStorage.getItem(`${SHOPIFY_INSTALLED_KEY_PREFIX}${shop}`) === '1';
 };
 
 export const hasShopifyInstallStarted = (shop: string): boolean => {
   if (!shop) return false;
-  return sessionStorage.getItem(`${SHOPIFY_INSTALL_STARTED_KEY_PREFIX}${shop}`) === '1';
+  return localStorage.getItem(`${SHOPIFY_INSTALL_STARTED_KEY_PREFIX}${shop}`) === '1';
 };
 
 /**
@@ -34,13 +34,13 @@ export const initiateShopifyInstall = async (shop: string) => {
     return;
   }
 
-  sessionStorage.setItem(`${SHOPIFY_INSTALL_STARTED_KEY_PREFIX}${shop}`, '1');
+  localStorage.setItem(`${SHOPIFY_INSTALL_STARTED_KEY_PREFIX}${shop}`, '1');
 
   const urlParams = new URLSearchParams(window.location.search);
   const hostFromUrl = urlParams.get('host') || undefined;
-  const host = hostFromUrl || sessionStorage.getItem(SHOPIFY_HOST_KEY) || undefined;
+  const host = hostFromUrl || localStorage.getItem(SHOPIFY_HOST_KEY) || undefined;
   if (hostFromUrl) {
-    sessionStorage.setItem(SHOPIFY_HOST_KEY, hostFromUrl);
+    localStorage.setItem(SHOPIFY_HOST_KEY, hostFromUrl);
   }
 
   const installUrl = new URL(`${BASE_URL}/api/v1/shopify/oauth/install`);
@@ -60,36 +60,36 @@ export const saveShopifyLaunchParams = (params: { shop?: string | null; host?: s
   const { shop, host, tenantId } = params;
 
   if (shop) {
-    sessionStorage.setItem(SHOPIFY_SHOP_KEY, shop);
+    localStorage.setItem(SHOPIFY_SHOP_KEY, shop);
   }
   if (host) {
-    sessionStorage.setItem(SHOPIFY_HOST_KEY, host);
+    localStorage.setItem(SHOPIFY_HOST_KEY, host);
   }
   if (shop && tenantId) {
-    sessionStorage.setItem(`${SHOPIFY_TENANT_ID_KEY_PREFIX}${shop}`, tenantId);
-    sessionStorage.setItem(`${SHOPIFY_INSTALLED_KEY_PREFIX}${shop}`, '1');
-    sessionStorage.removeItem(`${SHOPIFY_INSTALL_STARTED_KEY_PREFIX}${shop}`);
+    localStorage.setItem(`${SHOPIFY_TENANT_ID_KEY_PREFIX}${shop}`, tenantId);
+    localStorage.setItem(`${SHOPIFY_INSTALLED_KEY_PREFIX}${shop}`, '1');
+    localStorage.removeItem(`${SHOPIFY_INSTALL_STARTED_KEY_PREFIX}${shop}`);
   }
 };
 
 export const getShopifyLaunchParams = (): { shop?: string; host?: string; tenantId?: string } => {
   const urlParams = new URLSearchParams(window.location.search);
-  const shop = urlParams.get('shop') || sessionStorage.getItem(SHOPIFY_SHOP_KEY) || undefined;
-  const host = urlParams.get('host') || sessionStorage.getItem(SHOPIFY_HOST_KEY) || undefined;
-  const tenantId = urlParams.get('tenantId') || urlParams.get('tenant_id') || (shop ? sessionStorage.getItem(`${SHOPIFY_TENANT_ID_KEY_PREFIX}${shop}`) : null) || undefined;
+  const shop = urlParams.get('shop') || localStorage.getItem(SHOPIFY_SHOP_KEY) || undefined;
+  const host = urlParams.get('host') || localStorage.getItem(SHOPIFY_HOST_KEY) || undefined;
+  const tenantId = urlParams.get('tenantId') || urlParams.get('tenant_id') || (shop ? localStorage.getItem(`${SHOPIFY_TENANT_ID_KEY_PREFIX}${shop}`) : null) || undefined;
 
   return { shop, host, tenantId };
 };
 
 export const logoutShopify = () => {
-  const shop = sessionStorage.getItem(SHOPIFY_SHOP_KEY);
+  const shop = localStorage.getItem(SHOPIFY_SHOP_KEY);
   if (shop) {
-    sessionStorage.removeItem(`${SHOPIFY_INSTALLED_KEY_PREFIX}${shop}`);
-    sessionStorage.removeItem(`${SHOPIFY_INSTALL_STARTED_KEY_PREFIX}${shop}`);
-    sessionStorage.removeItem(`${SHOPIFY_TENANT_ID_KEY_PREFIX}${shop}`);
+    localStorage.removeItem(`${SHOPIFY_INSTALLED_KEY_PREFIX}${shop}`);
+    localStorage.removeItem(`${SHOPIFY_INSTALL_STARTED_KEY_PREFIX}${shop}`);
+    localStorage.removeItem(`${SHOPIFY_TENANT_ID_KEY_PREFIX}${shop}`);
   }
-  sessionStorage.removeItem(SHOPIFY_SHOP_KEY);
-  sessionStorage.removeItem(SHOPIFY_HOST_KEY);
+  localStorage.removeItem(SHOPIFY_SHOP_KEY);
+  localStorage.removeItem(SHOPIFY_HOST_KEY);
 };
 
 type ShopifyAuthExchangeResult = {
@@ -187,7 +187,7 @@ export const exchangeShopifyAuth = async (params: {
     }
     return await parseShopifyAuthExchangeResult(res);
   }
-
+  
   if (sessionToken) {
     const res = await fetch(endpoint, {
       method: 'POST',
@@ -281,7 +281,7 @@ const ensureShopifyAppBridgeReady = async (params: { apiKey: string; host: strin
   throw new Error('Shopify App Bridge is not ready (Timeout)');
 };
 
-const getShopifySessionToken = async (): Promise<string> => {
+export const getShopifySessionToken = async (): Promise<string> => {
   const current = (window as any).shopify;
   if (current && typeof current.idToken === 'function') {
     return await current.idToken();
@@ -293,6 +293,44 @@ const getShopifySessionToken = async (): Promise<string> => {
     return await current.sessionToken.get();
   }
   throw new Error('Missing Shopify session token');
+};
+
+export const fetchShopifyAgents = async (params: { shop: string; host?: string }): Promise<Agent[]> => {
+  const { shop, host } = params;
+  if (!shop) {
+    throw new Error('Shop is required');
+  }
+
+  const apiKey = resolveShopifyApiKey();
+  if (!apiKey || !host) {
+    throw new Error('Missing Shopify App Bridge context');
+  }
+
+  await ensureShopifyAppBridgeReady({ apiKey: apiKey as string, host: host as string, shop });
+  const sessionToken = await getShopifySessionToken();
+
+  const endpoint = `${BASE_URL}/api/v1/shopify/auth/agents?shop=${encodeURIComponent(shop)}`;
+  const res = await fetch(endpoint, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${sessionToken}` }
+  });
+
+  const text = await res.text();
+  if (!res.ok) {
+    throw new Error(text || `HTTP ${res.status}`);
+  }
+
+  const json = text ? JSON.parse(text) : {};
+  const data = json && typeof json === 'object' && 'data' in json ? json.data : json;
+  if (!data || typeof data !== 'object') {
+    throw new Error('Invalid response');
+  }
+
+  if (!data.success) {
+    throw new Error(data.error || 'Failed to load agents');
+  }
+
+  return Array.isArray(data.agents) ? data.agents : [];
 };
 
 export const exchangeShopifyForAgentSession = async (params: {

@@ -2971,7 +2971,6 @@ const edgeTypes = {
 // Sidebar Component for Draggable Nodes
 const Sidebar = () => {
   const { t } = useTranslation();
-  const onDragStart = (event: React.DragEvent, nodeType: string, label: string) => {
   const onDragStart = (event: React.DragEvent, nodeType: string, label: string, config?: any) => {
     event.dataTransfer.setData('application/reactflow', nodeType);
     event.dataTransfer.setData('application/reactflow/label', label);

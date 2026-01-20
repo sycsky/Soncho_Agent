@@ -21,12 +21,14 @@ interface SettingsViewProps {
   onDeleteSystemReply: (id: string) => void;
   onAddKnowledge: (title: string, content: string) => void; // Deprecated
   onDeleteKnowledge: (id: string) => void; // Deprecated
+  hasPermission?: (permissionKey: string) => boolean;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
   systemQuickReplies,
   onAddSystemReply,
   onDeleteSystemReply,
+  hasPermission,
 }) => {
   const { t } = useTranslation();
   const [settingsTab, setSettingsTab] = useState<'QUICK_REPLIES' | 'KNOWLEDGE_BASE' | 'ROLES' | 'CATEGORIES' | 'LLM_MODELS' | 'AI_TOOLS' | 'EXTERNAL_PLATFORMS' | 'OFFICIAL_CHANNELS' | 'EVENTS' | 'SCHEDULED_TASKS' | 'CANCELLATION_POLICY' | 'BILLING'>('QUICK_REPLIES');
@@ -56,7 +58,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
           <nav className="flex-1 p-4 space-y-1">
              <button onClick={() => setSettingsTab('QUICK_REPLIES')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'QUICK_REPLIES' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}><Shield size={18} />{t('settings_nav_quick_replies')}</button>
-             <button onClick={() => setSettingsTab('KNOWLEDGE_BASE')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'KNOWLEDGE_BASE' ? 'bg-purple-50 text-purple-700' : 'text-gray-600 hover:bg-gray-50'}`}><Database size={18} />{t('settings_nav_knowledge_base')}</button>
+             {(!hasPermission || hasPermission('manageKnowledgeBaseSetting')) && (
+               <button onClick={() => setSettingsTab('KNOWLEDGE_BASE')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'KNOWLEDGE_BASE' ? 'bg-purple-50 text-purple-700' : 'text-gray-600 hover:bg-gray-50'}`}><Database size={18} />{t('settings_nav_knowledge_base')}</button>
+             )}
              <button onClick={() => setSettingsTab('ROLES')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'ROLES' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50'}`}><Users size={18} />{t('settings_nav_roles')}</button>
              <button onClick={() => setSettingsTab('CATEGORIES')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'CATEGORIES' ? 'bg-green-50 text-green-700' : 'text-gray-600 hover:bg-gray-50'}`}><Users size={18} />{t('settings_nav_categories')}</button>
              <button onClick={() => setSettingsTab('LLM_MODELS')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'LLM_MODELS' ? 'bg-orange-50 text-orange-700' : 'text-gray-600 hover:bg-gray-50'}`}><Bot size={18} />{t('settings_nav_llm_models')}</button>
@@ -65,7 +69,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
              <button onClick={() => setSettingsTab('OFFICIAL_CHANNELS')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'OFFICIAL_CHANNELS' ? 'bg-green-50 text-green-700' : 'text-gray-600 hover:bg-gray-50'}`}><MessageSquare size={18} />{t('settings_nav_official_channels')}</button>
              <button onClick={() => setSettingsTab('EVENTS')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'EVENTS' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}><Calendar size={18} />{t('settings_nav_events')}</button>
              <button onClick={() => setSettingsTab('SCHEDULED_TASKS')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'SCHEDULED_TASKS' ? 'bg-orange-50 text-orange-700' : 'text-gray-600 hover:bg-gray-50'}`}><Clock size={18} />{t('settings_nav_scheduled_tasks')}</button>
-             <button onClick={() => setSettingsTab('CANCELLATION_POLICY')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'CANCELLATION_POLICY' ? 'bg-red-50 text-red-700' : 'text-gray-600 hover:bg-gray-50'}`}><XCircle size={18} />{t('settings_nav_cancellation_policy')}</button>
+             {(!hasPermission || hasPermission('setCancellationPolicy')) && (
+               <button onClick={() => setSettingsTab('CANCELLATION_POLICY')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'CANCELLATION_POLICY' ? 'bg-red-50 text-red-700' : 'text-gray-600 hover:bg-gray-50'}`}><XCircle size={18} />{t('settings_nav_cancellation_policy')}</button>
+             )}
              <button onClick={() => setSettingsTab('BILLING')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'BILLING' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}><CreditCard size={18} />{t('settings_nav_billing')}</button>
           </nav>
           <div className="p-4 border-t border-gray-100 text-xs text-gray-400 text-center">{t('version_label', { version: '1.3.0' })}</div>

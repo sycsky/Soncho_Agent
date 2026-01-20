@@ -51,7 +51,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ subscription }) =>
   const tagsData = summary ? Object.entries(summary.topTags || {}).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 10) : [];
 
   if (loading && !summary) {
-    return <div className="p-8 text-center">{t('analytics_loading')}</div>;
+    return <div className="p-8 text-center">{t('analytics.loading')}</div>;
   }
 
   const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
@@ -77,21 +77,21 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ subscription }) =>
             .recharts-cartesian-axis-tick text { font-size: 11px; fill: #6b7280; }
         `}</style>
         <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">{t('analytics_dashboard_title')}</h2>
+            <h2 className="text-2xl font-bold text-gray-800">{t('analytics.dashboard_title')}</h2>
             <div className="flex gap-2 bg-white p-1 rounded-lg border border-gray-200">
                 <button 
                     onClick={() => setDateRange('7')}
                     className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${dateRange === '7' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'}`}
                 >
-                    {t('analytics_last_7_days')}
+                    {t('analytics.last_7_days')}
                 </button>
                 <button 
                     onClick={() => canAccessHistory && setDateRange('30')}
                     disabled={!canAccessHistory}
-                    title={!canAccessHistory ? t('analytics_upgrade_for_history') : ''}
+                    title={!canAccessHistory ? t('analytics.upgrade_for_history') : ''}
                     className={`px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center gap-1 ${dateRange === '30' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'} ${!canAccessHistory ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                    {t('analytics_last_30_days')}
+                    {t('analytics.last_30_days')}
                     {!canAccessHistory && <Lock size={12} />}
                 </button>
             </div>
@@ -103,7 +103,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ subscription }) =>
                 <div className="flex items-center gap-4 mb-2">
                     <div className="p-3 bg-blue-50 rounded-lg text-blue-600"><MessageSquare size={24} /></div>
                     <div>
-                        <p className="text-sm font-medium text-gray-500">{t('analytics_total_conversations')}</p>
+                        <p className="text-sm font-medium text-gray-500">{t('analytics.total_conversations')}</p>
                         <p className="text-2xl font-bold text-gray-900">{summary?.totalConversations || 0}</p>
                     </div>
                 </div>
@@ -112,16 +112,16 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ subscription }) =>
                 <div className="flex items-center gap-4 mb-2">
                     <div className="p-3 bg-purple-50 rounded-lg text-purple-600"><Bot size={24} /></div>
                     <div>
-                        <p className="text-sm font-medium text-gray-500">{t('analytics_ai_messages')}</p>
+                        <p className="text-sm font-medium text-gray-500">{t('analytics.ai_messages')}</p>
                         <p className="text-2xl font-bold text-gray-900">{summary?.aiMessages || 0}</p>
                     </div>
                 </div>
             </div>
-             <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition-shadow duration-200">
+            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition-shadow duration-200">
                 <div className="flex items-center gap-4 mb-2">
                     <div className="p-3 bg-green-50 rounded-lg text-green-600"><Users size={24} /></div>
                     <div>
-                        <p className="text-sm font-medium text-gray-500">{t('analytics_human_messages')}</p>
+                        <p className="text-sm font-medium text-gray-500">{t('analytics.human_messages')}</p>
                         <p className="text-2xl font-bold text-gray-900">{summary?.humanMessages || 0}</p>
                     </div>
                 </div>
@@ -130,7 +130,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ subscription }) =>
                 <div className="flex items-center gap-4 mb-2">
                     <div className="p-3 bg-orange-50 rounded-lg text-orange-600"><Activity size={24} /></div>
                     <div>
-                        <p className="text-sm font-medium text-gray-500">{t('analytics_order_lookups')}</p>
+                        <p className="text-sm font-medium text-gray-500">{t('analytics.order_lookups')}</p>
                         <p className="text-2xl font-bold text-gray-900">{summary?.orderActions?.lookup || 0}</p>
                     </div>
                 </div>
@@ -142,7 +142,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ subscription }) =>
             <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition-shadow duration-200 h-[400px]">
                 <h3 className="text-lg font-bold mb-6 text-gray-800 flex items-center gap-2">
                     <Activity size={18} className="text-blue-500"/>
-                    {t('analytics_conversation_trend')}
+                    {t('analytics.conversation_trend')}
                 </h3>
                 <ResponsiveContainer width="100%" height="300">
                     <LineChart data={trend} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
@@ -165,7 +165,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ subscription }) =>
                             labelFormatter={(value) => new Date(value).toLocaleDateString()}
                         />
                         <Legend wrapperStyle={{paddingTop: '20px'}}/>
-                        <Line type="monotone" dataKey="conversations" name={t('analytics_total_conversations')} stroke="#3b82f6" strokeWidth={3} dot={false} activeDot={{r: 6, strokeWidth: 0}} />
+                        <Line type="monotone" dataKey="conversations" name={t('analytics.total_conversations')} stroke="#3b82f6" strokeWidth={3} dot={false} activeDot={{r: 6, strokeWidth: 0}} />
                     </LineChart>
                 </ResponsiveContainer>
             </div>
@@ -173,7 +173,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ subscription }) =>
             <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition-shadow duration-200 h-[400px]">
                 <h3 className="text-lg font-bold mb-6 text-gray-800 flex items-center gap-2">
                     <MessageSquare size={18} className="text-purple-500"/>
-                    {t('analytics_ai_vs_human_volume')}
+                    {t('analytics.ai_vs_human_volume')}
                 </h3>
                 <ResponsiveContainer width="100%" height="300">
                     <BarChart data={trend} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
@@ -196,8 +196,8 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ subscription }) =>
                             labelFormatter={(value) => new Date(value).toLocaleDateString()}
                         />
                         <Legend wrapperStyle={{paddingTop: '20px'}}/>
-                        <Bar dataKey="aiMessages" name={t('analytics_ai_messages')} fill="#8b5cf6" radius={[4, 4, 0, 0]} stackId="a" />
-                        <Bar dataKey="humanMessages" name={t('analytics_human_messages')} fill="#10b981" radius={[4, 4, 0, 0]} stackId="a" />
+                        <Bar dataKey="aiMessages" name={t('analytics.ai_messages')} fill="#8b5cf6" radius={[4, 4, 0, 0]} stackId="a" />
+                        <Bar dataKey="humanMessages" name={t('analytics.human_messages')} fill="#10b981" radius={[4, 4, 0, 0]} stackId="a" />
                     </BarChart>
                 </ResponsiveContainer>
             </div>
@@ -209,7 +209,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ subscription }) =>
             <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition-shadow duration-200 h-[400px]">
                 <h3 className="text-lg font-bold mb-6 text-gray-800 flex items-center gap-2">
                      <Activity size={18} className="text-indigo-500"/>
-                    {t('analytics_session_status')}
+                    {t('analytics.session_status')}
                 </h3>
                 <ResponsiveContainer width="100%" height="300">
                     <PieChart>
@@ -240,7 +240,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ subscription }) =>
             <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition-shadow duration-200 h-[400px]">
                 <h3 className="text-lg font-bold mb-6 text-gray-800 flex items-center gap-2">
                     <Settings size={18} className="text-gray-500"/>
-                    {t('analytics_top_tags')}
+                    {t('analytics.top_tags')}
                 </h3>
                 <ResponsiveContainer width="100%" height="300">
                     <BarChart

@@ -33,10 +33,11 @@ import { ShopifyAppProvider } from './components/shopify/ShopifyAppProvider';
 import { ShopifyDashboard } from './components/shopify/ShopifyDashboard';
 import { ShopifyInstall } from './components/shopify/ShopifyInstall';
 import { ShopifyBilling } from './components/shopify/ShopifyBilling';
-import { exchangeShopifyForAgentSession, getShopifyLaunchParams, initiateShopifyInstall, probeShopifyExchange, saveShopifyLaunchParams } from './services/shopifyAuthService';
+import { getShopifyLaunchParams, initiateShopifyInstall, probeShopifyExchange, saveShopifyLaunchParams } from './services/shopifyAuthService';
+import { AgentSwitcher } from './components/AgentSwitcher';
 import { checkSubscriptionStatus, verifySubscription } from './services/shopifyBillingService';
 import { Button } from '@shopify/polaris';
-import { Toaster } from 'sonner';
+import { Toaster, toast } from 'sonner';
 
 // Type for the successful login response data
 interface LoginResponse {
@@ -76,6 +77,7 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isShopifyEmbedded, setIsShopifyEmbedded] = useState(false);
   const [isShopifyAuthenticated, setIsShopifyAuthenticated] = useState(false);
+  const [shopifyInstalled, setShopifyInstalled] = useState(false);
   const [isSubscriptionActive, setIsSubscriptionActive] = useState(false);
   const [checkingSubscription, setCheckingSubscription] = useState(true);
   const [currentUser, setCurrentUser] = useState<Agent | null>(null);
@@ -116,6 +118,7 @@ function App() {
   const [isGeneratingTags, setIsGeneratingTags] = useState(false);
   const [currentAgentLanguage, setCurrentAgentLanguage] = useState<string>(localStorage.getItem('agent_language') || 'en');
   const [showMobileProfile, setShowMobileProfile] = useState(false);
+  const [showAgentSwitcher, setShowAgentSwitcher] = useState(false);
 
   useEffect(() => {
     if (currentUser?.language) {
@@ -157,6 +160,18 @@ function App() {
     });
   }, []);
   const canManageSessionAgents = true;
+
+  // 权限检查函数
+  const hasPermission = useCallback((permissionKey: string): boolean => {
+    if (!currentUser || !currentUser.roleId || !roles.length) {
+      return false;
+    }
+    const userRole = roles.find(r => r.id === currentUser.roleId);
+    if (!userRole || !userRole.permissions) {
+      return false;
+    }
+    return userRole.permissions[permissionKey] === true;
+  }, [currentUser, roles]);
 
   const showToast = (type: 'SUCCESS' | 'ERROR' | 'INFO', message: string) => {
     switch (type) {
@@ -455,6 +470,23 @@ function App() {
       const planId = urlParams.get('plan_id');
       const chargeId = urlParams.get('charge_id');
 
+      // Check for billing callback in top frame without session (likely due to storage partitioning)
+      // We must redirect back to Shopify Admin to regain access to the embedded session.
+      const isTopFrame = window.top === window.self;
+      const hasToken = !!localStorage.getItem('nexus_token');
+      
+      if (confirmBilling && isTopFrame && !hasToken) {
+         const apiKey = import.meta.env.VITE_SHOPIFY_API_KEY;
+         if (apiKey) {
+            // Extract shop name from domain (e.g. store.myshopify.com -> store)
+            const shopName = shop.replace('.myshopify.com', '');
+            const adminUrl = `https://admin.shopify.com/store/${shopName}/apps/${apiKey}${window.location.search}`;
+            console.log('Redirecting back to Shopify Admin to restore session:', adminUrl);
+            window.location.href = adminUrl;
+            return;
+         }
+      }
+
       const ensureBackendAgentSession = async (): Promise<boolean> => {
         const existingToken = localStorage.getItem('nexus_token');
         const existingUserJson = localStorage.getItem('nexus_user');
@@ -475,49 +507,23 @@ function App() {
         try {
           const probe = await probeShopifyExchange(shop);
           if (!probe.success) {
-            // Check specific error message from backend
-            // Backend returns { success: false, error: 'Shop not installed' } if not installed
-            // Backend returns { success: false, error: 'installed' } if installed but needs token exchange
-            
             if (probe.error === 'Shop not installed') {
               console.warn('Shopify probe: Shop not installed. Redirecting to install.');
-              return false; // Triggers ShopifyInstall component
+              setShopifyInstalled(false);
+              return false;
             }
-            
-            // If error is 'installed' (or any other error), we proceed to try App Bridge token exchange
-            // as a fallback/next step.
-            console.log('Shopify probe: Shop installed, proceeding to token exchange.');
-            
-          } else if (probe.token) {
-            const resolvedTenantId = probe.tenantId || tenantId || shop;
-            const agent: Agent = {
-              id: resolvedTenantId,
-              name: `Shopify (${probe.shop || shop})`,
-              roleId: 'default',
-              avatar: '',
-              status: 'ONLINE'
-            };
 
-            saveShopifyLaunchParams({ shop: probe.shop || shop, host: host || null, tenantId: probe.tenantId || tenantId || null });
-            localStorage.setItem('nexus_token', probe.token);
-            localStorage.setItem('nexus_user', JSON.stringify(agent));
-            setIsAuthenticated(true);
-            setCurrentUser(agent);
-            fetchBootstrapData(agent, probe.token);
-            return true;
+            // Installed but no agent session yet, show login screen
+            console.log('Shopify probe: Shop installed, waiting for login.');
+            setShopifyInstalled(true);
+            saveShopifyLaunchParams({ shop: shop, host: host || null, tenantId: probe.tenantId || tenantId || null });
+            return false;
           }
 
-          const session = await exchangeShopifyForAgentSession({
-            shop,
-            host: host || undefined,
-            tenantId: tenantId || undefined
-          });
-          localStorage.setItem('nexus_token', session.token);
-          localStorage.setItem('nexus_user', JSON.stringify(session.agent));
-          setIsAuthenticated(true);
-          setCurrentUser(session.agent);
-          fetchBootstrapData(session.agent, session.token);
-          return true;
+          // If probe success but no local token, do not auto-login
+          setShopifyInstalled(true);
+          saveShopifyLaunchParams({ shop: probe.shop || shop, host: host || null, tenantId: probe.tenantId || tenantId || null });
+          return false;
         } catch (e: any) {
           console.error('Failed to establish agent session for Shopify store:', e);
           const msg = (e && typeof e === 'object' && 'message' in e) ? String((e as any).message) : String(e);
@@ -546,9 +552,10 @@ function App() {
 
         try {
           const subStatus = await checkSubscriptionStatus(shop);
+          console.log('[App] Subscription status check:', subStatus);
           setIsSubscriptionActive(subStatus.active);
         } catch (e) {
-          console.error('Failed to check subscription', e);
+          console.error('[App] Failed to check subscription', e);
           setIsSubscriptionActive(false);
         } finally {
           setCheckingSubscription(false);
@@ -560,13 +567,37 @@ function App() {
           // Verify billing then start
           verifySubscription(shop, chargeId, planId).then(success => {
              if (success) {
+                 toast.success(t('billing.payment_success'));
                  window.history.replaceState({}, document.title, `/?shop=${shop}&is_embedded=1`);
                  finalizeStartup();
              } else {
+                 toast.error(t('billing.payment_failed'));
                  setCheckingSubscription(false);
                  setIsShopifyAuthenticated(true); // Still auth'd, just failed billing
              }
           });
+      } else if (planId === 'FREE') { // Handle Free Plan Redirect
+           // Assuming Free plan doesn't have a chargeId, but we redirected with plan_id=FREE
+           // Let's verify/activate free plan directly
+           // Backend's verifySubscription might need chargeId, but for free plan we might not have one or use dummy
+           
+           // Actually, if we look at ShopifyBillingService.java, for FREE plan it returns returnUrl immediately.
+           // So the URL would look like /?shop=...&planId=FREE (we need to make sure frontend passes this param if it's not standard)
+           // Wait, my frontend code in createSubscription sends returnUrl. 
+           // If backend returns returnUrl immediately for Free plan, it's just a redirect back.
+           // But verifySubscription requires chargeId.
+           
+           // Let's check how I implemented backend createSubscription for FREE plan:
+           // It updates local DB and returns returnUrl.
+           // So when we come back, we are already "subscribed" in DB.
+           // We just need to reload/check status.
+           
+           // So if we have plan_id=FREE but no charge_id, we should just proceed to finalizeStartup
+           // which calls checkSubscriptionStatus.
+           
+           window.history.replaceState({}, document.title, `/?shop=${shop}&is_embedded=1`);
+           finalizeStartup();
+           
       } else {
         if (tenantId) {
           const nextUrl = new URL(window.location.href);
@@ -625,6 +656,27 @@ function App() {
     setIsAuthenticated(true);
     setCurrentUser(data.agent);
     fetchBootstrapData(data.agent, data.token);
+
+    if (isShopifyEmbedded) {
+      setIsShopifyAuthenticated(true);
+      setShopifyInstalled(true);
+      const { shop } = getShopifyLaunchParams();
+      if (shop) {
+        setCheckingSubscription(true);
+        checkSubscriptionStatus(shop)
+          .then(subStatus => {
+            setIsSubscriptionActive(subStatus.active);
+          })
+          .catch(err => {
+            console.error('[App] Failed to check subscription after login', err);
+            setIsSubscriptionActive(false);
+          })
+          .finally(() => {
+            setCheckingSubscription(false);
+            setActiveView('INBOX');
+          });
+      }
+    }
   };
 
   const handleLogout = () => {
@@ -640,7 +692,33 @@ function App() {
     setSystemQuickReplies([]);
     setKnowledgeBase([]);
     setActiveSessionId(null);
-    showToast('INFO', 'You have been logged out.');
+    showToast('INFO', t('logout_success'));
+  };
+
+  const handleSwitchAgent = async (agent: Agent, token: string) => {
+    try {
+      // 保存新的 token 和用户信息
+      localStorage.setItem('nexus_token', token);
+      localStorage.setItem('nexus_user', JSON.stringify(agent));
+      
+      // 断开旧的 WebSocket 连接
+      websocketService.disconnect();
+      
+      // 更新当前用户
+      setCurrentUser(agent);
+      setIsAuthenticated(true);
+      
+      // 重新获取数据
+      await fetchBootstrapData(agent, token);
+      
+      // 关闭切换对话框
+      setShowAgentSwitcher(false);
+      
+      showToast('SUCCESS', t('switch_agent_success'));
+    } catch (error) {
+      console.error('Failed to switch agent:', error);
+      showToast('ERROR', t('switch_agent_failed'));
+    }
   };
 
   /**
@@ -1358,7 +1436,11 @@ function App() {
       <ShopifyAppProvider apiKey={apiKey} shopOrigin={shop || undefined} host={host || undefined}>
         <Toaster position="top-center" richColors expand style={{ zIndex: 99999 }} />
         {!isShopifyAuthenticated ? (
-          <ShopifyInstall shop={shop || ''} error={authError} />
+          shopifyInstalled ? (
+            <LoginScreen onLoginSuccess={handleLoginSuccess} shopifyMode shopifyShop={shop || ''} shopifyHost={host || ''} />
+          ) : (
+            <ShopifyInstall shop={shop || ''} error={authError} />
+          )
         ) : checkingSubscription ? (
           <div className="h-screen w-full flex items-center justify-center bg-gray-50">
              <div className="text-center">
@@ -1383,6 +1465,9 @@ function App() {
                   handleStatusChange={handleStatusChange}
                   handleLogout={handleLogout}
                   onLanguageChange={handleLanguageChange}
+                  hasPermission={hasPermission}
+                  isShopifyEmbedded={isShopifyEmbedded}
+                  onSwitchAgent={() => setShowAgentSwitcher(true)}
                 />
               </div>
 
@@ -1479,6 +1564,7 @@ function App() {
                          onDeleteSystemReply={onDeleteSystemReply}
                          onAddKnowledge={onAddKnowledge}
                          onDeleteKnowledge={onDeleteKnowledge}
+                         hasPermission={hasPermission}
                      />
                    )}
            
@@ -1595,6 +1681,14 @@ function App() {
                }}
            />
         )}
+        {/* Agent Switcher Modal - Only in Shopify environment */}
+        {isShopifyEmbedded && showAgentSwitcher && currentUser && (
+          <AgentSwitcher
+            currentUser={currentUser}
+            onSwitchAgent={handleSwitchAgent}
+            onCancel={() => setShowAgentSwitcher(false)}
+          />
+        )}
       </ShopifyAppProvider>
     );
   }
@@ -1618,6 +1712,7 @@ function App() {
           handleStatusChange={handleStatusChange}
           handleLogout={handleLogout}
           onLanguageChange={handleLanguageChange}
+          hasPermission={hasPermission}
         />
       </div>
       
@@ -1738,6 +1833,7 @@ function App() {
                 onDeleteSystemReply={onDeleteSystemReply}
                 onAddKnowledge={onAddKnowledge}
                 onDeleteKnowledge={onDeleteKnowledge}
+                hasPermission={hasPermission}
             />
           )}
         </div>
@@ -1754,6 +1850,7 @@ function App() {
         handleStatusChange={handleStatusChange}
         handleLogout={handleLogout}
         onLanguageChange={handleLanguageChange}
+        hasPermission={hasPermission}
       />
 
       {/* Transfer Notifications */}

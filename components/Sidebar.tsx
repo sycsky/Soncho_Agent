@@ -15,6 +15,9 @@ interface SidebarProps {
   handleStatusChange: (status: 'ONLINE' | 'BUSY' | 'IDLE') => void;
   handleLogout: () => void;
   onLanguageChange?: (lang: string) => void;
+  hasPermission?: (permissionKey: string) => boolean;
+  isShopifyEmbedded?: boolean;
+  onSwitchAgent?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -26,13 +29,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentUserStatus,
   handleStatusChange,
   handleLogout,
-  onLanguageChange
+  onLanguageChange,
+  hasPermission,
+  isShopifyEmbedded,
+  onSwitchAgent
 }) => {
   const { t, i18n } = useTranslation();
   const [languages, setLanguages] = useState<Language[]>([]);
   const [isLanguagesLoading, setIsLanguagesLoading] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState(currentUser.language || '');
-  const [menuView, setMenuView] = useState<'MAIN' | 'LANGUAGES'>('MAIN');
+  const [menuView, setMenuView] = useState<'MAIN' | 'LANGUAGES' | 'SWITCH_AGENT'>('MAIN');
   const [languageSearch, setLanguageSearch] = useState('');
 
   useEffect(() => {
@@ -48,6 +54,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       setLanguageSearch('');
     }
   }, [showProfileMenu]);
+
+  const handleSwitchAgentClick = () => {
+    if (onSwitchAgent) {
+      onSwitchAgent();
+      setShowProfileMenu(false);
+    } else {
+      setMenuView('SWITCH_AGENT');
+    }
+  };
 
   useEffect(() => {
     if (showProfileMenu) {
@@ -79,10 +94,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-900/50">N</div>
       <nav className="flex flex-col gap-6 w-full">
         <button onClick={() => setActiveView('INBOX')} className={`p-3 mx-auto rounded-xl transition-all ${activeView === 'INBOX' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`} title={t('inbox')}><MessageCircle size={24} /></button>
-        <button onClick={() => setActiveView('CUSTOMERS')} className={`p-3 mx-auto rounded-xl transition-all ${activeView === 'CUSTOMERS' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`} title={t('customers')}><UserCircle size={24} /></button>
-        <button onClick={() => setActiveView('TEAM')} className={`p-3 mx-auto rounded-xl transition-all ${activeView === 'TEAM' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`} title={t('team')}><Users size={24} /></button>
-        <button onClick={() => setActiveView('WORKFLOW')} className={`p-3 mx-auto rounded-xl transition-all ${activeView === 'WORKFLOW' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`} title={t('workflows')}><GitBranch size={24} /></button>
-        <button onClick={() => setActiveView('ANALYTICS')} className={`p-3 mx-auto rounded-xl transition-all ${activeView === 'ANALYTICS' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`} title={t('analytics')}><BarChart size={24} /></button>
+        {(!hasPermission || hasPermission('accessCustomerManagement')) && (
+          <button onClick={() => setActiveView('CUSTOMERS')} className={`p-3 mx-auto rounded-xl transition-all ${activeView === 'CUSTOMERS' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`} title={t('customers')}><UserCircle size={24} /></button>
+        )}
+        {(!hasPermission || hasPermission('manageTeam')) && (
+          <button onClick={() => setActiveView('TEAM')} className={`p-3 mx-auto rounded-xl transition-all ${activeView === 'TEAM' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`} title={t('team')}><Users size={24} /></button>
+        )}
+        {(!hasPermission || hasPermission('designWorkflow')) && (
+          <button onClick={() => setActiveView('WORKFLOW')} className={`p-3 mx-auto rounded-xl transition-all ${activeView === 'WORKFLOW' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`} title={t('workflows')}><GitBranch size={24} /></button>
+        )}
+        {(!hasPermission || hasPermission('accessSystemStatistics')) && (
+          <button onClick={() => setActiveView('ANALYTICS')} className={`p-3 mx-auto rounded-xl transition-all ${activeView === 'ANALYTICS' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`} title={t('analytics')}><BarChart size={24} /></button>
+        )}
       </nav>
       <div className="mt-auto flex flex-col items-center gap-6 pb-6 relative">
         <button onClick={() => setActiveView('SETTINGS')} className={`p-2 transition-all rounded-lg ${activeView === 'SETTINGS' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'}`}><Settings size={24} /></button>
@@ -109,6 +132,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       <button onClick={() => handleStatusChange('IDLE')} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700"><div className="w-2.5 h-2.5 rounded-full bg-gray-400"></div> {t('idle')}{currentUserStatus === 'IDLE' && <Check size={14} className="ml-auto text-gray-500"/>}</button>
                    </div>
                    <div className="p-2 space-y-1 border-t border-gray-100">
+                      {isShopifyEmbedded && onSwitchAgent && (
+                        <button 
+                          onClick={handleSwitchAgentClick}
+                          className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700 group"
+                        >
+                           <Users size={16} className="text-gray-500 group-hover:text-blue-500"/>
+                           <div className="flex-1 text-left">
+                             <div className="text-xs text-gray-500">{t('switch_agent')}</div>
+                             <div className="font-medium truncate">{t('switch_agent_desc')}</div>
+                           </div>
+                           <ChevronRight size={16} className="text-gray-400"/>
+                        </button>
+                      )}
                       <button 
                         onClick={() => setMenuView('LANGUAGES')}
                         className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700 group"

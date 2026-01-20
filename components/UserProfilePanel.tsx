@@ -196,7 +196,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
             </div>
         ) : (
             <div className="group relative w-full flex justify-center mb-2">
-                <div className="relative">
+                <div className="relative margin-top-2">
                     <h2 className="text-xl font-bold text-gray-800">{user.name}</h2>
                     {onUpdateName && (
                         <button 
