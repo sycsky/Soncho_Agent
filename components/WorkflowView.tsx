@@ -67,7 +67,7 @@ const useModelName = (modelId?: string, modelDisplayName?: string) => {
           console.error('Failed to resolve model name', err);
         }
       } else {
-         if (isMounted) setDisplayName(modelDisplayName || modelId || t('workflow.select_model'));
+         if (isMounted) setDisplayName(modelDisplayName || modelId || t('workflow_editor.select_model'));
       }
     };
 
@@ -1302,7 +1302,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
     const config = node.data.config || {};
     const intents = config.intents || [];
     const newId = `i${Date.now()}`;
-    const newIntent = { id: newId, label: 'New Intent' };
+    const newIntent = { id: newId, label: t('workflow_editor.new_intent') };
     
     onChange({
       ...node.data,
@@ -1982,7 +1982,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                   value={node.data.config?.sourceField || ''}
                   onChange={(e) => handleConfigChange('sourceField', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                  placeholder="e.g. {{LLM.text}}"
+                  placeholder={t('workflow_editor.source_field_example')}
                 />
                 <p className="text-[10px] text-gray-400 mt-1">{t('workflow_editor.source_field_help')}</p>
               </div>
@@ -3690,86 +3690,86 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
               </div>
 
               <div className="py-1 max-h-[360px] overflow-y-auto">
-                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Basic</div>
-                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('start', 'Start')}>
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{t('workflow_editor.categories.basic')}</div>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('start', t('workflow_editor.nodes.start'))}>
                   <Play size={14} className="text-blue-600" />
-                  <span>Start</span>
+                  <span>{t('workflow_editor.nodes.start')}</span>
                 </button>
-                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('end', 'End')}>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('end', t('workflow_editor.nodes.end'))}>
                   <Square size={14} className="text-red-600" />
-                  <span>End</span>
+                  <span>{t('workflow_editor.nodes.end')}</span>
                 </button>
-                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('reply', 'Direct Reply')}>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('reply', t('workflow_editor.nodes.reply'))}>
                   <MessageSquare size={14} className="text-blue-600" />
-                  <span>Direct Reply</span>
+                  <span>{t('workflow_editor.nodes.reply')}</span>
                 </button>
-                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('human_transfer', 'Transfer to Human')}>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('human_transfer', t('workflow_editor.transfer_to_human'))}>
                   <Headphones size={14} className="text-pink-600" />
-                  <span>Transfer to Human</span>
+                  <span>{t('workflow_editor.transfer_to_human')}</span>
                 </button>
 
-                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Routing</div>
-                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('intent', 'Intent Recognition')}>
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{t('workflow_editor.categories.routing')}</div>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('intent', t('workflow_editor.nodes.intent'))}>
                   <GitBranch size={14} className="text-green-600" />
-                  <span>Intent Recognition</span>
+                  <span>{t('workflow_editor.nodes.intent')}</span>
                 </button>
-                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('condition', 'Condition Check')}>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('condition', t('workflow_editor.condition_check'))}>
                   <Split size={14} className="text-teal-600" />
-                  <span>Condition Check</span>
+                  <span>{t('workflow_editor.condition_check')}</span>
                 </button>
 
-                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">AI</div>
-                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('llm', 'LLM Generation')}>
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{t('workflow_editor.categories.ai')}</div>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('llm', t('workflow_editor.nodes.llm'))}>
                   <Bot size={14} className="text-indigo-600" />
-                  <span>LLM Generation</span>
+                  <span>{t('workflow_editor.nodes.llm')}</span>
                 </button>
-                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('agent', 'Agent')}>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('agent', t('workflow_editor.nodes.agent'))}>
                   <Wand2 size={14} className="text-pink-600" />
-                  <span>Agent</span>
+                  <span>{t('workflow_editor.nodes.agent')}</span>
                 </button>
-                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('tool', 'Tool Execution')}>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('tool', t('workflow_editor.tool_node'))}>
                   <Hammer size={14} className="text-orange-600" />
-                  <span>Tool Execution</span>
+                  <span>{t('workflow_editor.tool_node')}</span>
                 </button>
 
-                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Data</div>
-                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('knowledge', 'Knowledge Retrieval')}>
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{t('workflow_editor.categories.data')}</div>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('knowledge', t('workflow_editor.nodes.knowledge'))}>
                   <Database size={14} className="text-orange-600" />
-                  <span>Knowledge Retrieval</span>
+                  <span>{t('workflow_editor.nodes.knowledge')}</span>
                 </button>
-                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('translation', 'Translation')}>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('translation', t('workflow_editor.nodes.translation'))}>
                   <Languages size={14} className="text-orange-600" />
-                  <span>Translation</span>
+                  <span>{t('workflow_editor.nodes.translation')}</span>
                 </button>
-                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('setSessionMetadata', 'Set Metadata')}>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('setSessionMetadata', t('workflow_editor.set_metadata'))}>
                   <Tags size={14} className="text-fuchsia-600" />
-                  <span>Set Metadata</span>
+                  <span>{t('workflow_editor.set_metadata')}</span>
                 </button>
-                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('variable', 'Variable Setting')}>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('variable', t('workflow_editor.variable_setting'))}>
                   <Braces size={14} className="text-cyan-600" />
-                  <span>Variable Setting</span>
+                  <span>{t('workflow_editor.variable_setting')}</span>
                 </button>
-                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('parameter_extraction', 'Param Extraction')}>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('parameter_extraction', t('workflow_editor.param_extraction'))}>
                   <ListFilter size={14} className="text-violet-600" />
-                  <span>Param Extraction</span>
+                  <span>{t('workflow_editor.param_extraction')}</span>
                 </button>
 
-                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Advanced</div>
-                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('flow', 'Flow')}>
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{t('workflow_editor.categories.advanced')}</div>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('flow', t('workflow_editor.nodes.flow'))}>
                   <Bot size={14} className="text-purple-600" />
-                  <span>Flow</span>
+                  <span>{t('workflow_editor.nodes.flow')}</span>
                 </button>
-                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('flow_end', 'Flow End')}>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('flow_end', t('workflow_editor.agent_end'))}>
                   <Square size={14} className="text-gray-600" />
-                  <span>Flow End</span>
+                  <span>{t('workflow_editor.agent_end')}</span>
                 </button>
-                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('flow_update', 'Flow Update')}>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('flow_update', t('workflow_editor.agent_update'))}>
                   <Edit2 size={14} className="text-yellow-600" />
-                  <span>Flow Update</span>
+                  <span>{t('workflow_editor.agent_update')}</span>
                 </button>
-                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('imageTextSplit', 'Image-Text Split')}>
+                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('imageTextSplit', t('workflow_editor.image_text_split'))}>
                   <Split size={14} className="text-teal-600" />
-                  <span>Image-Text Split</span>
+                  <span>{t('workflow_editor.image_text_split')}</span>
                 </button>
               </div>
             </div>

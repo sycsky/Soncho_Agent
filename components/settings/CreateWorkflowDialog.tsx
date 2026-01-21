@@ -131,17 +131,18 @@ export const CreateWorkflowDialog: React.FC<CreateWorkflowDialogProps> = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description
+                {t('description')}
               </label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none"
-                placeholder="Briefly describe the purpose of this workflow..."
+                placeholder={t('workflow_editor.description_placeholder')}
                 disabled={isSubmitting}
               />
             </div>
 
+            {/* Categories hidden as per requirement
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Categories
@@ -182,6 +183,7 @@ export const CreateWorkflowDialog: React.FC<CreateWorkflowDialogProps> = ({
                 )}
               </div>
             </div>
+            */}
           </form>
         </div>
 

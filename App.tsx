@@ -34,6 +34,7 @@ import { ShopifyDashboard } from './components/shopify/ShopifyDashboard';
 import { ShopifyInstall } from './components/shopify/ShopifyInstall';
 import { ShopifyBilling } from './components/shopify/ShopifyBilling';
 import { getShopifyLaunchParams, initiateShopifyInstall, probeShopifyExchange, saveShopifyLaunchParams } from './services/shopifyAuthService';
+import { tokenService } from './services/tokenService';
 import { AgentSwitcher } from './components/AgentSwitcher';
 import { checkSubscriptionStatus, verifySubscription } from './services/shopifyBillingService';
 import { Button } from '@shopify/polaris';
@@ -116,14 +117,14 @@ function App() {
   const [sentiment, setSentiment] = useState<{score: number, label: string}>({ score: 50, label: 'Neutral' });
   const [isAnalyzingSentiment, setIsAnalyzingSentiment] = useState(false);
   const [isGeneratingTags, setIsGeneratingTags] = useState(false);
-  const [currentAgentLanguage, setCurrentAgentLanguage] = useState<string>(localStorage.getItem('agent_language') || 'en');
+  const [currentAgentLanguage, setCurrentAgentLanguage] = useState<string>(tokenService.getLanguage() || 'en');
   const [showMobileProfile, setShowMobileProfile] = useState(false);
   const [showAgentSwitcher, setShowAgentSwitcher] = useState(false);
 
   useEffect(() => {
     if (currentUser?.language) {
       setCurrentAgentLanguage(currentUser.language);
-      localStorage.setItem('agent_language', currentUser.language);
+      tokenService.setLanguage(currentUser.language);
     }
   }, [currentUser]);
 
@@ -139,7 +140,7 @@ function App() {
 
   const handleLanguageChange = (lang: string) => {
     setCurrentAgentLanguage(lang);
-    localStorage.setItem('agent_language', lang);
+    tokenService.setLanguage(lang);
     if (currentUser) {
       setCurrentUser({ ...currentUser, language: lang });
     }
@@ -488,19 +489,19 @@ function App() {
       }
 
       const ensureBackendAgentSession = async (): Promise<boolean> => {
-        const existingToken = localStorage.getItem('nexus_token');
-        const existingUserJson = localStorage.getItem('nexus_user');
+        const existingToken = tokenService.getToken();
+        const existingUser = tokenService.getUser();
 
-        if (existingToken && existingUserJson) {
+        if (existingToken && existingUser) {
           try {
-            const loggedInUser: Agent = JSON.parse(existingUserJson);
+            const loggedInUser: Agent = existingUser;
             setIsAuthenticated(true);
             setCurrentUser(loggedInUser);
             fetchBootstrapData(loggedInUser, existingToken);
             return true;
           } catch (e) {
-            localStorage.removeItem('nexus_token');
-            localStorage.removeItem('nexus_user');
+            tokenService.removeToken();
+            tokenService.removeUser();
           }
         }
 
@@ -616,11 +617,10 @@ function App() {
       return;
     }
 
-    const token = localStorage.getItem('nexus_token');
-    const userJson = localStorage.getItem('nexus_user');
-    if (token && userJson) {
+    const token = tokenService.getToken();
+    const loggedInUser = tokenService.getUser();
+    if (token && loggedInUser) {
       try {
-        const loggedInUser: Agent = JSON.parse(userJson);
         setIsAuthenticated(true);
         setCurrentUser(loggedInUser);
         fetchBootstrapData(loggedInUser, token);
@@ -651,8 +651,8 @@ function App() {
   }, [activeView, agents.length]);
 
   const handleLoginSuccess = (data: LoginResponse) => {
-    localStorage.setItem('nexus_token', data.token);
-    localStorage.setItem('nexus_user', JSON.stringify(data.agent));
+    tokenService.setToken(data.token);
+    tokenService.setUser(data.agent);
     setIsAuthenticated(true);
     setCurrentUser(data.agent);
     fetchBootstrapData(data.agent, data.token);
@@ -681,9 +681,10 @@ function App() {
 
   const handleLogout = () => {
     websocketService.disconnect();
-    localStorage.removeItem('nexus_token');
-    localStorage.removeItem('nexus_user');
+    tokenService.removeToken();
+    tokenService.removeUser();
     setIsAuthenticated(false);
+    setIsShopifyAuthenticated(false); // Reset Shopify authentication state
     setCurrentUser(null);
     setSessions([]);
     setAgents([]);
@@ -698,8 +699,8 @@ function App() {
   const handleSwitchAgent = async (agent: Agent, token: string) => {
     try {
       // 保存新的 token 和用户信息
-      localStorage.setItem('nexus_token', token);
-      localStorage.setItem('nexus_user', JSON.stringify(agent));
+      tokenService.setToken(token);
+      tokenService.setUser(agent);
       
       // 断开旧的 WebSocket 连接
       websocketService.disconnect();
@@ -1434,7 +1435,7 @@ function App() {
 
     return (
       <ShopifyAppProvider apiKey={apiKey} shopOrigin={shop || undefined} host={host || undefined}>
-        <Toaster position="top-center" richColors expand style={{ zIndex: 99999 }} />
+        <Toaster position="top-center" richColors expand closeButton duration={3000} style={{ zIndex: 99999 }} />
         {!isShopifyAuthenticated ? (
           shopifyInstalled ? (
             <LoginScreen onLoginSuccess={handleLoginSuccess} shopifyMode shopifyShop={shop || ''} shopifyHost={host || ''} />
@@ -1699,7 +1700,7 @@ function App() {
 
   return (
     <div className="flex h-screen bg-white overflow-hidden font-sans text-gray-900">
-      <Toaster position="top-center" richColors expand style={{ zIndex: 2147483647 }} />
+      <Toaster position="top-center" richColors expand closeButton duration={3000} style={{ zIndex: 2147483647 }} />
       {/* Sidebar (Desktop) */}
       <div className="hidden lg:block h-full shrink-0">
         <Sidebar 

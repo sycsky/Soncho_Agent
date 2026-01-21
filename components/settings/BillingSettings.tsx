@@ -116,6 +116,7 @@ export const BillingSettings: React.FC = () => {
   };
 
   const currentPlan = plans.find(p => p.name === subscription?.plan) || plans[0];
+  const isFreePlan = (plan?: string) => !plan || plan.toUpperCase() === 'FREE';
 
   return (
     <div className="space-y-8">
@@ -127,18 +128,18 @@ export const BillingSettings: React.FC = () => {
                         <div className="text-sm text-gray-500 uppercase font-bold tracking-wide">{subscription?.plan} {t('billing.plan')}</div>
                         <div className="text-3xl font-bold mt-1">{subscription?.status}</div>
                         <div className="text-sm text-gray-500 mt-1">
-                            {subscription?.cancelAtPeriodEnd 
+                            {!isFreePlan(subscription?.plan) && subscription?.cancelAtPeriodEnd 
                                 ? <span className="text-red-500 font-medium">{t('billing.cancels_on')} {new Date(subscription?.currentPeriodEnd || '').toLocaleDateString()}</span>
                                 : <span>{t('billing.renews_on')} {new Date(subscription?.currentPeriodEnd || '').toLocaleDateString()}</span>
                             }
                         </div>
                     </div>
-                    <div className={`px-3 py-1 rounded-full text-sm font-medium ${subscription?.cancelAtPeriodEnd ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700'}`}>
-                        {subscription?.cancelAtPeriodEnd ? t('billing.cancelling') : t('billing.current_tag')}
+                    <div className={`px-3 py-1 rounded-full text-sm font-medium ${!isFreePlan(subscription?.plan) && subscription?.cancelAtPeriodEnd ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700'}`}>
+                        {!isFreePlan(subscription?.plan) && subscription?.cancelAtPeriodEnd ? t('billing.cancelling') : t('billing.current_tag')}
                     </div>
                 </div>
 
-                {!subscription?.cancelAtPeriodEnd && subscription?.plan !== 'FREE' && (
+                {!subscription?.cancelAtPeriodEnd && !isFreePlan(subscription?.plan) && (
                     <div className="flex justify-end mb-6">
                         <button 
                             onClick={handleCancelSubscription}

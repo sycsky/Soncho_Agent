@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { Page, Layout, Card, BlockStack, Text, Button, Banner, Spinner } from '@shopify/polaris';
+import { Page, Layout, Card, BlockStack, Text, Button, Banner } from '@shopify/polaris';
+import { Loader2 } from 'lucide-react';
 import { initiateShopifyInstall } from '../../services/shopifyAuthService';
 
 interface ShopifyInstallProps {
@@ -10,18 +11,10 @@ interface ShopifyInstallProps {
 export const ShopifyInstall: React.FC<ShopifyInstallProps> = ({ shop, error }) => {
   useEffect(() => {
     if (!error) {
-      const isInIframe = (() => {
-        try {
-          return window.top !== window.self;
-        } catch {
-          return true;
-        }
-      })();
-
-      if (!isInIframe) {
-        console.log('ShopifyInstall component mounted. Initiating install immediately...');
-        initiateShopifyInstall(shop);
-      }
+      // Always attempt to redirect, even in iframe. 
+      // Browsers might block it if not user-initiated, but the button is provided as a fallback.
+      console.log('ShopifyInstall component mounted. Initiating install immediately...');
+      initiateShopifyInstall(shop);
     }
   }, [shop, error]);
 
@@ -43,7 +36,9 @@ export const ShopifyInstall: React.FC<ShopifyInstallProps> = ({ shop, error }) =
                     </div>
                   ) : (
                     <>
-                      <Spinner size="large" accessibilityLabel="Loading" />
+                      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+                        <Loader2 className="animate-spin" size={48} color="#008060" />
+                      </div>
                       <div style={{ marginTop: '1rem' }}>
                         <Text as="h2" variant="headingLg">Connecting to Shopify...</Text>
                       </div>

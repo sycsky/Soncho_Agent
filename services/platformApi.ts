@@ -1,15 +1,11 @@
 import { ExternalPlatform, CreatePlatformRequest, UpdatePlatformRequest, PlatformTypeOption, AuthTypeOption } from '../types/platform';
 import { BASE_URL } from '../config';
+import { tokenService } from './tokenService';
 
 const API_BASE = `${BASE_URL}/api/v1/webhook`;
 
 const getToken = (): string | null => {
-  try {
-    return localStorage.getItem('nexus_token');
-  } catch (error) {
-    console.error("Could not access localStorage:", error);
-    return null;
-  }
+  return tokenService.getToken();
 };
 
 const getHeaders = () => {

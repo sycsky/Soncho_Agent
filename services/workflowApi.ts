@@ -1,15 +1,11 @@
 import { AiWorkflow, CreateWorkflowRequest, UpdateWorkflowRequest, LlmModel, WorkflowCategory, LlmProvider, GenerateWorkflowRequest, GeneratedWorkflow } from '../types/workflow';
 import { BASE_URL } from '../config';
+import { tokenService } from './tokenService';
 
 const API_BASE = `${BASE_URL}/api/v1`;
 
 const getToken = (): string | null => {
-  try {
-    return localStorage.getItem('nexus_token');
-  } catch (error) {
-    console.error("Could not access localStorage:", error);
-    return null;
-  }
+  return tokenService.getToken();
 };
 
 const getHeaders = () => {

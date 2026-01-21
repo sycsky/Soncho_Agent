@@ -33,6 +33,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const { t } = useTranslation();
   const [settingsTab, setSettingsTab] = useState<'QUICK_REPLIES' | 'KNOWLEDGE_BASE' | 'ROLES' | 'CATEGORIES' | 'LLM_MODELS' | 'AI_TOOLS' | 'EXTERNAL_PLATFORMS' | 'OFFICIAL_CHANNELS' | 'EVENTS' | 'SCHEDULED_TASKS' | 'CANCELLATION_POLICY' | 'BILLING'>('QUICK_REPLIES');
   
+  const showAdvancedSettings = import.meta.env.VITE_SHOW_ADVANCED_SETTINGS === 'true';
+  
   // Form states
   const [newSysReplyLabel, setNewSysReplyLabel] = useState('');
   const [newSysReplyText, setNewSysReplyText] = useState('');
@@ -61,18 +63,32 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
              {(!hasPermission || hasPermission('manageKnowledgeBaseSetting')) && (
                <button onClick={() => setSettingsTab('KNOWLEDGE_BASE')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'KNOWLEDGE_BASE' ? 'bg-purple-50 text-purple-700' : 'text-gray-600 hover:bg-gray-50'}`}><Database size={18} />{t('settings_nav_knowledge_base')}</button>
              )}
-             <button onClick={() => setSettingsTab('ROLES')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'ROLES' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50'}`}><Users size={18} />{t('settings_nav_roles')}</button>
-             <button onClick={() => setSettingsTab('CATEGORIES')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'CATEGORIES' ? 'bg-green-50 text-green-700' : 'text-gray-600 hover:bg-gray-50'}`}><Users size={18} />{t('settings_nav_categories')}</button>
-             <button onClick={() => setSettingsTab('LLM_MODELS')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'LLM_MODELS' ? 'bg-orange-50 text-orange-700' : 'text-gray-600 hover:bg-gray-50'}`}><Bot size={18} />{t('settings_nav_llm_models')}</button>
-             <button onClick={() => setSettingsTab('AI_TOOLS')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'AI_TOOLS' ? 'bg-cyan-50 text-cyan-700' : 'text-gray-600 hover:bg-gray-50'}`}><Wrench size={18} />{t('settings_nav_ai_tools')}</button>
-             <button onClick={() => setSettingsTab('EXTERNAL_PLATFORMS')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'EXTERNAL_PLATFORMS' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50'}`}><Globe size={18} />{t('settings_nav_external_platforms')}</button>
-             <button onClick={() => setSettingsTab('OFFICIAL_CHANNELS')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'OFFICIAL_CHANNELS' ? 'bg-green-50 text-green-700' : 'text-gray-600 hover:bg-gray-50'}`}><MessageSquare size={18} />{t('settings_nav_official_channels')}</button>
-             <button onClick={() => setSettingsTab('EVENTS')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'EVENTS' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}><Calendar size={18} />{t('settings_nav_events')}</button>
-             <button onClick={() => setSettingsTab('SCHEDULED_TASKS')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'SCHEDULED_TASKS' ? 'bg-orange-50 text-orange-700' : 'text-gray-600 hover:bg-gray-50'}`}><Clock size={18} />{t('settings_nav_scheduled_tasks')}</button>
+             {(!hasPermission || hasPermission('accessRoleConfig')) && (
+               <button onClick={() => setSettingsTab('ROLES')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'ROLES' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50'}`}><Users size={18} />{t('settings_nav_roles')}</button>
+             )}
+             {showAdvancedSettings && (
+               <>
+                 <button onClick={() => setSettingsTab('CATEGORIES')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'CATEGORIES' ? 'bg-green-50 text-green-700' : 'text-gray-600 hover:bg-gray-50'}`}><Users size={18} />{t('settings_nav_categories')}</button>
+                 <button onClick={() => setSettingsTab('LLM_MODELS')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'LLM_MODELS' ? 'bg-orange-50 text-orange-700' : 'text-gray-600 hover:bg-gray-50'}`}><Bot size={18} />{t('settings_nav_llm_models')}</button>
+               </>
+             )}
+             {(!hasPermission || hasPermission('accessAiTools')) && (
+               <button onClick={() => setSettingsTab('AI_TOOLS')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'AI_TOOLS' ? 'bg-cyan-50 text-cyan-700' : 'text-gray-600 hover:bg-gray-50'}`}><Wrench size={18} />{t('settings_nav_ai_tools')}</button>
+             )}
+             {showAdvancedSettings && (
+               <>
+                 <button onClick={() => setSettingsTab('EXTERNAL_PLATFORMS')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'EXTERNAL_PLATFORMS' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50'}`}><Globe size={18} />{t('settings_nav_external_platforms')}</button>
+                 <button onClick={() => setSettingsTab('OFFICIAL_CHANNELS')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'OFFICIAL_CHANNELS' ? 'bg-green-50 text-green-700' : 'text-gray-600 hover:bg-gray-50'}`}><MessageSquare size={18} />{t('settings_nav_official_channels')}</button>
+                 <button onClick={() => setSettingsTab('EVENTS')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'EVENTS' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}><Calendar size={18} />{t('settings_nav_events')}</button>
+                 <button onClick={() => setSettingsTab('SCHEDULED_TASKS')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'SCHEDULED_TASKS' ? 'bg-orange-50 text-orange-700' : 'text-gray-600 hover:bg-gray-50'}`}><Clock size={18} />{t('settings_nav_scheduled_tasks')}</button>
+               </>
+             )}
              {(!hasPermission || hasPermission('setCancellationPolicy')) && (
                <button onClick={() => setSettingsTab('CANCELLATION_POLICY')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'CANCELLATION_POLICY' ? 'bg-red-50 text-red-700' : 'text-gray-600 hover:bg-gray-50'}`}><XCircle size={18} />{t('settings_nav_cancellation_policy')}</button>
              )}
-             <button onClick={() => setSettingsTab('BILLING')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'BILLING' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}><CreditCard size={18} />{t('settings_nav_billing')}</button>
+             {(!hasPermission || hasPermission('accessBilling')) && (
+               <button onClick={() => setSettingsTab('BILLING')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'BILLING' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}><CreditCard size={18} />{t('settings_nav_billing')}</button>
+             )}
           </nav>
           <div className="p-4 border-t border-gray-100 text-xs text-gray-400 text-center">{t('version_label', { version: '1.3.0' })}</div>
         </div>

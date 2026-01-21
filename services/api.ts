@@ -1,5 +1,6 @@
 import { BASE_URL } from '../config';
 import notificationService from './notificationService';
+import { tokenService } from './tokenService';
 
 // Unified response format from the backend
 interface ApiResponse<T> {
@@ -17,12 +18,7 @@ class ApiError extends Error {
 }
 
 const getToken = (): string | null => {
-  try {
-    return localStorage.getItem('nexus_token');
-  } catch (error) {
-    console.error("Could not access localStorage:", error);
-    return null;
-  }
+  return tokenService.getToken();
 };
 
 // FIX: Add an interface for the API service to correctly type `this` and allow generic method calls.

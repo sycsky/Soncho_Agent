@@ -12,7 +12,10 @@ const PERMISSION_KEYS = [
   'accessCustomerManagement',
   'manageTeam',
   'accessSystemStatistics',
-  'designWorkflow'
+  'designWorkflow',
+  'accessRoleConfig',
+  'accessAiTools',
+  'accessBilling'
 ] as const;
 
 const RoleForm: React.FC<{ role?: Role; onSave: (data: CreateRoleRequest | UpdateRoleRequest) => void; onCancel: () => void; }> = ({ role, onSave, onCancel }) => {
@@ -66,6 +69,9 @@ const RoleForm: React.FC<{ role?: Role; onSave: (data: CreateRoleRequest | Updat
       'manageTeam': t('permission_manage_team_label'),
       'accessSystemStatistics': t('permission_access_system_statistics_label'),
       'designWorkflow': t('permission_design_workflow_label'),
+      'accessRoleConfig': t('permission_access_role_config_label'),
+      'accessAiTools': t('permission_access_ai_tools_label'),
+      'accessBilling': t('permission_access_billing_label'),
     };
     return labels[key] || key;
   };
@@ -79,6 +85,9 @@ const RoleForm: React.FC<{ role?: Role; onSave: (data: CreateRoleRequest | Updat
       'manageTeam': t('permission_manage_team_desc'),
       'accessSystemStatistics': t('permission_access_system_statistics_desc'),
       'designWorkflow': t('permission_design_workflow_desc'),
+      'accessRoleConfig': t('permission_access_role_config_desc'),
+      'accessAiTools': t('permission_access_ai_tools_desc'),
+      'accessBilling': t('permission_access_billing_desc'),
     };
     return descs[key] || '';
   };
@@ -113,9 +122,9 @@ const RoleForm: React.FC<{ role?: Role; onSave: (data: CreateRoleRequest | Updat
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase">权限</th>
-                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase">描述</th>
-                    <th className="text-center py-3 px-4 text-xs font-semibold text-gray-700 uppercase">启用</th>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase">{t('permissions_table_header_permission')}</th>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase">{t('permissions_table_header_desc')}</th>
+                    <th className="text-center py-3 px-4 text-xs font-semibold text-gray-700 uppercase">{t('permissions_table_header_enable')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -233,9 +242,11 @@ export const RoleView: React.FC = () => {
                 <td className="py-4 px-6 font-medium text-gray-900">{role.name}</td>
                 <td className="py-4 px-6 text-gray-600">{role.description || '-'}</td>
                 <td className="py-4 px-6 text-right">
-                  <button onClick={() => setEditingRole(role)} className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-4"><Edit size={16} /></button>
                   {!role.isSystem && (
-                    <button onClick={() => handleDeleteRole(role.id)} className="text-red-600 hover:text-red-800 text-sm font-medium"><Trash2 size={16} /></button>
+                    <>
+                      <button onClick={() => setEditingRole(role)} className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-4"><Edit size={16} /></button>
+                      <button onClick={() => handleDeleteRole(role.id)} className="text-red-600 hover:text-red-800 text-sm font-medium"><Trash2 size={16} /></button>
+                    </>
                   )}
                 </td>
               </tr>

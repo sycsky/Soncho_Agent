@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Agent, Role } from '../types';
-import { getRoles, createAgent, getAgents, updateAgent, CreateAgentRequest, UpdateAgentRequest } from '../services/adminService';
+import { getRoles, createAgent, getAgents, updateAgent, deleteAgent, CreateAgentRequest, UpdateAgentRequest } from '../services/adminService';
 import { AddAgentForm } from './AddAgentForm';
 import { ChevronLeft, ChevronRight, Plus, User, X, ArrowUpDown } from 'lucide-react';
 
@@ -129,6 +129,25 @@ export const TeamView: React.FC = () => {
 
   const getRoleName = (roleId: string) => roles.find(r => r.id === roleId)?.name || 'Unknown';
 
+  const handleDeleteAgent = async (agent: Agent) => {
+    const roleName = agent.roleName || getRoleName(agent.roleId);
+    if (roleName === 'Administrator' || roleName === 'Admin') {
+      alert(t('delete_agent_admin_error'));
+      return;
+    }
+
+    if (!window.confirm(t('delete_agent_confirm'))) {
+      return;
+    }
+
+    try {
+      await deleteAgent(agent.id);
+      fetchAgents();
+    } catch (error) {
+      alert(t('delete_agent_failed'));
+    }
+  };
+
   return (
     <div className="p-8 max-w-6xl mx-auto w-full relative animate-in fade-in duration-300">
       <div className="flex justify-between items-center mb-6">
@@ -181,6 +200,7 @@ export const TeamView: React.FC = () => {
                 </td>
                 <td className="py-4 px-6 text-right">
                   <button onClick={() => setEditingAgent(agent)} className="text-blue-600 hover:text-blue-800 text-sm font-medium">{t('edit')}</button>
+                  <button onClick={() => handleDeleteAgent(agent)} className="text-red-600 hover:text-red-800 text-sm font-medium ml-4">{t('delete')}</button>
                 </td>
               </tr>
             ))}

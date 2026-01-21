@@ -85,6 +85,10 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   
   // Translation state cached per session
   const [isTranslationEnabled, setIsTranslationEnabled] = useState(() => {
+    // Session-specific settings don't strictly need shop scoping if sessionId is unique globally (UUID).
+    // But to be safe and consistent, we could prefix, but sessionId is usually unique enough.
+    // However, the user asked for "token" separation.
+    // Let's keep session-specific keys as is for now unless requested, as they are bound to a specific chat session ID.
     return localStorage.getItem(`translation_enabled_${session.id}`) === 'true';
   });
 

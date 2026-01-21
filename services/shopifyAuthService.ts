@@ -38,9 +38,9 @@ export const initiateShopifyInstall = async (shop: string) => {
 
   const urlParams = new URLSearchParams(window.location.search);
   const hostFromUrl = urlParams.get('host') || undefined;
-  const host = hostFromUrl || localStorage.getItem(SHOPIFY_HOST_KEY) || undefined;
+  const host = hostFromUrl || sessionStorage.getItem(SHOPIFY_HOST_KEY) || undefined;
   if (hostFromUrl) {
-    localStorage.setItem(SHOPIFY_HOST_KEY, hostFromUrl);
+    sessionStorage.setItem(SHOPIFY_HOST_KEY, hostFromUrl);
   }
 
   const installUrl = new URL(`${BASE_URL}/api/v1/shopify/oauth/install`);
@@ -60,10 +60,10 @@ export const saveShopifyLaunchParams = (params: { shop?: string | null; host?: s
   const { shop, host, tenantId } = params;
 
   if (shop) {
-    localStorage.setItem(SHOPIFY_SHOP_KEY, shop);
+    sessionStorage.setItem(SHOPIFY_SHOP_KEY, shop);
   }
   if (host) {
-    localStorage.setItem(SHOPIFY_HOST_KEY, host);
+    sessionStorage.setItem(SHOPIFY_HOST_KEY, host);
   }
   if (shop && tenantId) {
     localStorage.setItem(`${SHOPIFY_TENANT_ID_KEY_PREFIX}${shop}`, tenantId);
@@ -74,22 +74,22 @@ export const saveShopifyLaunchParams = (params: { shop?: string | null; host?: s
 
 export const getShopifyLaunchParams = (): { shop?: string; host?: string; tenantId?: string } => {
   const urlParams = new URLSearchParams(window.location.search);
-  const shop = urlParams.get('shop') || localStorage.getItem(SHOPIFY_SHOP_KEY) || undefined;
-  const host = urlParams.get('host') || localStorage.getItem(SHOPIFY_HOST_KEY) || undefined;
+  const shop = urlParams.get('shop') || sessionStorage.getItem(SHOPIFY_SHOP_KEY) || undefined;
+  const host = urlParams.get('host') || sessionStorage.getItem(SHOPIFY_HOST_KEY) || undefined;
   const tenantId = urlParams.get('tenantId') || urlParams.get('tenant_id') || (shop ? localStorage.getItem(`${SHOPIFY_TENANT_ID_KEY_PREFIX}${shop}`) : null) || undefined;
 
   return { shop, host, tenantId };
 };
 
 export const logoutShopify = () => {
-  const shop = localStorage.getItem(SHOPIFY_SHOP_KEY);
+  const shop = sessionStorage.getItem(SHOPIFY_SHOP_KEY);
   if (shop) {
     localStorage.removeItem(`${SHOPIFY_INSTALLED_KEY_PREFIX}${shop}`);
     localStorage.removeItem(`${SHOPIFY_INSTALL_STARTED_KEY_PREFIX}${shop}`);
     localStorage.removeItem(`${SHOPIFY_TENANT_ID_KEY_PREFIX}${shop}`);
   }
-  localStorage.removeItem(SHOPIFY_SHOP_KEY);
-  localStorage.removeItem(SHOPIFY_HOST_KEY);
+  sessionStorage.removeItem(SHOPIFY_SHOP_KEY);
+  sessionStorage.removeItem(SHOPIFY_HOST_KEY);
 };
 
 type ShopifyAuthExchangeResult = {

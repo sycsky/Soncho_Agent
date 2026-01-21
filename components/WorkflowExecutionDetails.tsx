@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, Activity, Clock, CheckCircle, XCircle, Terminal, PlayCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface NodeExecutionDetail {
   nodeId: string;
@@ -37,6 +38,7 @@ interface WorkflowExecutionDetailsProps {
 }
 
 export const WorkflowExecutionDetails: React.FC<WorkflowExecutionDetailsProps> = ({ workflowInfo }) => {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
 
@@ -63,7 +65,7 @@ export const WorkflowExecutionDetails: React.FC<WorkflowExecutionDetailsProps> =
         <div className="flex items-center gap-2">
           <Activity size={16} className={statusColor} />
           <span className={`font-semibold text-sm ${statusColor}`}>
-            Workflow: {workflowInfo.workflowName || 'Unknown'}
+            {t('workflow_execution.workflow_label')} {workflowInfo.workflowName || t('workflow_execution.unknown')}
           </span>
           <span className="text-xs text-gray-500 flex items-center gap-1">
             <Clock size={12} /> {workflowInfo.durationMs}ms
@@ -130,7 +132,7 @@ export const WorkflowExecutionDetails: React.FC<WorkflowExecutionDetailsProps> =
                             {node.toolExecutions && node.toolExecutions.length > 0 && (
                                <div className="mt-3 pt-3 border-t border-gray-100">
                                   <div className="text-xs text-gray-500 uppercase font-bold mb-2 flex items-center gap-1">
-                                     <Terminal size={12} /> Tool Executions
+                                     <Terminal size={12} /> {t('workflow_execution.tool_executions')}
                                   </div>
                                   <div className="space-y-3 pl-3 border-l-2 border-blue-100">
                                      {node.toolExecutions.map((tool, tIdx) => (
@@ -142,18 +144,18 @@ export const WorkflowExecutionDetails: React.FC<WorkflowExecutionDetailsProps> =
                                           </div>
                                           <div className="pl-5 space-y-2">
                                             <div className="bg-gray-50 p-2 rounded border border-gray-100 font-mono text-xs text-gray-600 break-all">
-                                              <span className="text-gray-400 select-none">Args: </span>
+                                              <span className="text-gray-400 select-none">{t('workflow_execution.args')}</span>
                                               {typeof tool.args === 'string' ? tool.args : JSON.stringify(tool.args)}
                                             </div>
                                             {tool.result && (
                                               <div className="bg-blue-50 p-2 rounded border border-blue-100 font-mono text-xs text-gray-600 break-all max-h-40 overflow-y-auto">
-                                                <span className="text-blue-400 select-none">Result: </span>
+                                                <span className="text-blue-400 select-none">{t('workflow_execution.result')}</span>
                                                 {typeof tool.result === 'string' ? tool.result : JSON.stringify(tool.result)}
                                               </div>
                                             )}
                                             {tool.error && (
                                               <div className="bg-red-50 p-2 rounded border border-red-100 font-mono text-xs text-red-600 break-all">
-                                                 <span className="text-red-400 select-none">Err: </span>
+                                                 <span className="text-red-400 select-none">{t('workflow_execution.err')}</span>
                                                  {tool.error}
                                               </div>
                                             )}
@@ -166,7 +168,7 @@ export const WorkflowExecutionDetails: React.FC<WorkflowExecutionDetailsProps> =
 
                             {node.errorMessage && (
                                <div className="text-red-600 text-sm bg-red-50 p-2 rounded border border-red-100">
-                                 <strong>Error:</strong> {node.errorMessage}
+                                 <strong>{t('workflow_execution.error_label')}</strong> {node.errorMessage}
                                </div>
                             )}
                          </div>

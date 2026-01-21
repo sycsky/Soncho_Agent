@@ -1,4 +1,5 @@
 import { BASE_URL } from '../config';
+import { tokenService } from './tokenService';
 
 export interface EventConfig {
   id?: string;
@@ -13,12 +14,7 @@ export interface EventConfig {
 }
 
 const getToken = (): string | null => {
-  try {
-    return localStorage.getItem('nexus_token');
-  } catch (error) {
-    console.error("Could not access localStorage:", error);
-    return null;
-  }
+  return tokenService.getToken();
 };
 
 const getHeaders = () => {

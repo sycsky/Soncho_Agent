@@ -57,6 +57,10 @@ export const updateAgent = (id: string, data: UpdateAgentRequest): Promise<Agent
   return api.put<Agent>(`/admin/agents/${id}`, data);
 };
 
+export const deleteAgent = (id: string): Promise<void> => {
+  return api.delete<void>(`/admin/agents/${id}`);
+};
+
 export const getRoles = (): Promise<Role[]> => {
   return api.get<Role[]>('/admin/roles');
 };

@@ -33,6 +33,7 @@ node ai_agent_web/i18n/scripts/align_keys.cjs
 ### 2. Check for Untranslated Content
 Checks if other language files contain values identical to English.
 - Useful after running `align_keys.cjs` to find newly added keys that are still in English.
+- **Requirement:** Missing translations cannot be filled with English; they must be translated based on the English text.
 ```bash
 node ai_agent_web/i18n/scripts/check_untranslated.cjs
 ```

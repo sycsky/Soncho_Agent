@@ -8,7 +8,7 @@ import { updateAgent } from '../services/adminService';
 interface SidebarProps {
   activeView: 'DASHBOARD' | 'INBOX' | 'TEAM' | 'CUSTOMERS' | 'ANALYTICS' | 'SETTINGS' | 'WORKFLOW';
   setActiveView: (view: 'DASHBOARD' | 'INBOX' | 'TEAM' | 'CUSTOMERS' | 'ANALYTICS' | 'SETTINGS' | 'WORKFLOW') => void;
-  currentUser: Agent;
+  currentUser: Agent | null;
   showProfileMenu: boolean;
   setShowProfileMenu: (show: boolean) => void;
   currentUserStatus: 'ONLINE' | 'BUSY' | 'IDLE';
@@ -37,21 +37,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { t, i18n } = useTranslation();
   const [languages, setLanguages] = useState<Language[]>([]);
   const [isLanguagesLoading, setIsLanguagesLoading] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState(currentUser.language || '');
+  const [selectedLanguage, setSelectedLanguage] = useState(currentUser?.language || '');
   const [menuView, setMenuView] = useState<'MAIN' | 'LANGUAGES' | 'SWITCH_AGENT'>('MAIN');
   const [languageSearch, setLanguageSearch] = useState('');
 
   useEffect(() => {
-    setSelectedLanguage(currentUser.language || '');
-    if (currentUser.language) {
+    setSelectedLanguage(currentUser?.language || '');
+    if (currentUser?.language) {
       localStorage.setItem('agent_language', currentUser.language);
     }
-  }, [currentUser.language]);
+  }, [currentUser?.language]);
 
   useEffect(() => {
     if (!showProfileMenu) {
       setMenuView('MAIN');
       setLanguageSearch('');
+    }
+  }, [showProfileMenu]);
+
+  useEffect(() => {
+    if (showProfileMenu) {
+      setIsLanguagesLoading(true);
+      getSupportedLanguages()
+        .then(setLanguages)
+        .catch(console.error)
+        .finally(() => setIsLanguagesLoading(false));
     }
   }, [showProfileMenu]);
 
@@ -64,17 +74,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
-  useEffect(() => {
-    if (showProfileMenu) {
-      setIsLanguagesLoading(true);
-      getSupportedLanguages()
-        .then(setLanguages)
-        .catch(console.error)
-        .finally(() => setIsLanguagesLoading(false));
-    }
-  }, [showProfileMenu]);
-
   const handleLanguageChange = async (langCode: string) => {
+    if (!currentUser) return;
+    
     setSelectedLanguage(langCode);
     i18n.changeLanguage(langCode);
     localStorage.setItem('agent_language', langCode);
@@ -89,7 +91,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
-  return (
+  return currentUser ? (
     <div className="w-16 h-full bg-gray-900 flex flex-col items-center py-6 gap-8 z-20 shadow-xl shrink-0 transition-all duration-300">
       <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-900/50">N</div>
       <nav className="flex flex-col gap-6 w-full">
@@ -124,7 +126,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
              <div className="absolute bottom-0 left-14 ml-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50 animate-in slide-in-from-left-2 duration-200 flex flex-col max-h-[480px]">
                {menuView === 'MAIN' ? (
                  <>
-                   <div className="p-4 border-b border-gray-100 bg-gray-50"><p className="font-bold text-gray-800">{currentUser.name}</p><p className="text-xs text-gray-500">{currentUser.email || t('no_email_provided')}</p></div>
+                   <div className="p-4 border-b border-gray-100 bg-gray-50"><p className="font-bold text-gray-800">{currentUser.name}</p></div>
                    <div className="p-2 space-y-1">
                       <div className="px-3 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">{t('set_status')}</div>
                       <button onClick={() => handleStatusChange('ONLINE')} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700"><div className="w-2.5 h-2.5 rounded-full bg-green-500"></div> {t('online')}{currentUserStatus === 'ONLINE' && <Check size={14} className="ml-auto text-green-600"/>}</button>
@@ -213,5 +215,5 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
     </div>
-  );
+  ) : null;
 };

@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Loader2, ShieldCheck, AlertCircle, ChevronDown, Check, User } from 'lucide-react';
 import api from '../services/api';
 import { Agent } from '../types';
 import { fetchShopifyAgents, getShopifySessionToken } from '../services/shopifyAuthService';
@@ -27,6 +27,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, shopif
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgentId, setSelectedAgentId] = useState<string>('');
   const [loadingAgents, setLoadingAgents] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     if (shopifyMode) {
@@ -127,27 +142,94 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, shopif
 
         <form onSubmit={handleLogin} className="space-y-5">
           {shopifyMode ? (
-            <div className="space-y-1.5">
+            <div className="space-y-1.5" ref={dropdownRef}>
               <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">{t('select_agent_label')}</label>
-              <select
-                className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-3.5 outline-none transition-all"
-                value={selectedAgentId}
-                onChange={(e) => setSelectedAgentId(e.target.value)}
-                disabled={loadingAgents}
-                required
-              >
-                {loadingAgents && (
-                  <option value="">{t('loading')}</option>
+              
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => !loadingAgents && agents.length > 0 && setIsDropdownOpen(!isDropdownOpen)}
+                  className={`w-full bg-gray-50 border ${isDropdownOpen ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-gray-200'} text-gray-900 text-sm rounded-xl flex items-center justify-between p-3.5 outline-none transition-all hover:bg-gray-100 disabled:opacity-70 disabled:cursor-not-allowed`}
+                  disabled={loadingAgents || agents.length === 0}
+                >
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    {loadingAgents ? (
+                      <div className="flex items-center gap-2 text-gray-500">
+                        <Loader2 size={16} className="animate-spin" />
+                        <span>{t('loading')}</span>
+                      </div>
+                    ) : selectedAgentId ? (
+                      (() => {
+                        const agent = agents.find(a => a.id === selectedAgentId);
+                        if (!agent) return <span>{t('select_agent_label')}</span>;
+                        return (
+                          <>
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xs shrink-0">
+                              {agent.avatar ? (
+                                <img src={agent.avatar} alt={agent.name} className="w-full h-full rounded-full object-cover" />
+                              ) : (
+                                agent.name.charAt(0).toUpperCase()
+                              )}
+                            </div>
+                            <div className="flex flex-col items-start truncate">
+                              <span className="font-medium text-gray-900 truncate">{agent.name}</span>
+                              {agent.email && <span className="text-xs text-gray-500 truncate">{agent.email}</span>}
+                            </div>
+                          </>
+                        );
+                      })()
+                    ) : (
+                      <span className="text-gray-500">{agents.length === 0 ? t('no_other_agents') : t('select_agent_label')}</span>
+                    )}
+                  </div>
+                  <ChevronDown size={16} className={`text-gray-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180 text-blue-500' : ''}`} />
+                </button>
+
+                {isDropdownOpen && !loadingAgents && agents.length > 0 && (
+                  <div className="absolute top-full left-0 w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-xl max-h-60 overflow-y-auto z-50 animate-in fade-in zoom-in-95 duration-100">
+                    <div className="p-1 space-y-0.5">
+                      {agents.map(agent => (
+                        <button
+                          key={agent.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedAgentId(agent.id);
+                            setIsDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-3 p-2.5 rounded-lg transition-colors ${
+                            selectedAgentId === agent.id 
+                              ? 'bg-blue-50 text-blue-700' 
+                              : 'hover:bg-gray-50 text-gray-700'
+                          }`}
+                        >
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 border ${
+                            selectedAgentId === agent.id ? 'bg-blue-100 text-blue-600 border-blue-200' : 'bg-gray-100 text-gray-500 border-gray-200'
+                          }`}>
+                            {agent.avatar ? (
+                              <img src={agent.avatar} alt={agent.name} className="w-full h-full rounded-full object-cover" />
+                            ) : (
+                              agent.name.charAt(0).toUpperCase()
+                            )}
+                          </div>
+                          <div className="flex flex-col items-start flex-1 truncate">
+                            <span className={`font-medium truncate ${selectedAgentId === agent.id ? 'text-blue-900' : 'text-gray-900'}`}>
+                              {agent.name}
+                            </span>
+                            {agent.email && (
+                              <span className={`text-xs truncate ${selectedAgentId === agent.id ? 'text-blue-600/80' : 'text-gray-500'}`}>
+                                {agent.email}
+                              </span>
+                            )}
+                          </div>
+                          {selectedAgentId === agent.id && (
+                            <Check size={16} className="text-blue-600 shrink-0" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 )}
-                {!loadingAgents && agents.length === 0 && (
-                  <option value="">{t('no_other_agents')}</option>
-                )}
-                {!loadingAgents && agents.map(agent => (
-                  <option key={agent.id} value={agent.id}>
-                    {agent.name}{agent.email ? ` (${agent.email})` : ''}
-                  </option>
-                ))}
-              </select>
+              </div>
             </div>
           ) : (
             <div className="space-y-1.5">
@@ -174,13 +256,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, shopif
             />
           </div>
 
-          <div className="flex items-center justify-between pt-1">
-            <div className="flex items-center">
-              <input id="remember-me" type="checkbox" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2" />
-              <label htmlFor="remember-me" className="ml-2 text-sm font-medium text-gray-500 cursor-pointer select-none">{t('remember_me')}</label>
-            </div>
-            <a href="#" className="text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline">{t('forgot_password')}</a>
-          </div>
+
 
           <button 
             type="submit" 
