@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import api from './api';
+import { tokenService } from './tokenService';
 
 const apiKey = process.env.API_KEY || '';
 const ai = new GoogleGenAI({ apiKey });
@@ -99,10 +100,11 @@ export const generateChatSummary = async (
 
 export const rewriteMessage = async (draft: string, sessionId?: string): Promise<string> => {
   try {
-    // Call backend API for magic rewrite
+    const language = tokenService.getLanguage();
     const response = await api.post<{ rewrittenText: string }>('/ai/rewrite', { 
       text: draft,
-      sessionId: sessionId // Pass sessionId for context
+      sessionId: sessionId,
+      language: language
     });
     
     return response.rewrittenText || draft;

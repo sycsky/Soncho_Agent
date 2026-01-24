@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Agent, ChatSession, ChatStatus, Message, MessageSender, QuickReply, Attachment, KnowledgeEntry, Role, Notification, ChatGroup, UserProfile, SessionCategory } from './types';
-import { generateAIResponse, rewriteMessage, analyzeSentiment, suggestUserTags } from './services/geminiService';
+import { generateAIResponse, rewriteMessage, /* analyzeSentiment, */ suggestUserTags } from './services/geminiService';
 import api from './services/api';
 import websocketService, { ServerMessage } from './services/websocketService';
 import notificationService from './services/notificationService';
@@ -1162,7 +1162,8 @@ function App() {
         setIsGeneratingSummary(true);
         setSummaryPreview(null);
         try {
-          const preview = await sessionService.previewSessionSummary(activeSessionId);
+          const customerLanguage = activeSession?.customerLanguage;
+          const preview = await sessionService.previewSessionSummary(activeSessionId, customerLanguage);
           setSummaryPreview(preview);
         } catch (error) {
           console.error('Failed to load summary preview:', error);
@@ -1173,13 +1174,14 @@ function App() {
       };
       loadPreview();
     }
-  }, [showResolveModal, activeSessionId]);
+  }, [showResolveModal, activeSessionId, activeSession]);
 
   const confirmResolution = async () => {
     if (!activeSessionId) return;
     setIsPreparingResolution(true);
     try {
-      const response = await sessionService.resolveSession(activeSessionId);
+      const customerLanguage = activeSession?.customerLanguage;
+      const response = await sessionService.resolveSession(activeSessionId, customerLanguage);
       
       // Update local session state immediately
       setSessions(prev => prev.map(s => {
@@ -1395,7 +1397,7 @@ function App() {
     setIsGeneratingSummary(true);
     setShowSummaryModal(true);
     try {
-      const result = await sessionService.previewSessionSummary(activeSession.id);
+      const result = await sessionService.previewSessionSummary(activeSession.id, currentAgentLanguage);
       if (result.success) {
         setSummaryText(result.summary);
       } else {
@@ -1753,6 +1755,7 @@ function App() {
                 onBack={() => setActiveSessionId(null)}
                onShowProfile={() => setShowMobileProfile(true)}
                subscription={subscription}
+               hasPermission={hasPermission}
              />
             </div>
           ) : (

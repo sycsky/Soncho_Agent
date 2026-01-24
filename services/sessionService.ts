@@ -46,12 +46,12 @@ export interface SessionResolveResponse {
   summaryMessage: any; // Using any for now, or import Message
 }
 
-const previewSessionSummary = (sessionId: string): Promise<SessionSummaryPreview> => {
-  return api.get<SessionSummaryPreview>(`/chat/sessions/${sessionId}/summary/preview`);
+const previewSessionSummary = (sessionId: string, language?: string): Promise<SessionSummaryPreview> => {
+  return api.get<SessionSummaryPreview>(`/chat/sessions/${sessionId}/summary/preview${language ? `?language=${language}` : ''}`);
 };
 
-const resolveSession = (sessionId: string): Promise<SessionResolveResponse> => {
-  return api.post<SessionResolveResponse>(`/chat/sessions/${sessionId}/resolve`, {});
+const resolveSession = (sessionId: string, language?: string): Promise<SessionResolveResponse> => {
+  return api.post<SessionResolveResponse>(`/chat/sessions/${sessionId}/resolve${language ? `?language=${language}` : ''}`, {});
 };
 
 export default {

@@ -191,7 +191,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ data }) => {
             </div>
             <div className="mini-product-info">
               <h4 className="mini-product-title">{product.title}</h4>
-              <div className="mini-product-price">{product.currency || '$'}{product.price}</div>
               {product.discounts && product.discounts.length > 0 && (
                 <div className="flex flex-col gap-1 mt-1">
                    {product.discounts.map(d => (
@@ -199,6 +198,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ data }) => {
                    ))}
                 </div>
               )}
+              <div className="mini-product-price">{product.currency || '$'}{product.price}</div>
             </div>
           </div>
         ))}
@@ -304,7 +304,7 @@ const SingleOrderCard: React.FC<{ order: OrderData }> = ({ order }) => {
                 <span className="field-value">{order.shippingAddress.name}</span>
               </div>
             )}
-            {order.shippingAddress.phone && (
+            {order.shippingAddress.phone && order.shippingAddress.phone !== 'null' && (
               <div className="address-field-row">
                 <span className="field-label">{t('message_cards.phone')}:</span>
                 <span className="field-value">{order.shippingAddress.phone}</span>

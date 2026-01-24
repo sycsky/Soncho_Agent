@@ -15,7 +15,10 @@ const PERMISSION_KEYS = [
   'designWorkflow',
   'accessRoleConfig',
   'accessAiTools',
-  'accessBilling'
+  'accessBilling',
+  'accessShopifyProducts',
+  'accessShopifyDiscounts',
+  'manageShopifyGiftCards'
 ] as const;
 
 const RoleForm: React.FC<{ role?: Role; onSave: (data: CreateRoleRequest | UpdateRoleRequest) => void; onCancel: () => void; }> = ({ role, onSave, onCancel }) => {
@@ -72,6 +75,9 @@ const RoleForm: React.FC<{ role?: Role; onSave: (data: CreateRoleRequest | Updat
       'accessRoleConfig': t('permission_access_role_config_label'),
       'accessAiTools': t('permission_access_ai_tools_label'),
       'accessBilling': t('permission_access_billing_label'),
+      'accessShopifyProducts': t('permission_access_shopify_products_label'),
+      'accessShopifyDiscounts': t('permission_access_shopify_discounts_label'),
+      'manageShopifyGiftCards': t('permission_manage_shopify_gift_cards_label'),
     };
     return labels[key] || key;
   };
@@ -88,6 +94,9 @@ const RoleForm: React.FC<{ role?: Role; onSave: (data: CreateRoleRequest | Updat
       'accessRoleConfig': t('permission_access_role_config_desc'),
       'accessAiTools': t('permission_access_ai_tools_desc'),
       'accessBilling': t('permission_access_billing_desc'),
+      'accessShopifyProducts': t('permission_access_shopify_products_desc'),
+      'accessShopifyDiscounts': t('permission_access_shopify_discounts_desc'),
+      'manageShopifyGiftCards': t('permission_manage_shopify_gift_cards_desc'),
     };
     return descs[key] || '';
   };

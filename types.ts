@@ -76,6 +76,7 @@ export interface ChatSession {
   agents?: SessionAgent[];
   categoryId?: string;
   category?: SessionCategory;
+  customerLanguage?: string;
 }
 
 export interface ChatGroup {

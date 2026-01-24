@@ -547,7 +547,7 @@
   "permissions_table_header_desc": "Description",
   "permissions_table_header_enable": "Enable",
   "switch_agent": "Switch Agent",
-  "switch_agent_desc": "Switch to another agent account",
+  "switch_agent_desc": "Switch account",
   "switch_agent_title": "Switch Agent",
   "switch_agent_selected": "Selected Agent",
   "switch_agent_password_required": "Password is required",

@@ -32,6 +32,8 @@ interface ApiChatSession {
   primaryAgentId: string;
   supportAgentIds: string[];
   note?: string;  // ✅ 会话备注字段
+  metadata?: Record<string, any>;
+  customerLanguage?: string;
 }
 
 /**
@@ -95,7 +97,8 @@ export function transformBootstrapSession(apiSession: ApiChatSession, sessionGro
     unreadCount: apiSession.unreadCount || 0,  // ✅ 使用后端返回的 unreadCount
     groupId: sessionGroupId,  // ✅ 使用 SessionGroup 的 ID，而不是 session.groupId
     primaryAgentId: apiSession.primaryAgentId,
-    supportAgentIds: apiSession.supportAgentIds || []
+    supportAgentIds: apiSession.supportAgentIds || [],
+    customerLanguage: apiSession.customerLanguage || apiSession.metadata?.customerLanguage
   };
 }
 

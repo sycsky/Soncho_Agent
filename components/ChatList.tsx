@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { ChatSession, ChatStatus, UserSource, ChatGroup } from '../types';
 import { Monitor, Smartphone, Bot, User, CheckCircle, ChevronDown, ChevronRight, Inbox, MoreVertical, Plus, Trash2, FolderOpen, ArrowRight, X, Search } from 'lucide-react';
 import { DEFAULT_AVATAR } from '../constants';
-import sessionCategoryService from '../services/sessionCategoryService';
 
 interface ChatListProps {
   sessions: ChatSession[];
@@ -47,7 +46,6 @@ export const ChatList: React.FC<ChatListProps> = ({
   );
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState<{ group: ChatGroup } | null>(null);
-  const [boundOverride, setBoundOverride] = useState<Record<string, { id: string; name: string }[]>>({});
   
   // Search State
   const [isSearching, setIsSearching] = useState(false);
@@ -72,51 +70,14 @@ export const ChatList: React.FC<ChatListProps> = ({
     onClose: () => void;
   }> = ({ mode, group, onClose }) => {
     const [name, setName] = useState(group?.name || '');
-    const [selected, setSelected] = useState<string[]>([]);
-    const [available, setAvailable] = useState<{ id: string; name: string }[]>([]);
-
-    useEffect(() => {
-      const init = async () => {
-        try {
-          const av = await sessionCategoryService.getAvailableCategories();
-          let list = av.map(c => ({ id: c.id, name: c.name }));
-          if (mode === 'edit' && group) {
-            const bound = await sessionCategoryService.getGroupCategories(group.id);
-            setSelected(bound.map(b => b.id));
-            const boundSimple = bound.map(b => ({ id: b.id, name: b.name }));
-            const map = new Map<string, { id: string; name: string }>();
-            [...list, ...boundSimple].forEach(item => { map.set(item.id, item); });
-            list = Array.from(map.values());
-          }
-          setAvailable(list);
-        } catch {}
-      };
-      init();
-    }, [mode, group?.id]);
-
-    const toggleSelect = (id: string) => {
-      setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-    };
 
     const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       if (!name.trim()) return;
       if (mode === 'create') {
-        const created = await onCreateGroup(name.trim());
-        if (selected.length > 0) {
-          await sessionCategoryService.setGroupCategories(created.id, selected);
-          try {
-            const bound = await sessionCategoryService.getGroupCategories(created.id);
-            setBoundOverride(prev => ({ ...prev, [created.id]: bound.map(b => ({ id: b.id, name: b.name })) }));
-          } catch {}
-        }
+        await onCreateGroup(name.trim());
       } else if (mode === 'edit' && group) {
         await onRenameGroup(group.id, name.trim());
-        await sessionCategoryService.setGroupCategories(group.id, selected);
-        try {
-          const bound = await sessionCategoryService.getGroupCategories(group.id);
-          setBoundOverride(prev => ({ ...prev, [group.id]: bound.map(b => ({ id: b.id, name: b.name })) }));
-        } catch {}
       }
       onClose();
     };
@@ -132,20 +93,6 @@ export const ChatList: React.FC<ChatListProps> = ({
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('group_name')}</label>
               <input value={name} onChange={e => setName(e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('bind_category')}</label>
-              <div className="max-h-40 overflow-y-auto border border-gray-200 rounded p-2">
-                {available.map(c => (
-                  <label key={c.id} className="flex items-center gap-2 text-sm py-1">
-                    <input type="checkbox" checked={selected.includes(c.id)} onChange={() => toggleSelect(c.id)} />
-                    <span>{c.name}</span>
-                  </label>
-                ))}
-                {available.length === 0 && (
-                  <div className="text-xs text-gray-400">{t('no_category_tip')}</div>
-                )}
-              </div>
             </div>
             <div className="flex justify-end gap-2">
               <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-200 rounded-lg transition-colors">{t('cancel')}</button>
@@ -459,7 +406,7 @@ export const ChatList: React.FC<ChatListProps> = ({
                               {isExpanded ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />}
                               <span className="truncate">{group.name}</span>
                               {(() => {
-                                const cats = boundOverride[group.id] ?? (group.categories ? group.categories.map(c => ({ id: c.id, name: c.name })) : []);
+                                const cats = group.categories ? group.categories.map(c => ({ id: c.id, name: c.name })) : [];
                                 return cats && cats.length > 0 ? (
                                   <span className="text-gray-400 font-normal text-[10px] ml-2 inline-block truncate max-w-[140px]" title={cats.map(c => c.name).join(', ')}>
                                     [{(() => {

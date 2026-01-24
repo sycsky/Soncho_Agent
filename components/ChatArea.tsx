@@ -49,6 +49,7 @@ interface ChatAreaProps {
   onBack?: () => void;
   onShowProfile?: () => void;
   subscription?: Subscription | null;
+  hasPermission?: (permissionKey: string) => boolean;
 }
 
 const EMOJIS = ['😀', '😂', '😍', '😭', '😡', '👍', '👎', '🎉', '🔥', '❤️', '👀', '✅', '❌', '👋', '🙏', '💯'];
@@ -73,7 +74,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   currentAgentLanguage = 'en',
   onBack,
   onShowProfile,
-  subscription
+  subscription,
+  hasPermission
 }) => {
   const { t } = useTranslation();
   const canMagicRewrite = subscription?.supportMagicRewrite ?? false;
@@ -377,7 +379,6 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   };
 
   const handleMagicRewrite = async () => {
-    if (!inputText.trim()) return;
     setIsRewriting(true);
     const rewritten = await onMagicRewrite(inputText);
     setInputText(rewritten);
@@ -450,6 +451,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           </div>
           
           <div className="flex items-center gap-3">
+              {/* Hide Live Sentiment UI for now as it's not fully implemented
               <div className="hidden lg:flex flex-col items-end mr-4">
                  <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">
                    {isAnalyzingSentiment ? <Loader2 size={10} className="animate-spin" /> : null}
@@ -465,6 +467,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                     <span className={`text-xs font-bold ${sentiment.score < 30 ? 'text-red-500' : sentiment.score < 70 ? 'text-yellow-600' : 'text-green-600'}`}>{sentiment.label}</span>
                  </div>
               </div>
+              */}
 
               <div className="h-6 w-px bg-gray-200 mx-1 hidden sm:block"></div>
 
@@ -726,15 +729,21 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                     <div className="flex items-center gap-0.5 mr-2 bg-gray-100 rounded-lg p-1">
                         <button onClick={() => fileInputRef.current?.click()} disabled={isUploading} className={`p-1.5 text-gray-500 hover:text-gray-700 hover:bg-white rounded-md transition-all ${isUploading ? 'opacity-50 cursor-wait' : ''}`} title={t('attach_file_tooltip')}>{isUploading ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} />}</button>
                         <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} disabled={isResolved} className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-white rounded-md transition-all" title={t('emoji_tooltip')}><Smile size={16} /></button>
-                        <button onClick={() => setShowProductSelector(true)} disabled={isResolved} className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-white rounded-md transition-all" title={t('products_tooltip')}><ShoppingBag size={16} /></button>
-                        <button onClick={() => setShowGiftCardCreator(true)} disabled={isResolved} className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-white rounded-md transition-all" title={t('send_gift_card_tooltip')}><Gift size={16} /></button>
-                        <button onClick={() => setShowDiscountSelector(true)} disabled={isResolved} className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-white rounded-md transition-all" title={t('send_discount_tooltip')}><Ticket size={16} /></button>
+                        {(!hasPermission || hasPermission('accessShopifyProducts')) && (
+                          <button onClick={() => setShowProductSelector(true)} disabled={isResolved} className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-white rounded-md transition-all" title={t('products_tooltip')}><ShoppingBag size={16} /></button>
+                        )}
+                        {(!hasPermission || hasPermission('manageShopifyGiftCards')) && (
+                          <button onClick={() => setShowGiftCardCreator(true)} disabled={isResolved} className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-white rounded-md transition-all" title={t('send_gift_card_tooltip')}><Gift size={16} /></button>
+                        )}
+                        {(!hasPermission || hasPermission('accessShopifyDiscounts')) && (
+                          <button onClick={() => setShowDiscountSelector(true)} disabled={isResolved} className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-white rounded-md transition-all" title={t('send_discount_tooltip')}><Ticket size={16} /></button>
+                        )}
                         
                         <div className="w-px h-4 bg-gray-300 mx-1"></div>
                         
                         <button onClick={() => setIsInternalMode(!isInternalMode)} disabled={isResolved || mentionedAgents.length > 0} className={`p-1.5 rounded-md transition-all ${isInternalMode || mentionedAgents.length > 0 ? 'text-yellow-600 bg-yellow-100' : 'text-gray-500 hover:text-gray-700 hover:bg-white'}`} title={t('internal_whisper_mode_tooltip')}><EyeOff size={16} /></button>
-                        {!isInternalMode && inputText.trim().length > 3 && canMagicRewrite && (
-                            <button onClick={handleMagicRewrite} disabled={isRewriting || isResolved} className="p-1.5 rounded-md text-purple-500 hover:bg-purple-100 hover:text-purple-700 transition-all" title={t('magic_rewrite_tooltip')}><Wand2 size={16} /></button>
+                        {canMagicRewrite && (
+                          <button onClick={handleMagicRewrite} disabled={isRewriting || isResolved} className="p-1.5 rounded-md text-purple-500 hover:bg-purple-100 hover:text-purple-700 transition-all" title={t('magic_rewrite_tooltip')}><Wand2 size={16} /></button>
                         )}
                     </div>
 
