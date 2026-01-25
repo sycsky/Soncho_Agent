@@ -114,10 +114,17 @@ export default function OrderCancellationPolicySettings() {
         return;
       }
       
+      // 准备提交的数据
+      const payload = { ...formData };
+      if (payload.policyType === 'FREE') {
+        payload.cancellableHours = null;
+        payload.penaltyPercentage = null;
+      }
+
       if (editingPolicy) {
-        await orderCancellationPolicyApi.updatePolicy(editingPolicy.id, formData);
+        await orderCancellationPolicyApi.updatePolicy(editingPolicy.id, payload);
       } else {
-        await orderCancellationPolicyApi.createPolicy(formData);
+        await orderCancellationPolicyApi.createPolicy(payload);
       }
       
       await loadPolicies();
@@ -184,8 +191,8 @@ export default function OrderCancellationPolicySettings() {
   
   // 构建表格行
   const rows = (policies || []).map((policy, index) => [
-    <div key={`sort-${policy.id}`} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-      <span style={{ minWidth: '30px', fontWeight: 'bold' }}>{policy.sortOrder}</span>
+    <div key={`sort-${policy.id}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '120px' }}>
+      <span style={{ minWidth: '24px', fontWeight: 'bold' }}>{policy.sortOrder}</span>
       <ButtonGroup>
         <Button 
           size="slim" 
@@ -203,16 +210,20 @@ export default function OrderCancellationPolicySettings() {
         </Button>
       </ButtonGroup>
     </div>,
-    policy.name,
-    policy.description || '-',
+    <div style={{ whiteSpace: 'nowrap' }}>{policy.name}</div>,
+    <div style={{ width: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={policy.description || ''}>
+      {policy.description || '-'}
+    </div>,
     policy.cancellableHours !== null ? t('order_cancellation.time.hours', { hours: policy.cancellableHours }) : t('order_cancellation.time.any_time'),
     policy.penaltyPercentage !== null ? `${policy.penaltyPercentage}%` : '0%',
     renderPolicyTypeBadge(policy.policyType),
     policy.enabled ? <Badge status="success">{t('order_cancellation.status.enabled')}</Badge> : <Badge>{t('order_cancellation.status.disabled')}</Badge>,
-    <ButtonGroup key={`actions-${policy.id}`}>
-      <Button size="slim" onClick={() => handleOpenModal(policy)}>{t('edit')}</Button>
-      <Button size="slim" destructive onClick={() => handleDelete(policy.id)}>{t('delete')}</Button>
-    </ButtonGroup>
+    <div style={{ width: '120px', display: 'flex' }}>
+      <ButtonGroup key={`actions-${policy.id}`}>
+        <Button size="slim" onClick={() => handleOpenModal(policy)}>{t('edit')}</Button>
+        <Button size="slim" destructive onClick={() => handleDelete(policy.id)}>{t('delete')}</Button>
+      </ButtonGroup>
+    </div>
   ]);
   
   return (
@@ -316,22 +327,25 @@ export default function OrderCancellationPolicySettings() {
                 onChange={(value) => setFormData({ 
                   ...formData, 
                   policyType: value as any,
-                  penaltyPercentage: value === 'FREE' ? 0 : formData.penaltyPercentage
+                  penaltyPercentage: value === 'FREE' ? 0 : formData.penaltyPercentage,
+                  cancellableHours: value === 'FREE' ? null : formData.cancellableHours
                 })}
               />
               
-              <TextField
-                label={t('order_cancellation.form.cancellable_hours')}
-                type="number"
-                value={formData.cancellableHours?.toString() || ''}
-                onChange={(value) => setFormData({ 
-                  ...formData, 
-                  cancellableHours: value ? parseInt(value) : null 
-                })}
-                placeholder={t('order_cancellation.form.cancellable_hours_placeholder')}
-                helpText={t('order_cancellation.form.cancellable_hours_help')}
-                autoComplete="off"
-              />
+              {formData.policyType !== 'FREE' && (
+                <TextField
+                  label={t('order_cancellation.form.cancellable_hours')}
+                  type="number"
+                  value={formData.cancellableHours?.toString() || ''}
+                  onChange={(value) => setFormData({ 
+                    ...formData, 
+                    cancellableHours: value ? parseInt(value) : null 
+                  })}
+                  placeholder={t('order_cancellation.form.cancellable_hours_placeholder')}
+                  helpText={t('order_cancellation.form.cancellable_hours_help')}
+                  autoComplete="off"
+                />
+              )}
               
               {formData.policyType === 'WITH_PENALTY' && (
                 <TextField

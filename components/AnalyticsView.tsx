@@ -70,7 +70,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ subscription }) =>
   };
 
   return (
-    <div className="p-8 w-full max-w-5xl mx-auto animate-in fade-in duration-300">
+    <div className="p-8 w-full max-w-7xl mx-auto animate-in fade-in duration-300">
         <style>{`
             .recharts-wrapper, .recharts-surface, .recharts-layer { outline: none !important; }
             *:focus { outline: none !important; }
@@ -100,36 +100,36 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ subscription }) =>
         {/* Key Metrics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition-shadow duration-200">
-                <div className="flex items-center gap-4 mb-2">
+                <div className="flex items-center gap-4">
                     <div className="p-3 bg-blue-50 rounded-lg text-blue-600"><MessageSquare size={24} /></div>
-                    <div>
+                    <div className="flex-1 flex flex-row items-center justify-between gap-2">
                         <p className="text-sm font-medium text-gray-500">{t('analytics.total_conversations')}</p>
                         <p className="text-2xl font-bold text-gray-900">{summary?.totalConversations || 0}</p>
                     </div>
                 </div>
             </div>
             <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition-shadow duration-200">
-                <div className="flex items-center gap-4 mb-2">
+                <div className="flex items-center gap-4">
                     <div className="p-3 bg-purple-50 rounded-lg text-purple-600"><Bot size={24} /></div>
-                    <div>
+                    <div className="flex-1 flex flex-row items-center justify-between gap-2">
                         <p className="text-sm font-medium text-gray-500">{t('analytics.ai_messages')}</p>
                         <p className="text-2xl font-bold text-gray-900">{summary?.aiMessages || 0}</p>
                     </div>
                 </div>
             </div>
             <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition-shadow duration-200">
-                <div className="flex items-center gap-4 mb-2">
+                <div className="flex items-center gap-4">
                     <div className="p-3 bg-green-50 rounded-lg text-green-600"><Users size={24} /></div>
-                    <div>
+                    <div className="flex-1 flex flex-row items-center justify-between gap-2">
                         <p className="text-sm font-medium text-gray-500">{t('analytics.human_messages')}</p>
                         <p className="text-2xl font-bold text-gray-900">{summary?.humanMessages || 0}</p>
                     </div>
                 </div>
             </div>
             <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition-shadow duration-200">
-                <div className="flex items-center gap-4 mb-2">
+                <div className="flex items-center gap-4">
                     <div className="p-3 bg-orange-50 rounded-lg text-orange-600"><Activity size={24} /></div>
-                    <div>
+                    <div className="flex-1 flex flex-row items-center justify-between gap-2">
                         <p className="text-sm font-medium text-gray-500">{t('analytics.order_lookups')}</p>
                         <p className="text-2xl font-bold text-gray-900">{summary?.orderActions?.lookup || 0}</p>
                     </div>
@@ -153,7 +153,10 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ subscription }) =>
                             tickLine={false}
                             axisLine={{stroke: '#e5e7eb'}}
                             minTickGap={50}
-                            tickFormatter={(value) => new Date(value).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}
+                            tickFormatter={(value) => {
+                                const d = new Date(value);
+                                return `${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}`;
+                            }}
                         />
                         <YAxis 
                             tick={{fontSize: 11, fill: '#9ca3af'}} 
@@ -184,7 +187,10 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ subscription }) =>
                             tickLine={false}
                             axisLine={{stroke: '#e5e7eb'}}
                             minTickGap={50}
-                            tickFormatter={(value) => new Date(value).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}
+                            tickFormatter={(value) => {
+                                const d = new Date(value);
+                                return `${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}`;
+                            }}
                         />
                         <YAxis 
                             tick={{fontSize: 11, fill: '#9ca3af'}} 

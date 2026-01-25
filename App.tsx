@@ -64,7 +64,7 @@ interface TransferNotification {
 }
 
 function App() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const PERMISSION_DEFINITIONS = useMemo(() => [
     { key: 'viewAnalytics', label: t('permission_view_analytics_label'), description: t('permission_view_analytics_desc'), icon: 'BarChart' },
@@ -132,7 +132,7 @@ function App() {
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [showResolveModal, setShowResolveModal] = useState(false);
   const [showSummaryModal, setShowSummaryModal] = useState(false);
-  const [resolutionNote, setResolutionNote] = useState('');
+  const [editableSummary, setEditableSummary] = useState('');
   const [summaryText, setSummaryText] = useState('');
   const [summaryPreview, setSummaryPreview] = useState<SessionSummaryPreview | null>(null);
   const [isPreparingResolution, setIsPreparingResolution] = useState(false);
@@ -1161,10 +1161,15 @@ function App() {
       const loadPreview = async () => {
         setIsGeneratingSummary(true);
         setSummaryPreview(null);
+        setEditableSummary('');
         try {
-          const customerLanguage = activeSession?.customerLanguage;
-          const preview = await sessionService.previewSessionSummary(activeSessionId, customerLanguage);
+          // Use current interface language for summary preview, not customer language
+          const currentLanguage = i18n.language;
+          const preview = await sessionService.previewSessionSummary(activeSessionId, currentLanguage);
           setSummaryPreview(preview);
+          if (preview.success && preview.summary) {
+            setEditableSummary(preview.summary);
+          }
         } catch (error) {
           console.error('Failed to load summary preview:', error);
           showToast('ERROR', 'Failed to load summary preview');
@@ -1174,14 +1179,15 @@ function App() {
       };
       loadPreview();
     }
-  }, [showResolveModal, activeSessionId, activeSession]);
+  }, [showResolveModal, activeSessionId, activeSession, i18n.language]);
 
   const confirmResolution = async () => {
     if (!activeSessionId) return;
     setIsPreparingResolution(true);
     try {
-      const customerLanguage = activeSession?.customerLanguage;
-      const response = await sessionService.resolveSession(activeSessionId, customerLanguage);
+      // Use current interface language for resolution summary
+      const currentLanguage = i18n.language;
+      const response = await sessionService.resolveSession(activeSessionId, currentLanguage, editableSummary);
       
       // Update local session state immediately
       setSessions(prev => prev.map(s => {
@@ -1625,21 +1631,23 @@ function App() {
                             </div>
                             
                             {summaryPreview.success ? (
-                                <div className="bg-purple-50 border border-purple-100 rounded-lg p-4 text-sm text-gray-700 whitespace-pre-wrap">
-                                    {summaryPreview.summary}
-                                </div>
-                            ) : (
-                                <div className="bg-red-50 border border-red-100 rounded-lg p-4 text-sm text-red-600 flex items-center gap-2">
-                                    <AlertCircle size={16} />
-                                    {summaryPreview.errorMessage || t('failed_generate_summary')}
-                                </div>
-                            )}
-                         </div>
-                     ) : null}
-
-                     <label className="block text-xs font-bold text-gray-500 uppercase mb-2">{t('resolution_note_label')}</label>
-                     <textarea value={resolutionNote} onChange={e => setResolutionNote(e.target.value)} placeholder={t('resolution_note_placeholder')} className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 outline-none h-24 resize-none"></textarea>
-                  </div>
+                               <div className="space-y-2">
+                                   <label className="block text-xs font-bold text-gray-500 uppercase">{t('summary_preview_label') || 'Review & Edit Summary'}</label>
+                                   <textarea 
+                                       value={editableSummary} 
+                                       onChange={e => setEditableSummary(e.target.value)} 
+                                       className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none h-48 resize-none text-sm text-gray-700 leading-relaxed"
+                                   ></textarea>
+                               </div>
+                           ) : (
+                               <div className="bg-red-50 border border-red-100 rounded-lg p-4 text-sm text-red-600 flex items-center gap-2">
+                                   <AlertCircle size={16} />
+                                   {summaryPreview.errorMessage || t('failed_generate_summary')}
+                               </div>
+                           )}
+                        </div>
+                    ) : null}
+                 </div>
                   <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
                      <button onClick={() => setShowResolveModal(false)} className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-200 rounded-lg transition-colors">{t('cancel')}</button>
                      <button 
@@ -1947,8 +1955,13 @@ function App() {
                            </div>
                            
                            {summaryPreview.success ? (
-                               <div className="bg-purple-50 border border-purple-100 rounded-lg p-4 text-sm text-gray-700 whitespace-pre-wrap">
-                                   {summaryPreview.summary}
+                               <div className="space-y-2">
+                                   <label className="block text-xs font-bold text-gray-500 uppercase">{t('summary_preview_label') || 'Review & Edit Summary'}</label>
+                                   <textarea 
+                                       value={editableSummary} 
+                                       onChange={e => setEditableSummary(e.target.value)} 
+                                       className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none h-48 resize-none text-sm text-gray-700 leading-relaxed"
+                                   ></textarea>
                                </div>
                            ) : (
                                <div className="bg-red-50 border border-red-100 rounded-lg p-4 text-sm text-red-600 flex items-center gap-2">
@@ -1956,12 +1969,9 @@ function App() {
                                    {summaryPreview.errorMessage || t('failed_generate_summary')}
                                </div>
                            )}
-                       </div>
-                   ) : null}
-
-                   <label className="block text-xs font-bold text-gray-500 uppercase mb-2">{t('resolution_note_label')}</label>
-                   <textarea value={resolutionNote} onChange={e => setResolutionNote(e.target.value)} placeholder={t('resolution_note_placeholder')} className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 outline-none h-24 resize-none"></textarea>
-                </div>
+                        </div>
+                    ) : null}
+                 </div>
                 <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
                    <button onClick={() => setShowResolveModal(false)} className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-200 rounded-lg transition-colors">{t('cancel')}</button>
                    <button 

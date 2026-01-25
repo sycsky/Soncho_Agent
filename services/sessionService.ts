@@ -50,8 +50,11 @@ const previewSessionSummary = (sessionId: string, language?: string): Promise<Se
   return api.get<SessionSummaryPreview>(`/chat/sessions/${sessionId}/summary/preview${language ? `?language=${language}` : ''}`);
 };
 
-const resolveSession = (sessionId: string, language?: string): Promise<SessionResolveResponse> => {
-  return api.post<SessionResolveResponse>(`/chat/sessions/${sessionId}/resolve${language ? `?language=${language}` : ''}`, {});
+const resolveSession = (sessionId: string, language?: string, customSummary?: string): Promise<SessionResolveResponse> => {
+  return api.post<SessionResolveResponse>(
+    `/chat/sessions/${sessionId}/resolve${language ? `?language=${language}` : ''}`, 
+    { customSummary }
+  );
 };
 
 export default {
