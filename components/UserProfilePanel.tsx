@@ -2,11 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UserProfile, UserSource, QuickReply, ChatSession, Agent } from '../types';
-import { MapPin, Mail, Phone, Tag, Plus, X, MessageSquareText, Trash2, Lock, Shield, Sparkles, Loader2, Edit3, Check, Crown, Users } from 'lucide-react';
+import { MapPin, Mail, Phone, Tag, Plus, X, MessageSquareText, Trash2, Lock, Shield, Sparkles, Loader2, Edit3, Check, Crown, Users, ShoppingBag, ChevronDown, ChevronUp } from 'lucide-react';
 import { DEFAULT_AVATAR } from '../constants';
 import Avatar from './Avatar';
 import quickReplyServiceAPI from '../services/quickReplyService';
 import sessionService from '../services/sessionService';
+import customerService, { ShopifyOrder } from '../services/customerService';
 
 interface UserProfilePanelProps {
   user: UserProfile;
@@ -77,6 +78,36 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const [isAddingAgent, setIsAddingAgent] = useState(false);
   const [availableAgents, setAvailableAgents] = useState<Agent[]>([]);
   const [isLoadingAvailable, setIsLoadingAvailable] = useState(false);
+
+  // Shopify Orders State
+  const [orders, setOrders] = useState<ShopifyOrder[]>([]);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+  const [isOrdersExpanded, setIsOrdersExpanded] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (user?.id) {
+      setOrders([]); // Clear previous orders immediately
+      setIsLoadingOrders(true);
+      customerService.getCustomerShopifyOrders(user.id)
+        .then(data => {
+          if (isMounted) setOrders(data);
+        })
+        .catch(err => {
+          console.error("Failed to load orders", err);
+          if (isMounted) setOrders([]);
+        })
+        .finally(() => {
+          if (isMounted) setIsLoadingOrders(false);
+        });
+    } else {
+        setOrders([]);
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]);
+
   const isFullWidth = (ch: string) => {
     const cp = ch.codePointAt(0) || 0;
     if ((cp >= 0x4E00 && cp <= 0x9FFF) || (cp >= 0x3400 && cp <= 0x4DBF)) return true;
@@ -116,6 +147,10 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
     setIsEditingName(false);
     setIsEditingNote(false);
     setIsAddingAgent(false);
+    setNewTag('');
+    setIsAddingReply(false);
+    setNewReplyLabel('');
+    setNewReplyText('');
   }, [user?.id, user?.name, user?.notes]);
 
   const handleAddTag = (e: React.FormEvent) => {
@@ -225,6 +260,67 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
 
       <div className="p-6 space-y-6 flex-1">
         
+        {/* Shopify Orders */}
+        <div className="border-b border-gray-100 pb-6 last:border-0 last:pb-0">
+          <button 
+            onClick={() => setIsOrdersExpanded(!isOrdersExpanded)}
+            className="w-full flex items-center justify-between mb-3 text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <ShoppingBag size={16} className="text-blue-500" />
+              {t('recent_orders')}
+            </div>
+            {isOrdersExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+          
+          {isOrdersExpanded && (
+            <div className="space-y-3">
+              {isLoadingOrders ? (
+                <div className="flex justify-center py-4">
+                  <Loader2 size={20} className="animate-spin text-blue-500" />
+                </div>
+              ) : orders.length > 0 ? (
+                orders.map((edge) => (
+                  <div key={edge.node.id} className="bg-gray-50 rounded-lg p-3 text-xs relative overflow-hidden">
+                    {edge.node.cancelledAt && (
+                        <div className="absolute top-0 right-0 bg-red-100 text-red-600 px-2 py-0.5 rounded-bl text-[10px] font-bold">
+                            {t('cancelled')}
+                        </div>
+                    )}
+                    <div className="flex justify-between font-medium text-gray-700 mb-1 pr-14">
+                      <span>{edge.node.name}</span>
+                      <span>{edge.node.totalPriceSet.shopMoney.amount} {edge.node.totalPriceSet.shopMoney.currencyCode}</span>
+                    </div>
+                    <div className="flex justify-between text-gray-500 mb-2">
+                       <span>{new Date(edge.node.createdAt).toLocaleDateString()}</span>
+                       <span className={`px-1.5 py-0.5 rounded text-[10px] ${
+                         edge.node.displayFulfillmentStatus === 'FULFILLED' ? 'bg-green-100 text-green-700' : 
+                         edge.node.displayFulfillmentStatus === 'UNFULFILLED' ? 'bg-yellow-100 text-yellow-700' : 
+                         'bg-gray-200 text-gray-700'
+                       }`}>
+                         {edge.node.displayFulfillmentStatus}
+                       </span>
+                    </div>
+                    {/* Line Items */}
+                    <div className="border-t border-gray-200 pt-2 space-y-1">
+                        {edge.node.lineItems.edges.map((item, idx) => (
+                            <div key={idx} className="flex justify-between text-gray-600 text-[11px]">
+                                <span className="truncate flex-1 mr-2" title={item.node.title}>
+                                    {item.node.quantity}x {item.node.title} 
+                                    {item.node.variant && <span className="text-gray-400 ml-1">({item.node.variant.title})</span>}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center text-gray-400 text-xs py-2">{t('no_orders_found')}</div>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Support Team Section */}
         <div>
             <div className="flex justify-between items-center mb-3">

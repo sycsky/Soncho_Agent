@@ -246,7 +246,41 @@ class CustomerServiceAPI {
   async createCustomerRole(request: CreateRoleRequest): Promise<CustomerRole> {
     return api.post<CustomerRole>('/customer-roles', request);
   }
+
+  /**
+   * 获取客户的Shopify订单
+   */
+  async getCustomerShopifyOrders(customerId: string): Promise<ShopifyOrder[]> {
+    return api.get<ShopifyOrder[]>(`/customers/${customerId}/shopify-orders`);
+  }
 }
 
-const customerServiceAPI = new CustomerServiceAPI();
-export default customerServiceAPI;
+export interface ShopifyOrder {
+  node: {
+    id: string;
+    name: string;
+    createdAt: string;
+    cancelledAt?: string;
+    displayFulfillmentStatus: string;
+    totalPriceSet: {
+      shopMoney: {
+        amount: string;
+        currencyCode: string;
+      }
+    };
+    lineItems: {
+      edges: {
+        node: {
+          title: string;
+          quantity: number;
+          variant?: {
+            title: string;
+          };
+        };
+      }[];
+    };
+  }
+}
+
+export const customerService = new CustomerServiceAPI();
+export default customerService;

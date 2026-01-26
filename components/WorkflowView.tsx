@@ -4001,13 +4001,13 @@ const WorkflowList = ({ onSelect }: { onSelect: (id: string) => void }) => {
                   >
                     <Star size={16} fill={workflow.isDefault ? "currentColor" : "none"} />
                   </button>
-                  <button 
+                  {/* <button 
                     className={`p-1.5 rounded transition-colors ${workflow.enabled ? 'text-green-500 bg-green-50' : 'text-gray-400 hover:text-green-500 hover:bg-green-50'}`}
                     onClick={(e) => handleToggleEnabled(e, workflow.id, !workflow.enabled)}
                     title={workflow.enabled ? t('workflow_editor.disable') : t('workflow_editor.enable')}
                   >
                     <Power size={16} />
-                  </button>
+                  </button> */}
                   <button 
                     className="text-gray-400 hover:text-blue-600 p-1.5 hover:bg-blue-50 rounded transition-colors"
                     onClick={(e) => handleCopy(e, workflow.id)}

@@ -122,7 +122,7 @@ export const WorkflowTestDialog: React.FC<WorkflowTestDialogProps> = ({
       };
       setMessages(prev => [...prev, tempMsg]);
 
-      const updatedSession = await workflowTestService.sendMessage(testSessionId, userMsg);
+      const updatedSession = await workflowTestService.sendMessage(testSessionId, userMsg, workflowId);
       setMessages(updatedSession.messages);
     } catch (err: any) {
       console.error('Send message failed', err);

@@ -10,9 +10,10 @@ const createSession = (workflowId: string, variables?: Record<string, any>): Pro
   });
 };
 
-const sendMessage = (testSessionId: string, message: string): Promise<WorkflowTestSessionDto> => {
+const sendMessage = (testSessionId: string, message: string, workflowId?: string): Promise<WorkflowTestSessionDto> => {
   return api.post<WorkflowTestSessionDto>(`${BASE_PATH}/${testSessionId}/messages`, {
-    message
+    message,
+    workflowId
   });
 };
 

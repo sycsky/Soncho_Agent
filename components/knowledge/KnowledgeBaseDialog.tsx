@@ -23,37 +23,17 @@ export const KnowledgeBaseDialog: React.FC<KnowledgeBaseDialogProps> = ({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [vectorDimension, setVectorDimension] = useState(1536);
-  const [embeddingModelId, setEmbeddingModelId] = useState('');
-  const [embeddingModels, setEmbeddingModels] = useState<LlmModel[]>([]);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const fetchModels = async () => {
-      try {
-        const models = await workflowApi.getAllModels();
-        const embeddings = models.filter(m => m.modelType === 'EMBEDDING');
-        setEmbeddingModels(embeddings);
-      } catch (error) {
-        console.error('Failed to fetch models:', error);
-      }
-    };
-    
-    if (isOpen) {
-      fetchModels();
-    }
-  }, [isOpen]);
 
   useEffect(() => {
     if (initialData) {
       setName(initialData.name);
       setDescription(initialData.description || '');
       setVectorDimension(initialData.vectorDimension);
-      setEmbeddingModelId(initialData.embeddingModelId || '');
     } else {
       setName('');
       setDescription('');
       setVectorDimension(1536);
-      setEmbeddingModelId('');
     }
   }, [initialData, isOpen]);
 
@@ -66,7 +46,6 @@ export const KnowledgeBaseDialog: React.FC<KnowledgeBaseDialogProps> = ({
       await onSubmit({
         name,
         description,
-        embeddingModelId,
         vectorDimension: initialData ? undefined : vectorDimension, // Only send dimension on create
       });
       onClose();
@@ -110,23 +89,6 @@ export const KnowledgeBaseDialog: React.FC<KnowledgeBaseDialogProps> = ({
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none"
               placeholder={t('placeholder_kb_desc')}
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('embedding_model')}</label>
-            <select
-              value={embeddingModelId}
-              onChange={(e) => setEmbeddingModelId(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">{t('select_embedding_model')}</option>
-              {embeddingModels.map(model => (
-                <option key={model.id} value={model.id}>
-                  {model.name} ({model.provider})
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-gray-500 mt-1">{t('embedding_model_help')}</p>
           </div>
 
           {!initialData && (
