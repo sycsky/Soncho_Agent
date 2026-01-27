@@ -72,6 +72,19 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
+      },
+      build: {
+        chunkSizeWarningLimit: 1500,
+        rollupOptions: {
+          output: {
+            manualChunks: {
+              'vendor-react': ['react', 'react-dom', 'react-i18next', 'i18next'],
+              'vendor-shopify': ['@shopify/polaris', '@shopify/app-bridge-react'],
+              'vendor-ui': ['@tiptap/react', '@tiptap/starter-kit', 'recharts', 'lucide-react', 'sonner'],
+              'vendor-flow': ['@xyflow/react', 'dagre'],
+            }
+          }
+        }
       }
     };
 });
