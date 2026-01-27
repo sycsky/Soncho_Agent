@@ -188,7 +188,7 @@ export const TeamView: React.FC = () => {
             {agents.map(agent => (
               <tr key={agent.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
                 <td className="py-4 px-6 flex items-center gap-3">
-                  {agent.avatar ? <img src={agent.avatar} className="w-8 h-8 rounded-full object-cover" alt={agent.name} /> : <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center"><User size={16} className="text-gray-500" /></div>}
+                  {agent.avatarUrl ? <img src={agent.avatarUrl} className="w-8 h-8 rounded-full object-cover" alt={agent.name} /> : <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center"><User size={16} className="text-gray-500" /></div>}
                   <span className="font-medium text-gray-900">{agent.name}</span>
                 </td>
                 <td className="py-4 px-6"><span className={`px-2 py-1 rounded-full text-xs font-medium border ${(agent.roleName || getRoleName(agent.roleId)) === 'Admin' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>{agent.roleName || getRoleName(agent.roleId)}</span></td>

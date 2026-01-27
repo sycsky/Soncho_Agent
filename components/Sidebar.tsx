@@ -123,8 +123,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="mt-auto flex flex-col items-center gap-6 pb-6 relative">
         <div className="relative">
            <button onClick={() => setShowProfileMenu(!showProfileMenu)} className="relative block outline-none transition-transform hover:scale-105">
-            {currentUser.avatar ? (
-              <img src={currentUser.avatar} className={`w-10 h-10 rounded-full border-2 object-cover ${currentUserStatus === 'ONLINE' ? 'border-green-500' : currentUserStatus === 'BUSY' ? 'border-yellow-500' : 'border-gray-500'}`} alt="Profile" />
+            {currentUser.avatarUrl ? (
+              <img src={currentUser.avatarUrl} className={`w-10 h-10 rounded-full border-2 object-cover ${currentUserStatus === 'ONLINE' ? 'border-green-500' : currentUserStatus === 'BUSY' ? 'border-yellow-500' : 'border-gray-500'}`} alt="Profile" />
             ) : (
               <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center bg-gray-800 ${currentUserStatus === 'ONLINE' ? 'border-green-500' : currentUserStatus === 'BUSY' ? 'border-yellow-500' : 'border-gray-500'}`}>
                 <User size={24} className="text-gray-500" />
@@ -279,10 +279,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             isOpen={showUpdateAvatarModal}
             onClose={() => setShowUpdateAvatarModal(false)}
             currentUserId={currentUser.id}
-            currentAvatarUrl={currentUser.avatar}
+            currentAvatarUrl={currentUser.avatarUrl}
             onSuccess={(newAvatarUrl) => {
                if (onUserUpdated) {
-                  onUserUpdated({ ...currentUser, avatar: newAvatarUrl });
+                  onUserUpdated({ ...currentUser, avatarUrl: newAvatarUrl });
                }
                setShowUpdateAvatarModal(false);
             }}

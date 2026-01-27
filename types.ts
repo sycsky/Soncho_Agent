@@ -105,7 +105,7 @@ export interface Agent {
   id: string;
   name: string;
   roleId: string; // Role ID
-  avatar: string;
+  avatarUrl?: string;
   status: 'ONLINE' | 'BUSY' | 'OFFLINE';
   email?: string;
   roleName?: string;
@@ -189,7 +189,7 @@ export interface SessionCategory {
 export interface SessionAgent {
   id: string;
   name: string;
-  avatar?: string;
+  avatarUrl?: string;
   isPrimary: boolean;
 }
 

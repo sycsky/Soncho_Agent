@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Agent, ChatSession, ChatStatus, Message, MessageSender, QuickReply, Attachment, KnowledgeEntry, Role, Notification, ChatGroup, UserProfile, SessionCategory } from './types';
-import { generateAIResponse, rewriteMessage, /* analyzeSentiment, */ suggestUserTags } from './services/geminiService';
+import {  rewriteMessage, /* analyzeSentiment, */ suggestUserTags } from './services/geminiService';
 import api from './services/api';
 import websocketService, { ServerMessage } from './services/websocketService';
 import notificationService from './services/notificationService';
@@ -1044,7 +1044,7 @@ function App() {
             groupId: (detail.groupId ?? s.groupId),
             primaryAgentId: (detail.primaryAgentId ?? s.primaryAgentId),
             supportAgentIds: Array.isArray(detail.supportAgentIds) ? detail.supportAgentIds : s.supportAgentIds,
-            agents: Array.isArray(detail.agents) ? detail.agents.map((a: any) => ({ id: a.id, name: a.name, avatar: a.avatar, isPrimary: !!a.isPrimary })) : s.agents,
+            agents: Array.isArray(detail.agents) ? detail.agents.map((a: any) => ({ id: a.id, name: a.name, avatarUrl: a.avatarUrl || a.avatar, isPrimary: !!a.isPrimary })) : s.agents,
             categoryId: (detail.categoryId ?? detail.category?.id ?? s.categoryId),
             category: (detail.category ?? s.category),
             lastMessage: (detail.lastMessage ?? s.lastMessage),
@@ -1587,6 +1587,10 @@ function App() {
                   hasPermission={hasPermission}
                   isShopifyEmbedded={isShopifyEmbedded}
                   onSwitchAgent={() => setShowAgentSwitcher(true)}
+                  onUserUpdated={(updatedAgent) => {
+                    setCurrentUser(updatedAgent);
+                    tokenService.setUser(updatedAgent);
+                  }}
                 />
               </div>
 
@@ -1854,7 +1858,10 @@ function App() {
           handleLogout={handleLogout}
           onLanguageChange={handleLanguageChange}
           hasPermission={hasPermission}
-          onUserUpdated={(updatedAgent) => setCurrentUser(updatedAgent)}
+          onUserUpdated={(updatedAgent) => {
+            setCurrentUser(updatedAgent);
+            tokenService.setUser(updatedAgent);
+          }}
         />
       </div>
       

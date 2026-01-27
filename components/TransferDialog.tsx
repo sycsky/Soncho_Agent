@@ -91,7 +91,7 @@ const TransferDialog: React.FC<TransferDialogProps> = ({
                       onClick={() => setSelectedAgentId(a.id)}
                       className={`w-full flex items-center gap-3 p-2 rounded border transition-colors ${selectedAgentId === a.id ? 'border-blue-300 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'}`}
                     >
-                      <Avatar name={a.name} src={a.avatar} size={28} />
+                      <Avatar name={a.name} src={a.avatarUrl} size={28} />
                       <div className="flex-1 text-left">
                         <div className="text-sm font-semibold text-gray-800">{a.name}</div>
                       </div>

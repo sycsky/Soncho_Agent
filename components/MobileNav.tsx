@@ -108,7 +108,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
         isOpen={showUpdateAvatarModal}
         onClose={() => setShowUpdateAvatarModal(false)}
         currentUserId={currentUser.id}
-        currentAvatarUrl={currentUser.avatar}
+        currentAvatarUrl={currentUser.avatarUrl}
         onSuccess={(newAvatarUrl) => {
            // For now just close
            setShowUpdateAvatarModal(false);
@@ -131,8 +131,8 @@ export const MobileNav: React.FC<MobileNavProps> = ({
       
       <div className="relative">
          <button onClick={() => setShowProfileMenu(!showProfileMenu)} className="relative block outline-none">
-          {currentUser.avatar ? (
-            <img src={currentUser.avatar} className={`w-8 h-8 rounded-full border-2 object-cover ${currentUserStatus === 'ONLINE' ? 'border-green-500' : currentUserStatus === 'BUSY' ? 'border-yellow-500' : 'border-gray-500'}`} alt="Profile" />
+          {currentUser.avatarUrl ? (
+            <img src={currentUser.avatarUrl} className={`w-8 h-8 rounded-full border-2 object-cover ${currentUserStatus === 'ONLINE' ? 'border-green-500' : currentUserStatus === 'BUSY' ? 'border-yellow-500' : 'border-gray-500'}`} alt="Profile" />
           ) : (
             <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center bg-gray-800 ${currentUserStatus === 'ONLINE' ? 'border-green-500' : currentUserStatus === 'BUSY' ? 'border-yellow-500' : 'border-gray-500'}`}>
               <User size={16} className="text-gray-500" />

@@ -364,8 +364,8 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                                       onClick={() => { onAddSupportAgent(agent.id); setIsAddingAgent(false); }}
                                       className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 flex items-center gap-2"
                                     >
-                                        {agent.avatar ? (
-                                          <img src={agent.avatar} className="w-5 h-5 rounded-full" />
+                                        {agent.avatarUrl ? (
+                                          <img src={agent.avatarUrl} className="w-5 h-5 rounded-full" />
                                         ) : (
                                           <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center">
                                             <span className="text-[9px] font-bold text-gray-600">{initials(agent.name)}</span>
@@ -391,7 +391,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                 {/* Primary Owner */}
                 {currentSession.agents?.find(a => a.isPrimary) ? (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2.5 flex items-center gap-3 relative">
-                      <Avatar name={currentSession.agents!.find(a => a.isPrimary)?.name} src={currentSession.agents!.find(a => a.isPrimary)?.avatar} size={32} borderClassName="border-2 border-yellow-300" bgClassName="bg-yellow-200" textClassName="text-yellow-700" />
+                      <Avatar name={currentSession.agents!.find(a => a.isPrimary)?.name} src={currentSession.agents!.find(a => a.isPrimary)?.avatarUrl} size={32} borderClassName="border-2 border-yellow-300" bgClassName="bg-yellow-200" textClassName="text-yellow-700" />
                       <div>
                           <div className="text-xs font-bold text-gray-800">{currentSession.agents!.find(a => a.isPrimary)?.name || t('unknown_user')}</div>
                           <div className="text-[10px] text-yellow-700 font-bold flex items-center gap-1 uppercase tracking-wider"><Crown size={10} /> {t('primary_owner')}</div>
@@ -404,7 +404,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                   <div className="space-y-2 pl-2 border-l-2 border-gray-100 ml-2">
                     {currentSession.agents.filter(a => !a.isPrimary).map(a => (
                       <div key={a.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-gray-50">
-                        <Avatar name={a.name} src={a.avatar} size={24} />
+                        <Avatar name={a.name} src={a.avatarUrl} size={24} />
                         <div className="flex-1">
                           <div className="text-xs font-medium text-gray-700">{a.name}</div>
                           <div className="text-[10px] text-gray-400">{t('support_role')}</div>
