@@ -419,6 +419,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     : session.status === ChatStatus.AI_HANDLING ? t('take_over_placeholder')
     : t('type_message_placeholder');
 
+
+
   return (
     <div className="flex-1 flex flex-col bg-white h-full relative">
       {/* Header */}

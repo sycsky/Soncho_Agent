@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, BarChart, Users, Settings, LogOut, Check, User, UserCircle, GitBranch, Languages, Loader2, ChevronRight, ChevronLeft, Search } from 'lucide-react';
+import { MessageCircle, BarChart, Users, Settings, LogOut, Check, User, UserCircle, GitBranch, Languages, Loader2, ChevronRight, ChevronLeft, Search, Mail, Lock, Image } from 'lucide-react';
 import { Agent } from '../types';
 import { getSupportedLanguages, Language } from '../services/translationService';
 import { updateAgent } from '../services/adminService';
+import { UpdateEmailDialog } from './UpdateEmailDialog';
+import { ChangePasswordDialog } from './ChangePasswordDialog';
+import { UpdateAvatarDialog } from './UpdateAvatarDialog';
 
 interface MobileNavProps {
   activeView: 'DASHBOARD' | 'INBOX' | 'TEAM' | 'CUSTOMERS' | 'ANALYTICS' | 'SETTINGS' | 'WORKFLOW';
@@ -39,6 +42,10 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   const [selectedLanguage, setSelectedLanguage] = useState(currentUser?.language || '');
   const [menuView, setMenuView] = useState<'MAIN' | 'LANGUAGES'>('MAIN');
   const [languageSearch, setLanguageSearch] = useState('');
+  const [showUpdateEmailModal, setShowUpdateEmailModal] = useState(false);
+  // State for password and avatar modals
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [showUpdateAvatarModal, setShowUpdateAvatarModal] = useState(false);
 
   useEffect(() => {
     setSelectedLanguage(currentUser?.language || '');
@@ -80,6 +87,33 @@ export const MobileNav: React.FC<MobileNavProps> = ({
 
   return (
     <div className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-gray-900 flex items-center justify-between px-6 z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+      <UpdateEmailDialog
+        isOpen={showUpdateEmailModal}
+        onClose={() => setShowUpdateEmailModal(false)}
+        currentEmail={currentUser.email}
+        onSuccess={(newEmail) => {
+           // We might need to update the local user state or trigger a refresh
+           // For now just close
+           setShowUpdateEmailModal(false);
+        }}
+      />
+      <ChangePasswordDialog
+        isOpen={showChangePasswordModal}
+        onClose={() => setShowChangePasswordModal(false)}
+        onSuccess={() => {
+          setShowChangePasswordModal(false);
+        }}
+      />
+      <UpdateAvatarDialog
+        isOpen={showUpdateAvatarModal}
+        onClose={() => setShowUpdateAvatarModal(false)}
+        currentUserId={currentUser.id}
+        currentAvatarUrl={currentUser.avatar}
+        onSuccess={(newAvatarUrl) => {
+           // For now just close
+           setShowUpdateAvatarModal(false);
+        }}
+      />
       <button onClick={() => setActiveView('INBOX')} className={`p-2 rounded-xl transition-all ${activeView === 'INBOX' ? 'text-blue-500' : 'text-gray-400'}`}><MessageCircle size={24} /></button>
       {(!hasPermission || hasPermission('accessCustomerManagement')) && (
         <button onClick={() => setActiveView('CUSTOMERS')} className={`p-2 rounded-xl transition-all ${activeView === 'CUSTOMERS' ? 'text-blue-500' : 'text-gray-400'}`}><UserCircle size={24} /></button>
@@ -113,6 +147,36 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                <>
                  <div className="p-4 border-b border-gray-100 bg-gray-50"><p className="font-bold text-gray-800">{currentUser.name}</p><p className="text-xs text-gray-500">{currentUser.email || t('no_email_provided')}</p></div>
                  <div className="p-2 space-y-1">
+                    <button 
+                      onClick={() => {
+                        setShowUpdateEmailModal(true);
+                        setShowProfileMenu(false);
+                      }} 
+                      className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      <Mail size={16} className="text-gray-500" /> 
+                      {t('update_email')}
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setShowChangePasswordModal(true);
+                        setShowProfileMenu(false);
+                      }} 
+                      className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      <Lock size={16} className="text-gray-500" /> 
+                      {t('change_password_title')}
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setShowUpdateAvatarModal(true);
+                        setShowProfileMenu(false);
+                      }} 
+                      className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      <Image size={16} className="text-gray-500" /> 
+                      {t('update_avatar_title')}
+                    </button>
                     <div className="px-3 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">{t('set_status_title')}</div>
                     <button onClick={() => handleStatusChange('ONLINE')} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700"><div className="w-2.5 h-2.5 rounded-full bg-green-500"></div> {t('status_online')}{currentUserStatus === 'ONLINE' && <Check size={14} className="ml-auto text-green-600"/>}</button>
                     <button onClick={() => handleStatusChange('BUSY')} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700"><div className="w-2.5 h-2.5 rounded-full bg-yellow-500"></div> {t('status_busy')}{currentUserStatus === 'BUSY' && <Check size={14} className="ml-auto text-yellow-600"/>}</button>

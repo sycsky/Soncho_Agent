@@ -167,15 +167,15 @@ export const ChatList: React.FC<ChatListProps> = ({
             previewText = t('card_discount');
         } else if (lastMessage.messageType === 'CARD_ORDER') {
             previewText = t('card_order');
-        } else if (lastMessage.text.startsWith('card#')) {
+        } else if ((lastMessage.text || '').startsWith('card#')) {
              // Fallback for raw text
-             if (lastMessage.text.includes('CARD_PRODUCT')) previewText = t('card_product');
-             else if (lastMessage.text.includes('CARD_GIFT')) previewText = t('card_gift');
-             else if (lastMessage.text.includes('CARD_DISCOUNT')) previewText = t('card_discount');
-             else if (lastMessage.text.includes('CARD_ORDER')) previewText = t('card_order');
+             if ((lastMessage.text || '').includes('CARD_PRODUCT')) previewText = t('card_product');
+             else if ((lastMessage.text || '').includes('CARD_GIFT')) previewText = t('card_gift');
+             else if ((lastMessage.text || '').includes('CARD_DISCOUNT')) previewText = t('card_discount');
+             else if ((lastMessage.text || '').includes('CARD_ORDER')) previewText = t('card_order');
              else previewText = t('card_generic');
         } else {
-            const parsed = parseMessagePreview(lastMessage.text);
+            const parsed = parseMessagePreview(lastMessage.text || '');
             previewText = parsed.cleanText;
             mentionedNames = parsed.mentionedNames;
         }

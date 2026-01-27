@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MessageCircle, BarChart, Users, Settings, LogOut, Check, User, UserCircle, GitBranch, Languages, Loader2, ChevronRight, ChevronLeft, Search } from 'lucide-react';
+import { MessageCircle, BarChart, Users, Settings, LogOut, Check, User, UserCircle, GitBranch, Languages, Loader2, ChevronRight, ChevronLeft, Search, Mail } from 'lucide-react';
 import { Agent } from '../types';
 import { getSupportedLanguages, Language } from '../services/translationService';
 import { updateAgent } from '../services/adminService';
+import { UpdateEmailDialog } from './UpdateEmailDialog';
+import { ChangePasswordDialog } from './ChangePasswordDialog';
+import { UpdateAvatarDialog } from './UpdateAvatarDialog';
+import { Lock, Image } from 'lucide-react';
 
 interface SidebarProps {
   activeView: 'DASHBOARD' | 'INBOX' | 'TEAM' | 'CUSTOMERS' | 'ANALYTICS' | 'SETTINGS' | 'WORKFLOW';
@@ -18,6 +22,7 @@ interface SidebarProps {
   hasPermission?: (permissionKey: string) => boolean;
   isShopifyEmbedded?: boolean;
   onSwitchAgent?: () => void;
+  onUserUpdated?: (agent: Agent) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -32,7 +37,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onLanguageChange,
   hasPermission,
   isShopifyEmbedded,
-  onSwitchAgent
+  onSwitchAgent,
+  onUserUpdated
 }) => {
   const { t, i18n } = useTranslation();
   const [languages, setLanguages] = useState<Language[]>([]);
@@ -40,6 +46,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [selectedLanguage, setSelectedLanguage] = useState(currentUser?.language || '');
   const [menuView, setMenuView] = useState<'MAIN' | 'LANGUAGES' | 'SWITCH_AGENT'>('MAIN');
   const [languageSearch, setLanguageSearch] = useState('');
+  const [showUpdateEmailModal, setShowUpdateEmailModal] = useState(false);
+  // State for password and avatar modals
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [showUpdateAvatarModal, setShowUpdateAvatarModal] = useState(false);
 
   useEffect(() => {
     setSelectedLanguage(currentUser?.language || '');
@@ -128,6 +138,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
                  <>
                    <div className="p-4 border-b border-gray-100 bg-gray-50"><p className="font-bold text-gray-800">{currentUser.name}</p></div>
                    <div className="p-2 space-y-1">
+                      <button 
+                        onClick={() => {
+                          setShowUpdateEmailModal(true);
+                          setShowProfileMenu(false);
+                        }} 
+                        className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        <Mail size={16} className="text-gray-500" /> 
+                        {t('update_email')}
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setShowChangePasswordModal(true);
+                          setShowProfileMenu(false);
+                        }} 
+                        className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        <Lock size={16} className="text-gray-500" /> 
+                        {t('change_password_title')}
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setShowUpdateAvatarModal(true);
+                          setShowProfileMenu(false);
+                        }} 
+                        className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        <Image size={16} className="text-gray-500" /> 
+                        {t('update_avatar', 'Update Avatar')}
+                      </button>
                       <div className="px-3 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">{t('set_status')}</div>
                       <button onClick={() => handleStatusChange('ONLINE')} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700"><div className="w-2.5 h-2.5 rounded-full bg-green-500"></div> {t('online')}{currentUserStatus === 'ONLINE' && <Check size={14} className="ml-auto text-green-600"/>}</button>
                       <button onClick={() => handleStatusChange('BUSY')} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700"><div className="w-2.5 h-2.5 rounded-full bg-yellow-500"></div> {t('busy')}{currentUserStatus === 'BUSY' && <Check size={14} className="ml-auto text-yellow-600"/>}</button>
@@ -214,6 +254,41 @@ export const Sidebar: React.FC<SidebarProps> = ({
            )}
         </div>
       </div>
+
+      {currentUser && (
+        <>
+          <UpdateEmailDialog
+            isOpen={showUpdateEmailModal}
+            onClose={() => setShowUpdateEmailModal(false)}
+            currentEmail={currentUser.email}
+            onSuccess={(newEmail) => {
+               if (onUserUpdated) {
+                  onUserUpdated({ ...currentUser, email: newEmail });
+               }
+               setShowUpdateEmailModal(false);
+            }}
+          />
+          <ChangePasswordDialog
+            isOpen={showChangePasswordModal}
+            onClose={() => setShowChangePasswordModal(false)}
+            onSuccess={() => {
+              setShowChangePasswordModal(false);
+            }}
+          />
+          <UpdateAvatarDialog
+            isOpen={showUpdateAvatarModal}
+            onClose={() => setShowUpdateAvatarModal(false)}
+            currentUserId={currentUser.id}
+            currentAvatarUrl={currentUser.avatar}
+            onSuccess={(newAvatarUrl) => {
+               if (onUserUpdated) {
+                  onUserUpdated({ ...currentUser, avatar: newAvatarUrl });
+               }
+               setShowUpdateAvatarModal(false);
+            }}
+          />
+        </>
+      )}
     </div>
   ) : null;
 };

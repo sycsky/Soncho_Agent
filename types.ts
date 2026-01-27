@@ -110,6 +110,7 @@ export interface Agent {
   email?: string;
   roleName?: string;
   language?: string;
+  hasDefaultPassword?: boolean;
 }
 
 export interface QuickReply {

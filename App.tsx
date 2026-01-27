@@ -39,6 +39,7 @@ import { AgentSwitcher } from './components/AgentSwitcher';
 import { checkSubscriptionStatus, verifySubscription } from './services/shopifyBillingService';
 import { Button } from '@shopify/polaris';
 import { Toaster, toast } from 'sonner';
+import { ChangePasswordDialog } from './components/ChangePasswordDialog';
 
 // Type for the successful login response data
 interface LoginResponse {
@@ -95,8 +96,28 @@ function App() {
   // ✅ 使用 ref 追踪已经调度的获取任务
   const scheduledFetchesRef = useRef<Set<string>>(new Set());
 
-  // All data states, initialized to empty
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  // Debug: Monitor session updates
+  const setSessions = (action: React.SetStateAction<ChatSession[]>) => {
+    _setSessions(prev => {
+      const next = typeof action === 'function' ? action(prev) : action;
+      // Check if active session messages are being cleared
+      if (activeSessionId) {
+        const prevSession = prev.find(s => s.id === activeSessionId);
+        const nextSession = next.find(s => s.id === activeSessionId);
+        if (prevSession?.messages && !nextSession?.messages) {
+          console.error('[Critical Debug] Messages CLEARED for active session!', {
+            prevCount: prevSession.messages.length,
+            stack: new Error().stack
+          });
+        }
+      }
+      return next;
+    });
+  };
+
+  const [_sessions, _setSessions] = useState<ChatSession[]>([]);
+  // const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const sessions = _sessions;
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [chatGroups, setChatGroups] = useState<ChatGroup[]>([]);
@@ -120,11 +141,16 @@ function App() {
   const [currentAgentLanguage, setCurrentAgentLanguage] = useState<string>(tokenService.getLanguage() || 'en');
   const [showMobileProfile, setShowMobileProfile] = useState(false);
   const [showAgentSwitcher, setShowAgentSwitcher] = useState(false);
+  const [showForceChangePasswordModal, setShowForceChangePasswordModal] = useState(false);
 
   useEffect(() => {
     if (currentUser?.language) {
       setCurrentAgentLanguage(currentUser.language);
       tokenService.setLanguage(currentUser.language);
+    }
+    
+    if (currentUser?.hasDefaultPassword) {
+      setShowForceChangePasswordModal(true);
     }
   }, [currentUser]);
 
@@ -223,7 +249,7 @@ function App() {
           } 
         };
         
-        // ✅ 转换后端消息格式为前端 Message 格式
+          // ✅ 转换后端消息格式为前端 Message 格式
         const newMessage: Message = {
           id: backendMessage.id,
           text: backendMessage.text,
@@ -238,6 +264,8 @@ function App() {
           translation: backendMessage.translationData,
           translationData: backendMessage.translationData
         };
+
+ 
         
         // ✅ 使用函数式更新检查会话是否存在
         setSessions(prev => {
@@ -251,7 +279,10 @@ function App() {
                 const isMentioned = Array.isArray(newMessage.mentions) && (currentUser?.id ? newMessage.mentions.includes(currentUser.id) : false);
                 const isUserMessage = newMessage.sender === MessageSender.USER;
                 
-                const shouldIncrement = (isUserMessage && isOwned) || isMentioned;
+                // CRITICAL FIX: Explicitly exclude SYSTEM messages from unread count
+                const isSystemMessage = newMessage.sender === MessageSender.SYSTEM;
+                const shouldIncrement = !isSystemMessage && ((isUserMessage && isOwned) || isMentioned);
+                
                 const nextUnread = isNewUnread ? (shouldIncrement ? s.unreadCount + 1 : s.unreadCount) : 0;
                 const nextLastActive = newMessage.timestamp;
                 return {
@@ -303,6 +334,7 @@ function App() {
       case 'sessionUpdated': {
         // Fix: Handle nested session object in payload if present
         const sessionData = (payload as any).session || payload;
+ 
 
         // Check for Transfer to Human (Current Agent)
         if (sessionData.status === 'HUMAN_HANDLING' && 
@@ -319,16 +351,43 @@ function App() {
             });
         }
         
+        // Determine if we need to move the session to the Resolved group
+        let newGroupId = sessionData.groupId;
+        if (!newGroupId && sessionData.status === ChatStatus.RESOLVED) {
+
+            const resolvedGroup = chatGroups.find(g => g.name === 'Resolved' && g.isSystem);
+            if (resolvedGroup) {
+  
+                newGroupId = resolvedGroup.id;
+            } else {
+                console.warn('[Debug] Resolved group not found!');
+            }
+        }
+
         setSessions(prev => {
           const mapped = prev.map(s => {
             if (s.id === sessionData.id) {
-              // Merge updates to preserve existing fields (like messages/user) if they are missing in the update
+              // Merge updates to preserve existing fields
               const updated = { ...s, ...sessionData };
+              
+              // Apply group move if resolved
+              if (newGroupId) {
+                  updated.groupId = newGroupId;
+              }
+              
               // ✅ Ensure lastActive does not regress (go backwards in time)
-              // If the update has an older lastActive (or none), keep the current one
               if (s.lastActive > (updated.lastActive || 0)) {
                 updated.lastActive = s.lastActive;
               }
+              
+              // ✅ CRITICAL FIX: Always preserve existing messages if they are loaded.
+              // sessionUpdated events often contain partial messages (e.g. only lastMessage) or empty arrays,
+              // which would overwrite the fully loaded message history.
+              // Message updates should be handled via 'newMessage' event or explicit reloading.
+              if (s.messages) {
+                updated.messages = s.messages;
+              }
+              
               return updated;
             }
             return s;
@@ -369,7 +428,7 @@ function App() {
       default:
         console.warn('Unhandled WebSocket message event:', eventType);
     }
-  }, [activeSessionId, currentUser]);
+  }, [activeSessionId, currentUser, chatGroups]);
 
   // ✅ 更新 ref 以保存最新的处理函数
   useEffect(() => {
@@ -890,19 +949,33 @@ function App() {
   // ==================== End 分组管理功能 ====================
 
 
+  // Debug: Monitor active session messages
   useEffect(() => {
     if (activeSessionId) {
+      const session = sessions.find(s => s.id === activeSessionId);
+    }
+  }, [sessions, activeSessionId]);
+
+  useEffect(() => {
+    if (activeSessionId) {
+      // ✅ 只设置 unreadCount，不覆盖其他字段
       setSessions(prev => prev.map(s => 
         s.id === activeSessionId ? { ...s, unreadCount: 0 } : s
       ));
       
-      loadSessionDetail(activeSessionId);
+      // Removed redundant loadSessionDetail call that was causing race conditions
+      // loadSessionDetail(activeSessionId);
 
       // ✅ 加载会话消息（如果还未加载）
-      const activeSession = sessions.find(s => s.id === activeSessionId);
-      if (activeSession && !activeSession.messages) {
-        loadSessionMessages(activeSessionId);
-      }
+      // 使用函数式更新获取最新状态，避免闭包陷阱
+      setSessions(currentSessions => {
+        const currentActiveSession = currentSessions.find(s => s.id === activeSessionId);
+        if (currentActiveSession && !currentActiveSession.messages) {
+          // 在这里调用，确保只在真正需要时加载
+          loadSessionMessages(activeSessionId);
+        }
+        return currentSessions; // 不修改状态，只用于读取
+      });
     }
   }, [activeSessionId]);
   
@@ -910,7 +983,9 @@ function App() {
   const loadSessionMessages = async (sessionId: string) => {
     try {
       // 后端返回分页对象，消息列表在 content 中
+
       const response = await api.get<{ content: any[] }>(`/chat/sessions/${sessionId}/messages`);
+
       
       // 转换后端消息格式为前端格式
       const messages: Message[] = (response.content || []).map(backendMsg => ({
@@ -927,13 +1002,17 @@ function App() {
         translationData: backendMsg.translationData
       })).reverse();
       
-      setSessions(prev => prev.map(s => 
-        s.id === sessionId ? { ...s, messages } : s
-      ));
+      setSessions(prev => {
+
+        return prev.map(s => 
+          s.id === sessionId ? { ...s, messages } : s
+        );
+      });
     } catch (error) {
       console.error('Failed to load session messages:', error);
       showToast('ERROR', 'Failed to load messages');
       // 如果加载失败，至少设置为空数组避免重复请求
+  
       setSessions(prev => prev.map(s => 
         s.id === sessionId ? { ...s, messages: [] } : s
       ));
@@ -942,32 +1021,41 @@ function App() {
 
   const loadSessionDetail = async (sessionId: string) => {
     try {
+
       const detail = await api.get<any>(`/chat/sessions/${sessionId}`);
-      setSessions(prev => prev.map(s => {
-        if (s.id !== sessionId) return s;
-        const userUpdate = detail.user ? {
-          name: detail.user.name ?? s.user.name,
-          email: detail.user.email ?? s.user.email,
-          phone: detail.user.phone ?? s.user.phone,
-          tags: Array.isArray(detail.user.tags) ? detail.user.tags : s.user.tags,
-          aiTags: Array.isArray(detail.user.aiTags) ? detail.user.aiTags : s.user.aiTags,
-          notes: (detail.note ?? s.user.notes)
-        } : s.user;
-        return {
-          ...s,
-          status: (detail.status ?? s.status),
-          lastActive: (detail.lastActive ?? s.lastActive),
-          unreadCount: (sessionId === activeSessionId ? 0 : (detail.unreadCount ?? s.unreadCount)),
-          groupId: (detail.groupId ?? s.groupId),
-          primaryAgentId: (detail.primaryAgentId ?? s.primaryAgentId),
-          supportAgentIds: Array.isArray(detail.supportAgentIds) ? detail.supportAgentIds : s.supportAgentIds,
-          agents: Array.isArray(detail.agents) ? detail.agents.map((a: any) => ({ id: a.id, name: a.name, avatar: a.avatar, isPrimary: !!a.isPrimary })) : s.agents,
-          categoryId: (detail.categoryId ?? detail.category?.id ?? s.categoryId),
-          category: (detail.category ?? s.category),
-          lastMessage: (detail.lastMessage ?? s.lastMessage),
-          user: { ...s.user, ...userUpdate }
-        };
-      }));
+      setSessions(prev => {
+
+        return prev.map(s => {
+          if (s.id !== sessionId) return s;
+          const userUpdate = detail.user ? {
+            name: detail.user.name ?? s.user.name,
+            email: detail.user.email ?? s.user.email,
+            phone: detail.user.phone ?? s.user.phone,
+            tags: Array.isArray(detail.user.tags) ? detail.user.tags : s.user.tags,
+            aiTags: Array.isArray(detail.user.aiTags) ? detail.user.aiTags : s.user.aiTags,
+            notes: (detail.note ?? s.user.notes)
+          } : s.user;
+          
+          const updated = {
+            ...s,
+            status: (detail.status ?? s.status),
+            lastActive: (detail.lastActive ?? s.lastActive),
+            unreadCount: (sessionId === activeSessionId ? 0 : (detail.unreadCount ?? s.unreadCount)),
+            groupId: (detail.groupId ?? s.groupId),
+            primaryAgentId: (detail.primaryAgentId ?? s.primaryAgentId),
+            supportAgentIds: Array.isArray(detail.supportAgentIds) ? detail.supportAgentIds : s.supportAgentIds,
+            agents: Array.isArray(detail.agents) ? detail.agents.map((a: any) => ({ id: a.id, name: a.name, avatar: a.avatar, isPrimary: !!a.isPrimary })) : s.agents,
+            categoryId: (detail.categoryId ?? detail.category?.id ?? s.categoryId),
+            category: (detail.category ?? s.category),
+            lastMessage: (detail.lastMessage ?? s.lastMessage),
+            // ✅ Explicitly preserve messages to avoid accidental overwrite by implicit spread (if any)
+            messages: s.messages,
+            user: { ...s.user, ...userUpdate }
+          };
+   
+          return updated;
+        });
+      });
     } catch (error) {
       console.error('Failed to load session detail:', error);
     }
@@ -1192,8 +1280,14 @@ function App() {
       // Update local session state immediately
       setSessions(prev => prev.map(s => {
         if (s.id === activeSessionId) {
-          // Merge the updated session data
-          return { ...s, ...response.session };
+          const updated = { ...s, ...response.session };
+          
+          // ✅ CRITICAL FIX: Preserve existing messages.
+          // The resolved session object from backend might not contain the full message history.
+          if (s.messages) {
+            updated.messages = s.messages;
+          }
+          return updated;
         }
         return s;
       }));
@@ -1444,6 +1538,22 @@ function App() {
     return (
       <ShopifyAppProvider apiKey={apiKey} shopOrigin={shop || undefined} host={host || undefined}>
         <Toaster position="top-center" richColors expand closeButton duration={3000} style={{ zIndex: 99999 }} />
+        {showForceChangePasswordModal && (
+          <ChangePasswordDialog
+            isOpen={showForceChangePasswordModal}
+            onClose={() => {
+            }}
+            onSuccess={() => {
+              setShowForceChangePasswordModal(false);
+              if (currentUser) {
+                setCurrentUser({ ...currentUser, hasDefaultPassword: false });
+                tokenService.setUser({ ...currentUser, hasDefaultPassword: false });
+              }
+            }}
+            forced={true}
+            defaultOldPassword="123456"
+          />
+        )}
         {!isShopifyAuthenticated ? (
           shopifyInstalled ? (
             <LoginScreen onLoginSuccess={handleLoginSuccess} shopifyMode shopifyShop={shop || ''} shopifyHost={host || ''} />
@@ -1711,6 +1821,26 @@ function App() {
   return (
     <div className="flex h-screen bg-white overflow-hidden font-sans text-gray-900">
       <Toaster position="top-center" richColors expand closeButton duration={3000} style={{ zIndex: 2147483647 }} />
+      
+      {showForceChangePasswordModal && (
+        <ChangePasswordDialog
+          isOpen={showForceChangePasswordModal}
+          onClose={() => {
+            // Forced dialog cannot be closed
+          }}
+          onSuccess={() => {
+            setShowForceChangePasswordModal(false);
+            if (currentUser) {
+              setCurrentUser({ ...currentUser, hasDefaultPassword: false });
+              // Also update tokenService user
+              tokenService.setUser({ ...currentUser, hasDefaultPassword: false });
+            }
+          }}
+          forced={true}
+          defaultOldPassword="123456"
+        />
+      )}
+
       {/* Sidebar (Desktop) */}
       <div className="hidden lg:block h-full shrink-0">
         <Sidebar 
@@ -1724,6 +1854,7 @@ function App() {
           handleLogout={handleLogout}
           onLanguageChange={handleLanguageChange}
           hasPermission={hasPermission}
+          onUserUpdated={(updatedAgent) => setCurrentUser(updatedAgent)}
         />
       </div>
       

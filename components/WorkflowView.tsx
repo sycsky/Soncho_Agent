@@ -3043,15 +3043,6 @@ const Sidebar = () => {
       title: t('workflow_editor.categories.ai_capabilities'),
       items: [
         {
-            type: 'llm',
-            label: t('workflow_editor.nodes.llm'),
-            icon: <Bot size={16}/>,
-            bg: 'bg-indigo-50',
-            border: 'border-indigo-100',
-            iconBg: 'bg-indigo-100',
-            iconColor: 'text-indigo-600'
-        },
-        {
             type: 'knowledge',
             label: t('workflow_editor.nodes.knowledge'),
             icon: <Database size={16}/>,
@@ -3183,7 +3174,7 @@ const Sidebar = () => {
   ];
 
   return (
-    <div className="absolute top-20 left-4 w-60 bg-white rounded-xl shadow-xl border border-gray-200 z-20 flex flex-col max-h-[calc(100vh-7rem)]">
+    <div className="absolute top-20 left-4 w-60 bg-white rounded-xl shadow-xl border border-gray-200 z-20 flex flex-col max-h-[calc(100vh-10rem)]">
       <div className="p-4 pb-2 border-b border-gray-100 flex-shrink-0">
         <h3 className="text-sm font-bold text-gray-800">{t('workflow_editor.components')}</h3>
         <p className="text-xs text-gray-500">{t('workflow_editor.drag_to_add')}</p>
@@ -3719,10 +3710,6 @@ const WorkflowEditor = ({ onBack, workflowId }: { onBack: () => void; workflowId
                 </button>
 
                 <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{t('workflow_editor.categories.ai')}</div>
-                <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('llm', t('workflow_editor.nodes.llm'))}>
-                  <Bot size={14} className="text-indigo-600" />
-                  <span>{t('workflow_editor.nodes.llm')}</span>
-                </button>
                 <button className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2" onClick={() => handleQuickAddNode('agent', t('workflow_editor.nodes.agent'))}>
                   <Wand2 size={14} className="text-pink-600" />
                   <span>{t('workflow_editor.nodes.agent')}</span>

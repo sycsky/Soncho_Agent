@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2, ShieldCheck, AlertCircle, ChevronDown, Check, User } from 'lucide-react';
+import { Loader2, ShieldCheck, AlertCircle, ChevronDown, Check, User, Info } from 'lucide-react';
 import api from '../services/api';
 import { Agent } from '../types';
 import { fetchShopifyAgents, getShopifySessionToken } from '../services/shopifyAuthService';
+import { ChangePasswordDialog } from './ChangePasswordDialog';
+import { tokenService } from '../services/tokenService';
 
 // Type for the successful login response data
 interface LoginResponse {
@@ -29,6 +31,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, shopif
   const [loadingAgents, setLoadingAgents] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [pendingLoginResponse, setPendingLoginResponse] = useState<LoginResponse | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -279,6 +284,22 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, shopif
           <span>{t('secure_ssl')}</span>
         </div>
       </div>
+      
+      <ChangePasswordDialog 
+        isOpen={showChangePasswordModal} 
+        onClose={() => {
+          setShowChangePasswordModal(false);
+          setPendingLoginResponse(null);
+          tokenService.removeToken();
+        }}
+        onSuccess={() => {
+          if (pendingLoginResponse) {
+            onLoginSuccess(pendingLoginResponse);
+          }
+        }}
+        forced={true}
+        defaultOldPassword="123456"
+      />
     </div>
   );
 };
