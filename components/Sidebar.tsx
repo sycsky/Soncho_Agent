@@ -118,9 +118,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {(!hasPermission || hasPermission('accessSystemStatistics')) && (
           <button onClick={() => setActiveView('ANALYTICS')} className={`p-3 mx-auto rounded-xl transition-all ${activeView === 'ANALYTICS' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`} title={t('analytics')}><BarChart size={24} /></button>
         )}
+        <button onClick={() => setActiveView('SETTINGS')} className={`p-3 mx-auto rounded-xl transition-all ${activeView === 'SETTINGS' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`} title={t('settings')}><Settings size={24} /></button>
       </nav>
       <div className="mt-auto flex flex-col items-center gap-6 pb-6 relative">
-        <button onClick={() => setActiveView('SETTINGS')} className={`p-2 transition-all rounded-lg ${activeView === 'SETTINGS' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'}`}><Settings size={24} /></button>
         <div className="relative">
            <button onClick={() => setShowProfileMenu(!showProfileMenu)} className="relative block outline-none transition-transform hover:scale-105">
             {currentUser.avatar ? (
