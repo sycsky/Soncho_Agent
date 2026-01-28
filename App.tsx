@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Agent, ChatSession, ChatStatus, Message, MessageSender, QuickReply, Attachment, KnowledgeEntry, Role, Notification, ChatGroup, UserProfile, SessionCategory } from './types';
-import { generateAIResponse, generateChatSummary, rewriteMessage, analyzeSentiment, suggestUserTags } from './services/geminiService';
+import aiService from './services/aiService';
 import api from './services/api';
 import websocketService, { ServerMessage } from './services/websocketService';
 import notificationService from './services/notificationService';
@@ -95,7 +95,6 @@ function App() {
   const [isAiTyping, setIsAiTyping] = useState(false);
   const [sentiment, setSentiment] = useState<{score: number, label: string}>({ score: 50, label: 'Neutral' });
   const [isAnalyzingSentiment, setIsAnalyzingSentiment] = useState(false);
-  const [isGeneratingTags, setIsGeneratingTags] = useState(false);
   const [currentAgentLanguage, setCurrentAgentLanguage] = useState<string>(localStorage.getItem('agent_language') || 'en');
   const [showMobileProfile, setShowMobileProfile] = useState(false);
 
@@ -1094,20 +1093,30 @@ function App() {
   const onUpdateRole = (role: Role) => showToast('INFO', 'TODO: Update role');
 
   const handleMagicRewrite = async (text: string) => {
-    return await rewriteMessage(text);
+    try {
+      const response = await aiService.rewrite(text);
+      return response.rewrittenText;
+    } catch (error) {
+      console.error('Failed to rewrite message:', error);
+      showToast('ERROR', 'Failed to rewrite message');
+      return text;
+    }
   };
 
   const handleGenerateSummary = async () => {
     if (!activeSession) return;
     setIsGeneratingSummary(true);
     setShowSummaryModal(true);
-    const history = (activeSession.messages || []).map(m => ({
-        role: m.sender.toLowerCase(),
-        content: m.text
-    }));
-    const summary = await generateChatSummary(history);
-    setSummaryText(summary);
-    setIsGeneratingSummary(false);
+    try {
+      const response = await aiService.summary(activeSession.id);
+      setSummaryText(response.summary);
+    } catch (error) {
+      console.error('Failed to generate summary:', error);
+      showToast('ERROR', 'Failed to generate summary');
+      setSummaryText('Failed to generate summary.');
+    } finally {
+      setIsGeneratingSummary(false);
+    }
   };
   
   if (loadingState === 'INITIALIZING' || loadingState === 'LOADING') {

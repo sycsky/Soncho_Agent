@@ -77,7 +77,6 @@ Follow these instructions to get the project up and running on your local machin
 
 3.  **Configure Environment Variables:**
     -   **Backend API URL:** Open `config.ts` and ensure the `BASE_URL` constant points to your running backend server (e.g., `http://127.0.0.1:8080`).
-    -   **Gemini API Key:** The application expects the Gemini API key to be available as an environment variable named `process.env.API_KEY`. You must configure this in your deployment environment. The application code will automatically pick it up.
 
 4.  **Run the application:**
     The application is served automatically in this development environment.
@@ -98,7 +97,7 @@ The codebase is organized into logical directories to maintain clarity and scala
 -   **/services:** Houses modules for communicating with external services.
     -   `api.ts`: A centralized service for making RESTful API calls to the backend. It handles token authentication and the unified response format.
     -   `websocketService.ts`: Manages the WebSocket connection for real-time events.
-    -   `geminiService.ts`: Contains all functions that interact with the Google Gemini API for features like summarization, message rewriting, and sentiment analysis.
+    -   `aiService.ts`: Routes all AI-related operations (summary, rewrite, tag suggestion) to the backend API.
 -   **/types.ts:** Defines all TypeScript interfaces and enums used across the application, providing a single source of truth for data structures.
 -   **/constants.ts:** Stores static, unchanging data like default avatars.
 -   **/config.ts:** Contains environment-specific configurations, such as the API base URL.
