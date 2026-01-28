@@ -417,6 +417,9 @@
   "passwords_match": "Passwords match",
   "update_profile": "Update Profile",
   "login_failed": "Login Failed",
+  "connection_lost_title": "Connection Lost",
+  "connection_lost_message": "Connection to the server has been lost. Please refresh the page to reconnect.",
+  "refresh_page": "Refresh Page",
   "logout": "Logout",
   "magic_rewrite_progress": "AI Magic Rewrite in progress...",
   "magic_rewrite_tooltip": "Magic Rewrite",
@@ -716,7 +719,7 @@
   "shop_domain_hint": "Your Shopify store domain (e.g. my-store.myshopify.com)",
   "sign_in_btn": "Sign In to Workspace",
   "sign_out_button": "Sign Out",
-  "signin_text": "Sign in to your NexusSupport Agent Workspace",
+  "signin_text": "Sign in to your SonCho Agent Workspace",
   "smart_summary": "AI Smart Summary",
   "smtp_host": "SMTP Host",
   "smtp_port": "SMTP Port",
@@ -1239,5 +1242,10 @@
     "loading": "Loading analytics...",
     "session_status": "Session Status Distribution",
     "top_tags": "Top Conversation Topics"
+  },
+  "connection_error": {
+    "title": "Connection Lost",
+    "message": "We cannot connect to the server. Please check your internet connection and try again.",
+    "refresh_button": "Refresh Page"
   }
 }

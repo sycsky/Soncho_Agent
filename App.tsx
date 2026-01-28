@@ -40,6 +40,7 @@ import { checkSubscriptionStatus, verifySubscription } from './services/shopifyB
 import { Button } from '@shopify/polaris';
 import { Toaster, toast } from 'sonner';
 import { ChangePasswordDialog } from './components/ChangePasswordDialog';
+import { GlobalErrorOverlay } from './components/GlobalErrorOverlay';
 
 // Type for the successful login response data
 interface LoginResponse {
@@ -142,6 +143,7 @@ function App() {
   const [showMobileProfile, setShowMobileProfile] = useState(false);
   const [showAgentSwitcher, setShowAgentSwitcher] = useState(false);
   const [showForceChangePasswordModal, setShowForceChangePasswordModal] = useState(false);
+  const [connectionError, setConnectionError] = useState(false);
 
   useEffect(() => {
     if (currentUser?.language) {
@@ -493,12 +495,18 @@ function App() {
       }
       
       // ✅ 只在首次加载时连接 WebSocket，避免重复连接
-      if (!websocketService.isConnected()) {
-        websocketService.connect(token, (msg) => {
-          // 使用 ref 调用最新的处理函数，避免闭包问题
-          wsMessageHandlerRef.current?.(msg);
-        });
-      }
+      websocketService.connect(token, (msg) => {
+        // 使用 ref 调用最新的处理函数，避免闭包问题
+        wsMessageHandlerRef.current?.(msg);
+      }, {
+        onStatusChange: (status) => {
+          if (status === 'error') {
+            setConnectionError(true);
+          } else if (status === 'connected') {
+            setConnectionError(false);
+          }
+        }
+      });
       setLoadingState('READY');
     } catch (error) {
       console.error("Failed to fetch bootstrap data:", error);
@@ -1526,7 +1534,7 @@ function App() {
   if (isShopifyEmbedded) {
     const { shop, host } = getShopifyLaunchParams();
     const apiKey = import.meta.env.VITE_SHOPIFY_API_KEY; 
-    
+ 
     if (!apiKey) {
       return (
         <div className="flex items-center justify-center h-screen bg-gray-50 text-red-600">
@@ -1538,6 +1546,11 @@ function App() {
     return (
       <ShopifyAppProvider apiKey={apiKey} shopOrigin={shop || undefined} host={host || undefined}>
         <Toaster position="top-center" richColors expand closeButton duration={3000} style={{ zIndex: 99999 }} />
+        
+        {connectionError && (
+          <GlobalErrorOverlay onRefresh={() => window.location.reload()} />
+        )}
+
         {showForceChangePasswordModal && (
           <ChangePasswordDialog
             isOpen={showForceChangePasswordModal}
@@ -1822,10 +1835,13 @@ function App() {
     return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
   }
 
+  
   return (
     <div className="flex h-screen bg-white overflow-hidden font-sans text-gray-900">
       <Toaster position="top-center" richColors expand closeButton duration={3000} style={{ zIndex: 2147483647 }} />
       
+      
+
       {showForceChangePasswordModal && (
         <ChangePasswordDialog
           isOpen={showForceChangePasswordModal}

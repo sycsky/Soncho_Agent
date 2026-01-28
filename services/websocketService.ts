@@ -82,15 +82,8 @@ class WebSocketService {
       onTokenRefresh?: TokenRefreshCallback;
     }
   ) {
-    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      console.log('WebSocket (SockJS) is already connected.');
-      return;
-    }
-    
     this.token = token;
     this.messageHandler = onMessage;
-    this.shouldReconnect = true;
-    this.reconnectAttempts = 0;
     
     // 设置可选配置
     if (options) {
@@ -100,6 +93,14 @@ class WebSocketService {
       this.connectionStatusCallback = options.onStatusChange || null;
       this.tokenRefreshCallback = options.onTokenRefresh || null;
     }
+
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      console.log('WebSocket (SockJS) is already connected. Callbacks updated.');
+      return;
+    }
+    
+    this.shouldReconnect = true;
+    this.reconnectAttempts = 0;
     
     this.createWebSocket();
   }

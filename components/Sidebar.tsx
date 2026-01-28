@@ -136,70 +136,72 @@ export const Sidebar: React.FC<SidebarProps> = ({
              <div className="absolute bottom-0 left-14 ml-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50 animate-in slide-in-from-left-2 duration-200 flex flex-col max-h-[480px]">
                {menuView === 'MAIN' ? (
                  <>
-                   <div className="p-4 border-b border-gray-100 bg-gray-50"><p className="font-bold text-gray-800">{currentUser.name}</p></div>
-                   <div className="p-2 space-y-1">
-                      <button 
-                        onClick={() => {
-                          setShowUpdateEmailModal(true);
-                          setShowProfileMenu(false);
-                        }} 
-                        className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors"
-                      >
-                        <Mail size={16} className="text-gray-500" /> 
-                        {t('update_email')}
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setShowChangePasswordModal(true);
-                          setShowProfileMenu(false);
-                        }} 
-                        className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors"
-                      >
-                        <Lock size={16} className="text-gray-500" /> 
-                        {t('change_password_title')}
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setShowUpdateAvatarModal(true);
-                          setShowProfileMenu(false);
-                        }} 
-                        className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors"
-                      >
-                        <Image size={16} className="text-gray-500" /> 
-                        {t('update_avatar', 'Update Avatar')}
-                      </button>
-                      <div className="px-3 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">{t('set_status')}</div>
-                      <button onClick={() => handleStatusChange('ONLINE')} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700"><div className="w-2.5 h-2.5 rounded-full bg-green-500"></div> {t('online')}{currentUserStatus === 'ONLINE' && <Check size={14} className="ml-auto text-green-600"/>}</button>
-                      <button onClick={() => handleStatusChange('BUSY')} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700"><div className="w-2.5 h-2.5 rounded-full bg-yellow-500"></div> {t('busy')}{currentUserStatus === 'BUSY' && <Check size={14} className="ml-auto text-yellow-600"/>}</button>
-                      <button onClick={() => handleStatusChange('IDLE')} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700"><div className="w-2.5 h-2.5 rounded-full bg-gray-400"></div> {t('idle')}{currentUserStatus === 'IDLE' && <Check size={14} className="ml-auto text-gray-500"/>}</button>
-                   </div>
-                   <div className="p-2 space-y-1 border-t border-gray-100">
-                      {isShopifyEmbedded && onSwitchAgent && (
+                   <div className="p-4 border-b border-gray-100 bg-gray-50 shrink-0"><p className="font-bold text-gray-800">{currentUser.name}</p></div>
+                   <div className="overflow-y-auto flex-1">
+                     <div className="p-2 space-y-1">
                         <button 
-                          onClick={handleSwitchAgentClick}
+                          onClick={() => {
+                            setShowUpdateEmailModal(true);
+                            setShowProfileMenu(false);
+                          }} 
+                          className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors"
+                        >
+                          <Mail size={16} className="text-gray-500" /> 
+                          {t('update_email')}
+                        </button>
+                        <button 
+                          onClick={() => {
+                            setShowChangePasswordModal(true);
+                            setShowProfileMenu(false);
+                          }} 
+                          className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors"
+                        >
+                          <Lock size={16} className="text-gray-500" /> 
+                          {t('change_password_title')}
+                        </button>
+                        <button 
+                          onClick={() => {
+                            setShowUpdateAvatarModal(true);
+                            setShowProfileMenu(false);
+                          }} 
+                          className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors"
+                        >
+                          <Image size={16} className="text-gray-500" /> 
+                          {t('update_avatar', 'Update Avatar')}
+                        </button>
+                        <div className="px-3 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">{t('set_status')}</div>
+                        <button onClick={() => handleStatusChange('ONLINE')} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700"><div className="w-2.5 h-2.5 rounded-full bg-green-500"></div> {t('online')}{currentUserStatus === 'ONLINE' && <Check size={14} className="ml-auto text-green-600"/>}</button>
+                        <button onClick={() => handleStatusChange('BUSY')} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700"><div className="w-2.5 h-2.5 rounded-full bg-yellow-500"></div> {t('busy')}{currentUserStatus === 'BUSY' && <Check size={14} className="ml-auto text-yellow-600"/>}</button>
+                        <button onClick={() => handleStatusChange('IDLE')} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700"><div className="w-2.5 h-2.5 rounded-full bg-gray-400"></div> {t('idle')}{currentUserStatus === 'IDLE' && <Check size={14} className="ml-auto text-gray-500"/>}</button>
+                     </div>
+                     <div className="p-2 space-y-1 border-t border-gray-100">
+                        {isShopifyEmbedded && onSwitchAgent && (
+                          <button 
+                            onClick={handleSwitchAgentClick}
+                            className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700 group"
+                          >
+                             <Users size={16} className="text-gray-500 group-hover:text-blue-500"/>
+                             <div className="flex-1 text-left">
+                               <div className="text-xs text-gray-500">{t('switch_agent')}</div>
+                               <div className="font-medium truncate">{t('switch_agent_desc')}</div>
+                             </div>
+                             <ChevronRight size={16} className="text-gray-400"/>
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => setMenuView('LANGUAGES')}
                           className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700 group"
                         >
-                           <Users size={16} className="text-gray-500 group-hover:text-blue-500"/>
+                           <Languages size={16} className="text-gray-500 group-hover:text-blue-500"/>
                            <div className="flex-1 text-left">
-                             <div className="text-xs text-gray-500">{t('switch_agent')}</div>
-                             <div className="font-medium truncate">{t('switch_agent_desc')}</div>
+                             <div className="text-xs text-gray-500">{t('language')}</div>
+                             <div className="font-medium truncate">{languages.find(l => l.code === selectedLanguage)?.name || t('select_language')}</div>
                            </div>
                            <ChevronRight size={16} className="text-gray-400"/>
                         </button>
-                      )}
-                      <button 
-                        onClick={() => setMenuView('LANGUAGES')}
-                        className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700 group"
-                      >
-                         <Languages size={16} className="text-gray-500 group-hover:text-blue-500"/>
-                         <div className="flex-1 text-left">
-                           <div className="text-xs text-gray-500">{t('language')}</div>
-                           <div className="font-medium truncate">{languages.find(l => l.code === selectedLanguage)?.name || t('select_language')}</div>
-                         </div>
-                         <ChevronRight size={16} className="text-gray-400"/>
-                      </button>
+                     </div>
                    </div>
-                   <div className="p-2 border-t border-gray-100 mt-auto"><button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors"><LogOut size={16} /> {t('logout')}</button></div>
+                   <div className="p-2 border-t border-gray-100 mt-auto shrink-0"><button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors"><LogOut size={16} /> {t('logout')}</button></div>
                  </>
                ) : (
                  <>

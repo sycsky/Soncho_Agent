@@ -133,6 +133,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, shopif
           <p className="text-sm text-gray-500 mt-2 text-center max-w-[260px]">
             {t('signin_text')}
           </p>
+          <p className="text-xs text-blue-500/80 mt-2 font-medium bg-blue-50 px-3 py-1 rounded-full">
+            {t('login_hint')}
+          </p>
         </div>
 
         {error && (
