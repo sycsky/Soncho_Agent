@@ -1,4 +1,3 @@
-import { GoogleGenAI } from "@google/genai";
 import api from './api';
 import { tokenService } from './tokenService';
 
