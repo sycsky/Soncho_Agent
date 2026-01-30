@@ -79,10 +79,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                <>
                  <button onClick={() => setSettingsTab('EXTERNAL_PLATFORMS')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'EXTERNAL_PLATFORMS' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50'}`}><Globe size={18} />{t('settings_nav_external_platforms')}</button>
                  <button onClick={() => setSettingsTab('OFFICIAL_CHANNELS')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'OFFICIAL_CHANNELS' ? 'bg-green-50 text-green-700' : 'text-gray-600 hover:bg-gray-50'}`}><MessageSquare size={18} />{t('settings_nav_official_channels')}</button>
-                 <button onClick={() => setSettingsTab('EVENTS')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'EVENTS' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}><Calendar size={18} />{t('settings_nav_events')}</button>
                  <button onClick={() => setSettingsTab('SCHEDULED_TASKS')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'SCHEDULED_TASKS' ? 'bg-orange-50 text-orange-700' : 'text-gray-600 hover:bg-gray-50'}`}><Clock size={18} />{t('settings_nav_scheduled_tasks')}</button>
                </>
              )}
+             <button onClick={() => setSettingsTab('EVENTS')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'EVENTS' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}><Calendar size={18} />{t('settings_nav_events')}</button>
              {(!hasPermission || hasPermission('setCancellationPolicy')) && (
                <button onClick={() => setSettingsTab('CANCELLATION_POLICY')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${settingsTab === 'CANCELLATION_POLICY' ? 'bg-red-50 text-red-700' : 'text-gray-600 hover:bg-gray-50'}`}><XCircle size={18} />{t('settings_nav_cancellation_policy')}</button>
              )}
