@@ -6,7 +6,7 @@ export interface EventConfig {
   name: string;
   displayName: string;
   description: string;
-  workflowId: string;
+  workflowName: string;
   enabled: boolean;
   sortOrder: number;
   createdAt?: string;

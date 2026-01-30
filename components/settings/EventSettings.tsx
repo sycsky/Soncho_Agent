@@ -19,7 +19,7 @@ export const EventSettings: React.FC = () => {
     name: '',
     displayName: '',
     description: '',
-    workflowId: '',
+    workflowName: '',
     enabled: true,
     sortOrder: 0
   });
@@ -52,7 +52,7 @@ export const EventSettings: React.FC = () => {
       name: '',
       displayName: '',
       description: '',
-      workflowId: '',
+      workflowName: '',
       enabled: true,
       sortOrder: 0
     });
@@ -136,7 +136,6 @@ export const EventSettings: React.FC = () => {
           </div>
         ) : (
           events.map(event => {
-            const workflow = workflows.find(w => w.id === event.workflowId);
             return (
               <div key={event.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
                 <div className="flex items-start justify-between">
@@ -157,8 +156,8 @@ export const EventSettings: React.FC = () => {
                     <p className="text-sm text-gray-600 mb-2">{event.description}</p>
                     <div className="text-xs text-gray-500 flex items-center gap-2">
                       <span className="font-medium">{t('workflow')}:</span> 
-                      {workflow ? (
-                        <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded">{workflow.name}</span>
+                      {event.workflowName ? (
+                        <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded">{event.workflowName}</span>
                       ) : (
                         <span className="text-gray-400 italic">{t('no_workflow_assigned')}</span>
                       )}
@@ -243,13 +242,13 @@ export const EventSettings: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('trigger_workflow')}</label>
                 <select 
-                  value={currentEvent.workflowId || ''}
-                  onChange={e => setCurrentEvent({...currentEvent, workflowId: e.target.value})}
+                  value={currentEvent.workflowName || ''}
+                  onChange={e => setCurrentEvent({...currentEvent, workflowName: e.target.value})}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 >
                   <option value="">{t('select_workflow')}</option>
                   {workflows.map(wf => (
-                    <option key={wf.id} value={wf.id}>{wf.name}</option>
+                    <option key={wf.id} value={wf.name}>{wf.name}</option>
                   ))}
                 </select>
               </div>

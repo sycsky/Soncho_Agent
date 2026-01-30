@@ -622,9 +622,19 @@ function App() {
           const subStatus = await checkSubscriptionStatus(shop);
           console.log('[App] Subscription status check:', subStatus);
           setIsSubscriptionActive(subStatus.active);
-        } catch (e) {
+        } catch (e: any) {
           console.error('[App] Failed to check subscription', e);
-          setIsSubscriptionActive(false);
+          
+          // 自动检测 "Apps without a public distribution" 错误并绕过
+          // 允许 Custom App 或未配置 Public 的开发应用继续运行
+          const errorMsg = e?.response?.data?.message || e?.message || JSON.stringify(e);
+          if (errorMsg.includes('Apps without a public distribution') || errorMsg.includes('Billing API')) {
+            console.warn('[App] Billing API unavailable (likely Custom App). Bypassing subscription check.');
+            setIsSubscriptionActive(true);
+            toast.info(t('billing.bypass_mode', 'Billing API unavailable. Running in bypass mode.'));
+          } else {
+            setIsSubscriptionActive(false);
+          }
         } finally {
           setCheckingSubscription(false);
           setActiveView('INBOX');

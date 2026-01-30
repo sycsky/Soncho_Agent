@@ -102,9 +102,51 @@ class WebSocketService {
     this.shouldReconnect = true;
     this.reconnectAttempts = 0;
     
+    // 注册页面可见性监听（放在这里，确保只注册一次）
+    if (!this.visibilityHandler) {
+        this.registerVisibilityHandler();
+    }
+    
     this.createWebSocket();
   }
   
+  private registerVisibilityHandler() {
+    console.log('👁️ 注册页面可见性监听器');
+    
+    if (this.visibilityHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+    }
+
+    this.visibilityHandler = () => {
+      console.log('👀 页面可见性变化:', document.visibilityState);
+      
+      if (document.visibilityState === 'visible') {
+        console.log('👀 页面变为可见，检查 WebSocket 连接状态...');
+        
+        // 增加延时，确保浏览器已从后台完全恢复网络栈
+        setTimeout(() => {
+            if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+                console.log('⚠️ WebSocket 未连接，立即尝试重连...');
+                this.shouldReconnect = true; // 确保允许重连
+                this.reconnectAttempts = 0; // 重置重连次数
+                this.createWebSocket();
+            } else {
+                console.log('💓 发送心跳包以确认连接活性...');
+                // 尝试发送一个心跳
+                try {
+                    this.socket.send(JSON.stringify({ event: 'ping' }));
+                } catch (e) {
+                    console.warn('💓 心跳发送失败，可能是假死连接，尝试重连', e);
+                    this.socket.close(); // 关闭假死连接，触发 onclose 里的重连逻辑
+                }
+            }
+        }, 1000);
+      }
+    };
+
+    document.addEventListener('visibilitychange', this.visibilityHandler);
+  }
+
   private createWebSocket() {
     if (!this.token || !this.shouldReconnect) {
         console.error("WebSocket connection cannot be established without a token or if disconnected intentionally.");
@@ -489,6 +531,13 @@ class WebSocketService {
 
   disconnect() {
     this.stopHeartbeat();
+    
+    // 移除页面可见性监听
+    if (this.visibilityHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+      this.visibilityHandler = null;
+    }
+
     this.shouldReconnect = false;
     if (this.socket) {
       this.socket.close(1000, 'Client closed connection');
@@ -500,4 +549,10 @@ class WebSocketService {
 
 // Singleton instance
 const websocketService = new WebSocketService();
+
+// Expose for debugging
+if (typeof window !== 'undefined') {
+  (window as any).websocketService = websocketService;
+}
+
 export default websocketService;

@@ -1,6 +1,6 @@
-# SonCho AI - Intelligent Customer Support Platform
+# Soncho AI - Intelligent Customer Support Platform
 
-SonCho AI is a modern, feature-rich customer support workspace designed to enhance agent productivity and streamline customer interactions. It combines a real-time chat interface with powerful AI capabilities, powered by Google's Gemini models, to create a seamless environment for both human agents and AI assistants.
+Soncho AI is a modern, feature-rich customer support workspace designed to enhance agent productivity and streamline customer interactions. It combines a real-time chat interface with powerful AI capabilities, powered by Google's Gemini models, to create a seamless environment for both human agents and AI assistants.
 
 ---
 
@@ -61,7 +61,7 @@ Follow these instructions to get the project up and running on your local machin
 
 ### Prerequisites
 
--   A running instance of the corresponding SonCho AI backend server.
+-   A running instance of the corresponding Soncho AI backend server.
 -   A valid Google Gemini API key.
 
 ### Setup & Configuration
