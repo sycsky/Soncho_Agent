@@ -220,7 +220,10 @@ function App() {
                 const nextLastActive = newMessage.timestamp;
                 return {
                   ...s,
-                  messages: s.messages ? [...s.messages, newMessage] : [newMessage],
+                  // ✅ Check for duplicates before adding
+                  messages: s.messages 
+                    ? (s.messages.some(m => m.id === newMessage.id) ? s.messages : [...s.messages, newMessage]) 
+                    : [newMessage],
                   lastMessage: newMessage,
                   lastActive: nextLastActive,
                   unreadCount: nextUnread,
