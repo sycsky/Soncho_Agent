@@ -20,7 +20,7 @@ import {
   EdgeProps
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Play, GitBranch, Database, Bot, MessageSquare, GripHorizontal, Plus, Trash2, X, MoreHorizontal, ArrowLeft, ArrowRight, Calendar, User, Search, Filter, Save, Loader2, Square, Settings, ChevronRight, Star, Power, CheckCircle, Edit2, Headphones, Hammer, ListFilter, Split, Image, Tags, Wand2, Layout, Braces, Copy, Languages } from 'lucide-react';
+import { Play, GitBranch, Database, Bot, MessageSquare, GripHorizontal, Plus, Trash2, X, MoreHorizontal, ArrowLeft, ArrowRight, Calendar, User, Search, Filter, Save, Loader2, Square, Settings, ChevronRight, Star, Power, CheckCircle, Edit2, Headphones, Hammer, ListFilter, Split, Image, Tags, Wand2, Layout, Braces, Copy, Languages, Clock } from 'lucide-react';
 import { workflowApi } from '../services/workflowApi';
 import knowledgeBaseApi from '../services/knowledgeBaseApi';
 import aiToolApi from '../services/aiToolApi';
@@ -1209,7 +1209,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
         .catch(err => console.error('Failed to fetch knowledge bases', err));
     }
 
-    if (node && node.type === 'flow') {
+    if (node && (node.type === 'flow' || node.type === 'delay')) {
         workflowApi.getAllWorkflows()
             .then(data => setWorkflows(data))
             .catch(err => console.error('Failed to fetch workflows', err));
@@ -1389,7 +1389,47 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
 
         <div className="h-px bg-gray-100 my-2"></div>
 
-        {/* Node specific fields */}
+        {node.type === 'delay' && (
+          <div className="space-y-4">
+             <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Target Workflow</label>
+              <select 
+                value={node.data.config?.targetWorkflowId || ''}
+                onChange={(e) => handleConfigChange('targetWorkflowId', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select a workflow...</option>
+                {workflows.map(wf => (
+                    <option key={wf.id} value={wf.id}>{wf.name}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Delay (Minutes)</label>
+              <input 
+                type="number"
+                min="1"
+                max="1440"
+                value={node.data.config?.delayMinutes || 0}
+                onChange={(e) => handleConfigChange('delayMinutes', parseInt(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="text-[10px] text-gray-400 mt-1">Max: 1440 (24 hours)</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Input Data Template</label>
+              <textarea 
+                value={node.data.config?.inputData || ''}
+                onChange={(e) => handleConfigChange('inputData', e.target.value)}
+                placeholder="Data to pass to the target workflow (supports {{sys.query}}, {{sys.lastOutput}} etc.)"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 h-24"
+              />
+            </div>
+          </div>
+        )}
+
         {node.type === 'intent' && (
           <div className="space-y-4">
             <div>
@@ -2861,6 +2901,34 @@ const ConditionNode = ({ id, data, selected }: NodeProps) => {
   );
 };
 
+const DelayNode = ({ id, data, selected }: NodeProps) => {
+  const config = data.config as any;
+  const delayMinutes = config?.delayMinutes || 0;
+  
+  return (
+    <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[240px] group hover:border-purple-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
+      <NodeMenu nodeId={id} />
+      <div className="bg-purple-50 px-4 py-2 rounded-t-xl border-b border-purple-100 flex items-center gap-2">
+        <div className="bg-purple-100 p-1 rounded-lg text-purple-600">
+          <Clock size={14} />
+        </div>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Delay Execution'}</span>
+      </div>
+      <div className="p-3 bg-gray-50 border-b border-gray-100">
+        <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
+          <Clock size={12} />
+          <span>{delayMinutes} Minutes Delay</span>
+        </div>
+      </div>
+      <div className="p-3 bg-gray-50 rounded-b-xl text-[10px] text-gray-400 leading-relaxed border-t border-gray-100">
+        Wait for specified time, then trigger target workflow.
+      </div>
+      <Handle type="target" position={Position.Left} className="!bg-gray-400" />
+      <Handle type="source" position={Position.Right} className="!bg-gray-400" />
+    </div>
+  );
+};
+
 const nodeTypes = {
   start: StartNode,
   end: EndNode,
@@ -2880,6 +2948,7 @@ const nodeTypes = {
   flow_update: FlowUpdateNode,
   agent: AgentNode,
   tool: ToolNode,
+  delay: DelayNode,
 
   imageTextSplit: ImageTextSplitNode,
   setSessionMetadata: SetSessionMetadataNode,
@@ -2958,6 +3027,7 @@ const Sidebar = () => {
         { type: 'agent', label: 'Agent', Icon: Wand2, itemClassName: 'bg-pink-50 border-pink-100', iconClassName: 'bg-pink-100 text-pink-600' },
         { type: 'tool', label: 'Tool Execution', Icon: Hammer, itemClassName: 'bg-orange-50 border-orange-100', iconClassName: 'bg-orange-100 text-orange-600' },
         { type: 'translation', label: 'Translation', Icon: Languages, itemClassName: 'bg-orange-50 border-orange-100', iconClassName: 'bg-orange-100 text-orange-600' },
+        { type: 'delay', label: 'Delay Execution', Icon: Clock, itemClassName: 'bg-purple-50 border-purple-100', iconClassName: 'bg-purple-100 text-purple-600' },
       ],
     },
     {
