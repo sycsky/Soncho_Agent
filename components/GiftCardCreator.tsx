@@ -7,12 +7,14 @@ interface GiftCardCreatorProps {
   isOpen: boolean;
   onClose: () => void;
   onSend: (giftCard: any) => void;
+  customerId?: string;
 }
 
-export const GiftCardCreator: React.FC<GiftCardCreatorProps> = ({ isOpen, onClose, onSend }) => {
+export const GiftCardCreator: React.FC<GiftCardCreatorProps> = ({ isOpen, onClose, onSend, customerId }) => {
   const { t } = useTranslation();
   const [amount, setAmount] = useState('50');
   const [note, setNote] = useState('');
+  const [expiresOn, setExpiresOn] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -24,11 +26,12 @@ export const GiftCardCreator: React.FC<GiftCardCreatorProps> = ({ isOpen, onClos
     setError('');
 
     try {
-      const giftCard = await createGiftCard(amount, note);
+      const giftCard = await createGiftCard(amount, note, customerId, expiresOn);
       onSend({
         amount: giftCard.balance.amount,
         code: giftCard.code,
-        currency: giftCard.balance.currencyCode
+        currency: giftCard.balance.currencyCode,
+        expiresOn: giftCard.expiresOn
       });
     } catch (err: any) {
       setError(err.message || t('gift_card.error_create'));
@@ -67,6 +70,16 @@ export const GiftCardCreator: React.FC<GiftCardCreatorProps> = ({ isOpen, onClos
             </div>
           </div>
           
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('gift_card.expires_on_optional')}</label>
+            <input
+              type="date"
+              value={expiresOn}
+              onChange={(e) => setExpiresOn(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('gift_card.note_optional')}</label>
             <input

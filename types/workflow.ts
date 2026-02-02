@@ -85,6 +85,7 @@ export interface LlmModel {
   supportsVision?: boolean;
   enabled?: boolean;
   isDefault?: boolean;
+  statusExplanation?: boolean;
   sortOrder?: number;
   description?: string;
   createdAt?: string;

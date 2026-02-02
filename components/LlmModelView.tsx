@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { LlmModel, LlmProvider } from '../types/workflow';
 import { workflowApi } from '../services/workflowApi';
 import { Bot, Plus, Trash2, Edit2, CheckCircle, XCircle, Play, Save, X, RefreshCw, Eye, EyeOff } from 'lucide-react';
 
 export const LlmModelView: React.FC = () => {
+  const { t } = useTranslation();
   const [models, setModels] = useState<LlmModel[]>([]);
   const [providers, setProviders] = useState<LlmProvider[]>([]);
   const [loading, setLoading] = useState(false);
@@ -330,6 +332,15 @@ export const LlmModelView: React.FC = () => {
                 />
                 Default Model
              </label>
+             <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={currentModel.statusExplanation || false}
+                  onChange={e => setCurrentModel({...currentModel, statusExplanation: e.target.checked})}
+                  className="rounded text-indigo-600 focus:ring-indigo-500"
+                />
+                {t('status_explanation_model')}
+             </label>
           </div>
 
           <div className="flex justify-end gap-2">
@@ -368,6 +379,7 @@ export const LlmModelView: React.FC = () => {
                       <h4 className="font-bold text-gray-800">{model.name}</h4>
                       <span className="text-[10px] uppercase font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">{model.provider}</span>
                       {model.isDefault && <span className="text-[10px] uppercase font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">Default</span>}
+                      {model.statusExplanation && <span className="text-[10px] uppercase font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">{t('status')}</span>}
                     </div>
                     <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
                       <span className="font-mono">{model.modelName}</span>

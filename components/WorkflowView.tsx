@@ -2910,15 +2910,21 @@ const ConditionNode = ({ id, data, selected }: NodeProps) => {
             {/* IF / ELSE IF Branches */}
             {conditions.map((condition: any, index: number) => (
                 <div key={condition.id} className="px-4 py-3 border-b border-gray-100 flex justify-between items-center relative hover:bg-gray-50">
-                    <div className="flex flex-col overflow-hidden mr-2">
+                    <div className="flex flex-col overflow-hidden mr-2 w-full max-w-[260px]">
                         <span className="text-xs font-bold text-gray-500 uppercase mb-0.5">
                             {index === 0 ? t('workflow_editor.if') : t('workflow_editor.else_if')}
                         </span>
-                        <div className="flex items-center gap-1 text-xs text-gray-700 truncate max-w-[180px]">
-                            <span className="font-mono bg-gray-100 px-1 rounded">{condition.sourceValue || '?'}</span>
-                            <span className="text-gray-400 font-bold text-[10px]">{condition.conditionType}</span>
+                        <div className="flex flex-col gap-1 text-xs text-gray-700 w-full mt-1">
+                            <span className="font-mono bg-gray-100 px-2 py-1 rounded block w-full truncate" title={condition.sourceValue}>
+                                {condition.sourceValue || '?'}
+                            </span>
+                            <span className="text-gray-400 font-bold text-[10px] px-1">
+                                {condition.conditionType}
+                            </span>
                             {!['isEmpty', 'isNotEmpty'].includes(condition.conditionType) && (
-                                <span className="font-mono bg-gray-100 px-1 rounded">{condition.inputValue || '?'}</span>
+                                <span className="font-mono bg-gray-100 px-2 py-1 rounded block w-full truncate" title={condition.inputValue}>
+                                    {condition.inputValue || '?'}
+                                </span>
                             )}
                         </div>
                     </div>
