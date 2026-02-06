@@ -9,6 +9,11 @@ export interface Subscription {
   seatUsage: number;
   cancelAtPeriodEnd?: boolean;
   
+  // Next Cycle Info
+  nextPlan?: 'FREE' | 'BASIC' | 'PRO' | 'ENTERPRISE';
+  nextBillingDate?: string;
+  nextPrice?: number;
+
   // Feature flags
   supportAnalyticsHistory: boolean;
   supportAdvancedAnalytics: boolean;

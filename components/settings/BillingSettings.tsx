@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { billingApi, Subscription } from '../../services/billingApi';
 import { createSubscription, cancelSubscription } from '../../services/shopifyBillingService';
 import { getShopifyLaunchParams } from '../../services/shopifyAuthService';
-import { Check, Loader2 } from 'lucide-react';
+import { Check, Loader2, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
@@ -31,16 +31,33 @@ export const BillingSettings: React.FC = () => {
     }
   };
 
+  const plans = [
+    { name: 'FREE', price: '$0', aiLimit: 50, seats: 1, features: ['billing.features.basic_analytics', 'billing.features.order_view'] },
+    { name: 'BASIC', price: '$19', aiLimit: 500, seats: 3, features: ['billing.features.magic_rewrite', 'billing.features.email_support'] },
+    { name: 'PRO', price: '$59', aiLimit: 2000, seats: 10, features: ['billing.features.advanced_analytics', 'billing.features.smart_summary', 'billing.features.ai_tags', 'billing.features.priority_support'] },
+    { name: 'ENTERPRISE', price: '$199', aiLimit: 'Unlimited', seats: 'Unlimited', features: ['billing.features.dedicated_manager', 'billing.features.all_features'] },
+  ];
+
   const handlePlanChange = async (plan: string) => {
     if (!shop) {
         toast.error('Shopify shop context missing');
         return;
     }
     
-    // For Free plan, we might just update backend directly if desired, 
-    // but consistent flow is to redirect via shopifyBillingService 
-    // which handles the redirect logic.
-    if (confirm(t('billing.switch_confirm', { plan }))) {
+    // Determine upgrade or downgrade
+    const getPriceValue = (priceStr: string) => parseInt(priceStr.replace('$', '')) || 0;
+    const newPlanObj = plans.find(p => p.name === plan);
+    const currentPlanObj = plans.find(p => p.name === subscription?.plan);
+    
+    const isDowngrade = (newPlanObj && currentPlanObj) 
+        ? getPriceValue(newPlanObj.price) < getPriceValue(currentPlanObj.price) 
+        : false;
+
+    const confirmMsg = isDowngrade 
+        ? t('billing.downgrade_confirm', { plan }) 
+        : t('billing.switch_confirm', { plan });
+
+    if (confirm(confirmMsg)) {
         setUpgrading(true);
         try {
             // Use Shopify Billing Flow
@@ -103,13 +120,6 @@ export const BillingSettings: React.FC = () => {
 
   if (loading) return <div>{t('billing.loading')}</div>;
 
-  const plans = [
-    { name: 'FREE', price: '$0', aiLimit: 50, seats: 1, features: ['billing.features.basic_analytics', 'billing.features.order_view'] },
-    { name: 'BASIC', price: '$19', aiLimit: 500, seats: 3, features: ['billing.features.magic_rewrite', 'billing.features.email_support'] },
-    { name: 'PRO', price: '$59', aiLimit: 2000, seats: 10, features: ['billing.features.advanced_analytics', 'billing.features.smart_summary', 'billing.features.ai_tags', 'billing.features.priority_support'] },
-    { name: 'ENTERPRISE', price: '$199', aiLimit: 'Unlimited', seats: 'Unlimited', features: ['billing.features.dedicated_manager', 'billing.features.all_features'] },
-  ];
-
   const getUsagePercentage = (usage: number, limit: number | string) => {
     if (limit === 'Unlimited') return 0;
     return Math.min((usage / (limit as number)) * 100, 100);
@@ -133,6 +143,24 @@ export const BillingSettings: React.FC = () => {
                                 : <span>{t('billing.renews_on')} {new Date(subscription?.currentPeriodEnd || '').toLocaleDateString()}</span>
                             }
                         </div>
+                        {subscription?.nextPlan && (
+                             <div className="mt-3 p-3 bg-blue-50 text-blue-700 rounded-lg text-sm flex items-start gap-2 border border-blue-100">
+                                <Info size={16} className="mt-0.5 shrink-0" />
+                                <div>
+                                    <div className="font-medium">
+                                        {t('billing.next_plan_scheduled', { 
+                                            plan: subscription.nextPlan, 
+                                            date: new Date(subscription.nextBillingDate || '').toLocaleDateString() 
+                                        })}
+                                    </div>
+                                    {subscription.nextPrice !== undefined && (
+                                        <div className="text-xs opacity-80 mt-1">
+                                            ${subscription.nextPrice}/mo
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
                     <div className={`px-3 py-1 rounded-full text-sm font-medium ${!isFreePlan(subscription?.plan) && subscription?.cancelAtPeriodEnd ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700'}`}>
                         {!isFreePlan(subscription?.plan) && subscription?.cancelAtPeriodEnd ? t('billing.cancelling') : t('billing.current_tag')}

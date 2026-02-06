@@ -1196,6 +1196,8 @@
     "switch_confirm": "确定要切换到 {{plan}} 套餐吗？",
     "switch_success": "成功切换到 {{plan}} 套餐",
     "switch_failed": "切换套餐失败",
+    "next_plan_scheduled": "预计将于 {{date}} 切换至 {{plan}} 套餐",
+    "downgrade_confirm": "这将在下一个计费周期将您的套餐降级为 {{plan}}。确认吗？",
     "cancels_on": "将于此日期取消：",
     "cancelling": "取消中",
     "cancel_confirm": "您确定要取消订阅吗？您将在当前计费周期结束前保留访问权限。",
