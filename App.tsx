@@ -150,7 +150,7 @@ function App() {
       setCurrentAgentLanguage(currentUser.language);
       tokenService.setLanguage(currentUser.language);
     }
-    
+
     if (currentUser?.hasDefaultPassword) {
       setShowForceChangePasswordModal(true);
     }
@@ -267,8 +267,8 @@ function App() {
           translationData: backendMessage.translationData
         };
 
- 
-        
+
+
         // ✅ 使用函数式更新检查会话是否存在
         setSessions(prev => {
           const sessionExists = prev.some(s => s.id === sessionId);
@@ -284,12 +284,15 @@ function App() {
                 // CRITICAL FIX: Explicitly exclude SYSTEM messages from unread count
                 const isSystemMessage = newMessage.sender === MessageSender.SYSTEM;
                 const shouldIncrement = !isSystemMessage && ((isUserMessage && isOwned) || isMentioned);
-                
+
                 const nextUnread = isNewUnread ? (shouldIncrement ? s.unreadCount + 1 : s.unreadCount) : 0;
                 const nextLastActive = newMessage.timestamp;
                 return {
                   ...s,
-                  messages: s.messages ? [...s.messages, newMessage] : [newMessage],
+                  // ✅ Check for duplicates before adding
+                  messages: s.messages
+                    ? (s.messages.some(m => m.id === newMessage.id) ? s.messages : [...s.messages, newMessage])
+                    : [newMessage],
                   lastMessage: newMessage,
                   lastActive: nextLastActive,
                   unreadCount: nextUnread,
@@ -336,7 +339,7 @@ function App() {
       case 'sessionUpdated': {
         // Fix: Handle nested session object in payload if present
         const sessionData = (payload as any).session || payload;
- 
+
 
         // Check for Transfer to Human (Current Agent)
         if (sessionData.status === 'HUMAN_HANDLING' && 
@@ -359,7 +362,7 @@ function App() {
 
             const resolvedGroup = chatGroups.find(g => g.name === 'Resolved' && g.isSystem);
             if (resolvedGroup) {
-  
+
                 newGroupId = resolvedGroup.id;
             } else {
                 console.warn('[Debug] Resolved group not found!');
@@ -371,17 +374,17 @@ function App() {
             if (s.id === sessionData.id) {
               // Merge updates to preserve existing fields
               const updated = { ...s, ...sessionData };
-              
+
               // Apply group move if resolved
               if (newGroupId) {
                   updated.groupId = newGroupId;
               }
-              
+
               // ✅ Ensure lastActive does not regress (go backwards in time)
               if (s.lastActive > (updated.lastActive || 0)) {
                 updated.lastActive = s.lastActive;
               }
-              
+
               // ✅ CRITICAL FIX: Always preserve existing messages if they are loaded.
               // sessionUpdated events often contain partial messages (e.g. only lastMessage) or empty arrays,
               // which would overwrite the fully loaded message history.
@@ -389,7 +392,7 @@ function App() {
               if (s.messages) {
                 updated.messages = s.messages;
               }
-              
+
               return updated;
             }
             return s;
@@ -523,7 +526,7 @@ function App() {
       // return;
     }
     isInitialized.current = true;
-    
+
     const urlParams = new URLSearchParams(window.location.search);
     const launchParams = getShopifyLaunchParams();
     const shop = launchParams.shop;
@@ -533,7 +536,7 @@ function App() {
     if (shop) {
       setIsShopifyEmbedded(true);
       saveShopifyLaunchParams({ shop, host, tenantId });
-      
+
       const confirmBilling = urlParams.get('confirm_billing');
       const planId = urlParams.get('plan_id');
       const chargeId = urlParams.get('charge_id');
@@ -542,7 +545,7 @@ function App() {
       // We must redirect back to Shopify Admin to regain access to the embedded session.
       const isTopFrame = window.top === window.self;
       const hasToken = !!localStorage.getItem('nexus_token');
-      
+
       if (confirmBilling && isTopFrame && !hasToken) {
          const apiKey = import.meta.env.VITE_SHOPIFY_API_KEY;
          if (apiKey) {
@@ -624,7 +627,7 @@ function App() {
           setIsSubscriptionActive(subStatus.active);
         } catch (e: any) {
           console.error('[App] Failed to check subscription', e);
-          
+
           // 自动检测 "Apps without a public distribution" 错误并绕过
           // 允许 Custom App 或未配置 Public 的开发应用继续运行
           const errorMsg = e?.response?.data?.message || e?.message || JSON.stringify(e);
@@ -658,24 +661,24 @@ function App() {
            // Assuming Free plan doesn't have a chargeId, but we redirected with plan_id=FREE
            // Let's verify/activate free plan directly
            // Backend's verifySubscription might need chargeId, but for free plan we might not have one or use dummy
-           
+
            // Actually, if we look at ShopifyBillingService.java, for FREE plan it returns returnUrl immediately.
            // So the URL would look like /?shop=...&planId=FREE (we need to make sure frontend passes this param if it's not standard)
-           // Wait, my frontend code in createSubscription sends returnUrl. 
+           // Wait, my frontend code in createSubscription sends returnUrl.
            // If backend returns returnUrl immediately for Free plan, it's just a redirect back.
            // But verifySubscription requires chargeId.
-           
+
            // Let's check how I implemented backend createSubscription for FREE plan:
            // It updates local DB and returns returnUrl.
            // So when we come back, we are already "subscribed" in DB.
            // We just need to reload/check status.
-           
+
            // So if we have plan_id=FREE but no charge_id, we should just proceed to finalizeStartup
            // which calls checkSubscriptionStatus.
-           
+
            window.history.replaceState({}, document.title, `/?shop=${shop}&is_embedded=1`);
            finalizeStartup();
-           
+
       } else {
         if (tenantId) {
           const nextUrl = new URL(window.location.href);
@@ -778,20 +781,20 @@ function App() {
       // 保存新的 token 和用户信息
       tokenService.setToken(token);
       tokenService.setUser(agent);
-      
+
       // 断开旧的 WebSocket 连接
       websocketService.disconnect();
-      
+
       // 更新当前用户
       setCurrentUser(agent);
       setIsAuthenticated(true);
-      
+
       // 重新获取数据
       await fetchBootstrapData(agent, token);
-      
+
       // 关闭切换对话框
       setShowAgentSwitcher(false);
-      
+
       showToast('SUCCESS', t('switch_agent_success'));
     } catch (error) {
       console.error('Failed to switch agent:', error);
@@ -977,7 +980,7 @@ function App() {
   useEffect(() => {
     if (activeSessionId) {
       // ✅ 只设置 unreadCount，不覆盖其他字段
-      setSessions(prev => prev.map(s => 
+      setSessions(prev => prev.map(s =>
         s.id === activeSessionId ? { ...s, unreadCount: 0 } : s
       ));
       
@@ -1004,7 +1007,7 @@ function App() {
 
       const response = await api.get<{ content: any[] }>(`/chat/sessions/${sessionId}/messages`);
 
-      
+
       // 转换后端消息格式为前端格式
       const messages: Message[] = (response.content || []).map(backendMsg => ({
         id: backendMsg.id,
@@ -1022,7 +1025,7 @@ function App() {
       
       setSessions(prev => {
 
-        return prev.map(s => 
+        return prev.map(s =>
           s.id === sessionId ? { ...s, messages } : s
         );
       });
@@ -1030,8 +1033,8 @@ function App() {
       console.error('Failed to load session messages:', error);
       showToast('ERROR', 'Failed to load messages');
       // 如果加载失败，至少设置为空数组避免重复请求
-  
-      setSessions(prev => prev.map(s => 
+
+      setSessions(prev => prev.map(s =>
         s.id === sessionId ? { ...s, messages: [] } : s
       ));
     }
@@ -1053,7 +1056,7 @@ function App() {
             aiTags: Array.isArray(detail.user.aiTags) ? detail.user.aiTags : s.user.aiTags,
             notes: (detail.note ?? s.user.notes)
           } : s.user;
-          
+
           const updated = {
             ...s,
             status: (detail.status ?? s.status),
@@ -1070,7 +1073,7 @@ function App() {
             messages: s.messages,
             user: { ...s.user, ...userUpdate }
           };
-   
+
           return updated;
         });
       });
@@ -1209,7 +1212,7 @@ function App() {
     // Parse messageType for optimistic UI update
     let messageType = 'TEXT';
     let displayContent = text;
-    
+
     if (text.startsWith('card#')) {
         const parts = text.split('#', 3);
         if (parts.length >= 3) {
@@ -1299,7 +1302,7 @@ function App() {
       setSessions(prev => prev.map(s => {
         if (s.id === activeSessionId) {
           const updated = { ...s, ...response.session };
-          
+
           // ✅ CRITICAL FIX: Preserve existing messages.
           // The resolved session object from backend might not contain the full message history.
           if (s.messages) {
@@ -1486,7 +1489,7 @@ function App() {
     setIsGeneratingTags(true);
     try {
       const tags = await suggestUserTags([], "", activeSessionId);
-      
+
       // Update local state
       setSessions(prev => prev.map(s => {
         if (s.userId === userId && s.user) {
@@ -1500,7 +1503,7 @@ function App() {
         }
         return s;
       }));
-      
+
       showToast('SUCCESS', t('ai_tags_generated'));
     } catch (error) {
       console.error('Failed to generate AI tags:', error);
@@ -1543,8 +1546,8 @@ function App() {
   // Shopify Embedded App View
   if (isShopifyEmbedded) {
     const { shop, host } = getShopifyLaunchParams();
-    const apiKey = import.meta.env.VITE_SHOPIFY_API_KEY; 
- 
+    const apiKey = import.meta.env.VITE_SHOPIFY_API_KEY;
+
     if (!apiKey) {
       return (
         <div className="flex items-center justify-center h-screen bg-gray-50 text-red-600">
@@ -1556,7 +1559,7 @@ function App() {
     return (
       <ShopifyAppProvider apiKey={apiKey} shopOrigin={shop || undefined} host={host || undefined}>
         <Toaster position="top-center" richColors expand closeButton duration={3000} style={{ zIndex: 99999 }} />
-        
+
         {connectionError && (
           <GlobalErrorOverlay onRefresh={() => window.location.reload()} />
         )}
@@ -1597,8 +1600,8 @@ function App() {
             <div className="flex h-full w-full bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
               {/* Sidebar */}
               <div className="hidden lg:block h-full shrink-0 border-r border-gray-200">
-                <Sidebar 
-                  activeView={activeView} 
+                <Sidebar
+                  activeView={activeView}
                   setActiveView={setActiveView}
                   currentUser={currentUser}
                   currentUserStatus={currentUserStatus}
@@ -1621,19 +1624,19 @@ function App() {
               <div className="flex-1 h-full overflow-hidden relative">
                   {activeView === 'DASHBOARD' && (
                     <div className="h-full overflow-auto">
-                      <ShopifyDashboard 
+                      <ShopifyDashboard
                         onOpenChat={() => setActiveView('INBOX')}
                         onOpenSettings={() => setActiveView('SETTINGS')}
                         onOpenKnowledge={() => setActiveView('WORKFLOW')}
                       />
                     </div>
                   )}
-                  
+
                   {activeView === 'INBOX' && (
                      <div className="flex flex-col h-full">
                        <div className="flex-1 flex overflow-hidden">
                          <div className="w-full lg:w-80 lg:shrink-0 h-full overflow-hidden border-r border-gray-200 bg-white">
-                           <ChatList 
+                           <ChatList
                              sessions={sessions}
                              activeSessionId={activeSessionId}
                              onSelectSession={handleSelectSession}
@@ -1648,7 +1651,7 @@ function App() {
 
                          {activeSession ? (
                            <div className="flex-1 h-full overflow-hidden bg-white">
-                             <ChatArea 
+                             <ChatArea
                                session={activeSession}
                                agents={agents}
                                systemQuickReplies={systemQuickReplies}
@@ -1701,11 +1704,11 @@ function App() {
                        </div>
                      </div>
                   )}
-          
+
                   {activeView === 'SETTINGS' && (
-                     <SettingsView  
-                         systemQuickReplies={systemQuickReplies} 
-                         knowledgeBase={knowledgeBase} 
+                     <SettingsView
+                         systemQuickReplies={systemQuickReplies}
+                         knowledgeBase={knowledgeBase}
                          onAddSystemReply={handleAddSystemReply}
                          onDeleteSystemReply={onDeleteSystemReply}
                          onAddKnowledge={onAddKnowledge}
@@ -1713,7 +1716,7 @@ function App() {
                          hasPermission={hasPermission}
                      />
                    )}
-           
+
                    {activeView === 'WORKFLOW' && (
                      <WorkflowView />
                    )}
@@ -1766,13 +1769,13 @@ function App() {
                                 <span className="text-sm font-bold text-gray-700">{t('ai_summary_preview')}</span>
                                 <span className="text-xs text-gray-400">({summaryPreview.messageCount} {t('messages_count')})</span>
                             </div>
-                            
+
                             {summaryPreview.success ? (
                                <div className="space-y-2">
                                    <label className="block text-xs font-bold text-gray-500 uppercase">{t('summary_preview_label') || 'Review & Edit Summary'}</label>
-                                   <textarea 
-                                       value={editableSummary} 
-                                       onChange={e => setEditableSummary(e.target.value)} 
+                                   <textarea
+                                       value={editableSummary}
+                                       onChange={e => setEditableSummary(e.target.value)}
                                        className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none h-48 resize-none text-sm text-gray-700 leading-relaxed"
                                    ></textarea>
                                </div>
@@ -1787,8 +1790,8 @@ function App() {
                  </div>
                   <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
                      <button onClick={() => setShowResolveModal(false)} className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-200 rounded-lg transition-colors">{t('cancel')}</button>
-                     <button 
-                       onClick={confirmResolution} 
+                     <button
+                       onClick={confirmResolution}
                        disabled={isPreparingResolution}
                        className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-sm transition-colors flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                      >
@@ -1817,7 +1820,7 @@ function App() {
             </div>
         )}
         {showTransferModal && activeSession && (
-           <TransferDialog 
+           <TransferDialog
              sessionId={activeSession.id}
              isOpen={showTransferModal}
              currentUserId={currentUser?.id || ''}
@@ -1845,12 +1848,12 @@ function App() {
     return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
   }
 
-  
+
   return (
     <div className="flex h-screen bg-white overflow-hidden font-sans text-gray-900">
       <Toaster position="top-center" richColors expand closeButton duration={3000} style={{ zIndex: 2147483647 }} />
-      
-      
+
+
 
       {showForceChangePasswordModal && (
         <ChangePasswordDialog
@@ -2121,9 +2124,9 @@ function App() {
                            {summaryPreview.success ? (
                                <div className="space-y-2">
                                    <label className="block text-xs font-bold text-gray-500 uppercase">{t('summary_preview_label') || 'Review & Edit Summary'}</label>
-                                   <textarea 
-                                       value={editableSummary} 
-                                       onChange={e => setEditableSummary(e.target.value)} 
+                                   <textarea
+                                       value={editableSummary}
+                                       onChange={e => setEditableSummary(e.target.value)}
                                        className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none h-48 resize-none text-sm text-gray-700 leading-relaxed"
                                    ></textarea>
                                </div>

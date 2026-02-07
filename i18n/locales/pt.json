@@ -341,6 +341,7 @@
   "gift_card": {
     "title": "Criar Cartão Presente",
     "amount": "Valor",
+    "expires_on_optional": "Expiration Date (Optional)",
     "note_optional": "Nota (Opcional)",
     "note_placeholder": "Para um cliente especial...",
     "create_send": "Criar e Enviar",
@@ -435,6 +436,7 @@
     "gift_card": "Cartão Presente",
     "redeem_at_checkout": "Resgatar no checkout",
     "discount": "Desconto",
+    "expires_on": "Expires on: {{date}}",
     "off_caps": "OFF",
     "copied": "Código {{code}} copiado para a área de transferência",
     "redeem": "Resgatar Código",

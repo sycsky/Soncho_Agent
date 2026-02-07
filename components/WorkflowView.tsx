@@ -1148,6 +1148,8 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
           handleConfigChange('targetText', value);
       } else if (field === 'goal') {
           handleConfigChange('goal', value);
+      } else if (field === 'inputData') {
+          handleConfigChange('inputData', value);
       }
       
       if (showVarMenu && activeField === field && cursorPosition !== undefined) {
@@ -1220,7 +1222,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
         .catch(err => console.error('Failed to fetch knowledge bases', err));
     }
 
-    if (node && node.type === 'flow') {
+    if (node && (node.type === 'flow' || node.type === 'delay')) {
         workflowApi.getAllWorkflows()
             .then(data => setWorkflows(data))
             .catch(err => console.error('Failed to fetch workflows', err));
@@ -1288,6 +1290,17 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                 model: selectedModel.modelName, // Legacy/Code
                 modelDisplayName: selectedModel.name, // Display Name
                 provider: selectedModel.provider
+            };
+        }
+    }
+
+    // Special handling for target workflow selection to save workflow name
+    if (field === 'targetWorkflowId') {
+        const selectedWorkflow = workflows.find(w => w.id === value);
+        if (selectedWorkflow) {
+            updates = {
+                ...updates,
+                targetWorkflowName: selectedWorkflow.name
             };
         }
     }
@@ -1826,6 +1839,65 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
            </div>
         )}
 
+        {node.type === 'delay' && (
+           <div className="space-y-4">
+              <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-100 mb-4">
+                 <p className="text-xs text-yellow-800">
+                   {t('workflow_editor.delay_node_desc')}
+                 </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.delay_minutes')}</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="1440"
+                  value={node.data.config?.delayMinutes || 0}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    handleConfigChange('delayMinutes', isNaN(val) ? 0 : Math.min(1440, Math.max(0, val)));
+                  }}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                />
+                <p className="text-[10px] text-gray-400 mt-1">{t('workflow_editor.delay_minutes_help')}</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{t('workflow_editor.target_workflow')}</label>
+                <select
+                    value={node.data.config?.targetWorkflowId || ''}
+                    onChange={(e) => handleConfigChange('targetWorkflowId', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                >
+                    <option value="" disabled>{t('workflow_editor.select_workflow')}</option>
+                    {workflows.filter(w => w.id !== currentWorkflowId).map(workflow => (
+                        <option key={workflow.id} value={workflow.id}>
+                            {workflow.name}
+                        </option>
+                    ))}
+                </select>
+              </div>
+
+              <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-xs font-medium text-gray-500">{t('workflow_editor.input_data_template')}</label>
+                  </div>
+                  <div className="relative">
+                    <TiptapEditor
+                        ref={el => textareaRefs.current['inputData'] = el}
+                        value={node.data.config?.inputData || ''}
+                        onChange={(val, selection) => handleEditorChange('inputData', val, selection)}
+                        onSlash={(rect, index) => handleEditorSlash('inputData', rect, index)}
+                        placeholder={t('workflow_editor.enter_input_data_template')}
+                        className="min-h-[100px]"
+                    />
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1">{t('workflow_editor.input_data_help')}</p>
+              </div>
+           </div>
+        )}
+
         {node.type === 'parameter_extraction' && (
            <div className="space-y-4">
               <div className="p-4 bg-violet-50 rounded-lg border border-violet-100 mb-4">
@@ -2280,7 +2352,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                                 </div>
                                 <div className="flex-1 overflow-hidden">
                                     <div className="text-xs font-medium text-gray-700 truncate">{tool.displayName}</div>
-                                    <div className="text-[10px] text-gray-400 truncate">{tool.name}</div>
+                                    <div className="text-[10px] text-gray-400 whitespace-pre-wrap break-words">{tool.description}</div>
                                 </div>
                                 <button
                                     onClick={() => handleRemoveTool(tool.id)}
@@ -2910,15 +2982,21 @@ const ConditionNode = ({ id, data, selected }: NodeProps) => {
             {/* IF / ELSE IF Branches */}
             {conditions.map((condition: any, index: number) => (
                 <div key={condition.id} className="px-4 py-3 border-b border-gray-100 flex justify-between items-center relative hover:bg-gray-50">
-                    <div className="flex flex-col overflow-hidden mr-2">
+                    <div className="flex flex-col overflow-hidden mr-2 w-full max-w-[260px]">
                         <span className="text-xs font-bold text-gray-500 uppercase mb-0.5">
                             {index === 0 ? t('workflow_editor.if') : t('workflow_editor.else_if')}
                         </span>
-                        <div className="flex items-center gap-1 text-xs text-gray-700 truncate max-w-[180px]">
-                            <span className="font-mono bg-gray-100 px-1 rounded">{condition.sourceValue || '?'}</span>
-                            <span className="text-gray-400 font-bold text-[10px]">{condition.conditionType}</span>
+                        <div className="flex flex-col gap-1 text-xs text-gray-700 w-full mt-1">
+                            <span className="font-mono bg-gray-100 px-2 py-1 rounded block w-full truncate" title={condition.sourceValue}>
+                                {condition.sourceValue || '?'}
+                            </span>
+                            <span className="text-gray-400 font-bold text-[10px] px-1">
+                                {condition.conditionType}
+                            </span>
                             {!['isEmpty', 'isNotEmpty'].includes(condition.conditionType) && (
-                                <span className="font-mono bg-gray-100 px-1 rounded">{condition.inputValue || '?'}</span>
+                                <span className="font-mono bg-gray-100 px-2 py-1 rounded block w-full truncate" title={condition.inputValue}>
+                                    {condition.inputValue || '?'}
+                                </span>
                             )}
                         </div>
                     </div>
@@ -2939,6 +3017,34 @@ const ConditionNode = ({ id, data, selected }: NodeProps) => {
   );
 };
 
+const DelayNode = ({ id, data, selected }: NodeProps) => {
+  const { t } = useTranslation();
+  const config = data.config as any;
+  const delayMinutes = config?.delayMinutes || 0;
+
+  return (
+    <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[240px] group hover:border-yellow-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
+      <NodeMenu nodeId={id} />
+      <div className="bg-yellow-50 px-4 py-2 rounded-t-xl border-b border-yellow-100 flex items-center gap-2">
+        <div className="bg-yellow-100 p-1 rounded-lg text-yellow-600">
+          <Calendar size={14} />
+        </div>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || t('workflow_editor.nodes.delay')}</span>
+      </div>
+      <div className="p-3 bg-gray-50 border-b border-gray-100">
+         <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
+            <span className="font-medium">{delayMinutes}m</span>
+         </div>
+      </div>
+      <div className="p-4">
+        <p className="text-xs text-gray-500">{t('workflow_editor.delay_execution_desc')}</p>
+      </div>
+      <Handle type="target" position={Position.Left} className="!bg-gray-400" />
+      <Handle type="source" position={Position.Right} className="!bg-yellow-500" />
+    </div>
+  );
+};
+
 const nodeTypes = {
   start: StartNode,
   end: EndNode,
@@ -2954,7 +3060,8 @@ const nodeTypes = {
   reply: ReplyNode,
   human_transfer: TransferNode,
   flow: FlowNode,
-  flow_end: FlowEndNode,
+    delay: DelayNode,
+    flow_end: FlowEndNode,
   flow_update: FlowUpdateNode,
   agent: AgentNode,
   tool: ToolNode,
@@ -3022,6 +3129,15 @@ const Sidebar = () => {
               ]
             }));
           }
+        },
+        {
+          type: 'delay',
+          label: t('workflow_editor.nodes.delay'),
+          icon: <Calendar size={16} />,
+          bg: 'bg-yellow-50',
+          border: 'border-yellow-100',
+          iconBg: 'bg-yellow-100',
+          iconColor: 'text-yellow-600'
         },
         {
           type: 'intent',

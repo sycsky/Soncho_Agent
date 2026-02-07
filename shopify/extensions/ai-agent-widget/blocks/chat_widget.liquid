@@ -40,6 +40,12 @@
       "default": "default-agent"
     },
     {
+      "type": "text",
+      "id": "channel",
+      "label": "Channel",
+      "default": "SHOPIFY"
+    },
+    {
       "type": "color",
       "id": "primary_color",
       "label": "Primary Color",
@@ -73,6 +79,7 @@
       mode: {{ block.settings.mode | json }},
       userName: {{ block.settings.user_name | json }},
       agentId: {{ block.settings.agent_id | json }},
+      channel: {{ block.settings.channel | json }},
       primaryColor: {{ block.settings.primary_color | json }},
       position: {{ block.settings.position | json }},
       welcomeMessage: {{ block.settings.welcome_message | json }},

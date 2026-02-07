@@ -13,6 +13,13 @@ export interface WorkflowNode {
   [key: string]: any;
 }
 
+export interface DelayNodeConfig {
+  targetWorkflowId: string;
+  targetWorkflowName?: string;
+  delayMinutes: number;
+  inputData?: string;
+}
+
 export interface WorkflowEdge {
   id: string;
   source: string;
@@ -85,6 +92,7 @@ export interface LlmModel {
   supportsVision?: boolean;
   enabled?: boolean;
   isDefault?: boolean;
+  statusExplanation?: boolean;
   sortOrder?: number;
   description?: string;
   createdAt?: string;

@@ -155,9 +155,7 @@ export const getDiscounts = async () => {
         if (discount.codes?.nodes?.length > 0) {
           code = discount.codes.nodes[0].code;
         } else if (discount.title && !discount.title.includes('Automatic')) {
-             // Some code discounts might have title as code if codes nodes are empty/different structure
-             // But usually DiscountCodeBasic has codes.
-             // If code is empty, it might be automatic discount which user wants to filter out.
+          code = discount.title;
         }
         
         // Filter out if no code found (Automatic discounts usually don't have user-entered codes)
@@ -165,11 +163,33 @@ export const getDiscounts = async () => {
 
         let value = '';
         if (discount.customerGets?.value) {
-          if (discount.customerGets.value.percentage) {
-              value = `${Math.abs(discount.customerGets.value.percentage * 100)}%`;
+          if (typeof discount.customerGets.value.percentage === 'number') {
+            const pct = Math.round(Math.abs(discount.customerGets.value.percentage * 100));
+            value = pct >= 100 ? 'Free' : `${pct}%`;
           } else if (discount.customerGets.value.amount) {
-              value = `$${discount.customerGets.value.amount.amount}`;
+            value = `$${discount.customerGets.value.amount.amount}`;
+          } else if (discount.customerGets.value.effect) {
+             // Handle DiscountOnQuantity (nested effect)
+             const effect = discount.customerGets.value.effect;
+             if (typeof effect.percentage === 'number') {
+                const pct = Math.round(Math.abs(effect.percentage * 100));
+                value = pct >= 100 ? 'Free' : `${pct}%`;
+             } else if (effect.amount) {
+                value = `$${effect.amount.amount}`;
+             }
           }
+        } else if (edge.node.discount.__typename?.includes('FreeShipping')) {
+          value = 'Free Shipping';
+        }
+
+        // Fallback for BXGY if value is missing (e.g. complex conditions)
+        if (!value && edge.node.discount.__typename?.includes('Bxgy')) {
+          value = 'Buy X Get Y';
+        }
+        
+        // Fallback for App Discounts
+        if (!value && edge.node.discount.__typename?.includes('App')) {
+          value = 'App Discount';
         }
 
         return {
@@ -184,8 +204,8 @@ export const getDiscounts = async () => {
   return [];
 };
 
-export const createGiftCard = async (amount: string, note?: string) => {
-  const response = await api.post<any>('/shopify/gift-cards', { amount, note });
+export const createGiftCard = async (amount: string, note?: string, customerId?: string, expiresOn?: string) => {
+  const response = await api.post<any>('/shopify/gift-cards', { amount, note, customerId, expiresOn });
   if (response?.giftCard) {
     // We injected the code into the giftCard object in the backend
     return response.giftCard;
@@ -194,4 +214,14 @@ export const createGiftCard = async (amount: string, note?: string) => {
     throw new Error(response.userErrors[0].message);
   }
   throw new Error('Failed to create gift card');
+};
+
+export const recordSentItem = async (data: {
+  customerId: string;
+  itemType: 'DISCOUNT' | 'GIFT_CARD';
+  itemValue: string;
+  amount?: string;
+  note?: string;
+}) => {
+  await api.post('/shopify/sent-items', data);
 };

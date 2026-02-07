@@ -26,6 +26,7 @@ interface GiftCardProps {
     amount: string;
     code: string;
     currency: string;
+    expiresOn?: string;
   };
 }
 
@@ -224,6 +225,11 @@ export const GiftCard: React.FC<GiftCardProps> = ({ data }) => {
       </div>
       <div className="gift-amount">{data.currency || '$'}{data.amount}</div>
       <div className="gift-code">{data.code}</div>
+      {data.expiresOn && (
+        <div className="text-[10px] text-pink-200 mt-1 opacity-80">
+          {t('message_cards.expires_on', { date: new Date(data.expiresOn).toLocaleDateString() })}
+        </div>
+      )}
       <div className="gift-footer">{t('message_cards.redeem')}</div>
     </div>
   );

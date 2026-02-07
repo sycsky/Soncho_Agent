@@ -25,6 +25,7 @@ import { ProductCard, GiftCard, DiscountCard, OrderCard } from './MessageCards';
 import { DiscountSelector } from './DiscountSelector';
 import { GiftCardCreator } from './GiftCardCreator';
 import { Subscription } from '../services/billingApi';
+import { getDiscounts, createGiftCard, recordSentItem } from '../services/productService';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import './ChatArea.css';
@@ -211,6 +212,16 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       const payload = `card#CARD_DISCOUNT#${JSON.stringify(cardData)}`;
       onSendMessage(payload, [], false, isTranslationEnabled, []);
       setShowDiscountSelector(false);
+
+      if (session?.userId) {
+          recordSentItem({
+              customerId: session.userId,
+              itemType: 'DISCOUNT',
+              itemValue: discount.code,
+              amount: discount.value,
+              note: discount.description
+          }).catch(console.error);
+      }
   };
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -640,6 +651,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                 isOpen={showGiftCardCreator}
                 onClose={() => setShowGiftCardCreator(false)}
                 onSend={handleSendGiftCard}
+                customerId={session?.userId}
             />
           )}
 

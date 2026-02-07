@@ -341,6 +341,7 @@
   "gift_card": {
     "title": "Crear tarjeta de regalo",
     "amount": "Monto",
+    "expires_on_optional": "Expiration Date (Optional)",
     "note_optional": "Nota (opcional)",
     "note_placeholder": "Para un cliente especial...",
     "create_send": "Crear y enviar",
@@ -435,6 +436,7 @@
     "gift_card": "Tarjeta de Regalo",
     "redeem_at_checkout": "Canjear al pagar",
     "discount": "Descuento",
+    "expires_on": "Expires on: {{date}}",
     "off_caps": "DCTO",
     "copied": "Código {{code}} copiado al portapapeles",
     "redeem": "Canjear código",
