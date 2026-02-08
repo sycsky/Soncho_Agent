@@ -20,7 +20,7 @@ import {
   EdgeProps
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Play, GitBranch, Database, Bot, MessageSquare, GripHorizontal, Plus, Trash2, X, MoreHorizontal, ArrowLeft, ArrowRight, Calendar, User, Search, Filter, Save, Loader2, Square, Settings, ChevronRight, Star, Power, CheckCircle, Edit2, Headphones, Hammer, ListFilter, Split, Image, Tags, Wand2, Layout, Braces, Copy, Languages, Clock } from 'lucide-react';
+import { Play, GitBranch, Database, Bot, MessageSquare, GripHorizontal, Plus, Trash2, X, MoreHorizontal, ArrowLeft, ArrowRight, Calendar, User, Search, Filter, Save, Loader2, Square, Settings, ChevronRight, Star, Power, CheckCircle, Edit2, Headphones, Hammer, ListFilter, Split, Image, Tags, Wand2, Layout, Braces, Copy, Languages, Clock, HelpCircle } from 'lucide-react';
 import { workflowApi } from '../services/workflowApi';
 import knowledgeBaseApi from '../services/knowledgeBaseApi';
 import aiToolApi from '../services/aiToolApi';
@@ -2152,6 +2152,59 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
           </>
         )}
 
+        {node.type === 'yes_no' && (
+          <div className="space-y-4">
+             <div className="p-4 bg-blue-50 rounded-lg border border-blue-100 mb-4">
+                 <p className="text-xs text-blue-800">
+                   Evaluates a prompt using an LLM and returns YES or NO.
+                 </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Model</label>
+                <select 
+                  value={node.data.config?.modelId || node.data.config?.model || ''}
+                  onChange={(e) => handleConfigChange('modelId', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="" disabled>Select a model</option>
+                  {llmModels.length > 0 ? (
+                      llmModels.map(model => (
+                        <option key={model.id} value={model.id}>{model.name} ({model.provider})</option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                        <option value="gpt-4">gpt-4</option>
+                        <option value="claude-3-opus">claude-3-opus</option>
+                      </>
+                    )}
+                </select>
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-xs font-medium text-gray-500">Prompt (Context Aware)</label>
+                  <SystemPromptEnhancer 
+                      nodeType="yes_no"
+                      userInput={node.data.config?.systemPrompt || ''}
+                      onEnhanced={(val) => handleEditorChange('systemPrompt', val)}
+                  />
+                </div>
+                <div className="relative">
+                  <TiptapEditor
+                      ref={el => textareaRefs.current['systemPrompt'] = el}
+                      value={node.data.config?.systemPrompt || ''} 
+                      onChange={(val, selection) => handleEditorChange('systemPrompt', val, selection)}
+                      onSlash={(rect, index) => handleEditorSlash('systemPrompt', rect, index)}
+                      placeholder="Enter prompt (e.g., 'Is the user asking for a refund?')..."
+                      className="min-h-[150px]"
+                  />
+                </div>
+              </div>
+          </div>
+        )}
+
         {node.type === 'agent' && (
           <div className="space-y-4">
             <div>
@@ -2929,6 +2982,46 @@ const DelayNode = ({ id, data, selected }: NodeProps) => {
   );
 };
 
+const YesNoNode = ({ id, data, selected }: NodeProps) => {
+  const config = data.config as any;
+  const modelDisplay = useModelName(config?.modelId || config?.model, config?.modelDisplayName);
+
+  return (
+    <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[240px] group hover:border-blue-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
+      <NodeMenu nodeId={id} />
+      <div className="bg-blue-50 px-4 py-2 rounded-t-xl border-b border-blue-100 flex items-center gap-2">
+        <div className="bg-blue-100 p-1 rounded-lg text-blue-600">
+          <HelpCircle size={14} />
+        </div>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'YES/NO Switch'}</span>
+      </div>
+      <div className="p-3 bg-gray-50 border-b border-gray-100">
+        <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
+          <Bot size={12} />
+          <span>{modelDisplay}</span>
+        </div>
+      </div>
+      <div className="p-4">
+         <div className="text-xs text-gray-500 line-clamp-2">
+            {config?.systemPrompt || 'Checks YES or NO based on prompt'}
+         </div>
+      </div>
+      
+      <Handle type="target" position={Position.Left} className="!bg-gray-400" />
+      
+      <div className="absolute right-0 top-1/2 -translate-y-4">
+        <Handle type="source" position={Position.Right} id="YES" className="!bg-green-500 !right-[-6px]" />
+        <span className="absolute right-3 text-[10px] font-bold text-green-600">YES</span>
+      </div>
+      
+      <div className="absolute right-0 top-1/2 translate-y-4">
+        <Handle type="source" position={Position.Right} id="NO" className="!bg-red-500 !right-[-6px]" />
+        <span className="absolute right-3 text-[10px] font-bold text-red-600">NO</span>
+      </div>
+    </div>
+  );
+};
+
 const nodeTypes = {
   start: StartNode,
   end: EndNode,
@@ -2953,6 +3046,7 @@ const nodeTypes = {
   imageTextSplit: ImageTextSplitNode,
   setSessionMetadata: SetSessionMetadataNode,
   parameter_extraction: ParameterExtractionNode,
+  yes_no: YesNoNode,
 };
 
 const edgeTypes = {
@@ -3028,6 +3122,7 @@ const Sidebar = () => {
         { type: 'tool', label: 'Tool Execution', Icon: Hammer, itemClassName: 'bg-orange-50 border-orange-100', iconClassName: 'bg-orange-100 text-orange-600' },
         { type: 'translation', label: 'Translation', Icon: Languages, itemClassName: 'bg-orange-50 border-orange-100', iconClassName: 'bg-orange-100 text-orange-600' },
         { type: 'delay', label: 'Delay Execution', Icon: Clock, itemClassName: 'bg-purple-50 border-purple-100', iconClassName: 'bg-purple-100 text-purple-600' },
+        { type: 'yes_no', label: 'YES/NO Switch', Icon: HelpCircle, itemClassName: 'bg-blue-50 border-blue-100', iconClassName: 'bg-blue-100 text-blue-600' },
       ],
     },
     {

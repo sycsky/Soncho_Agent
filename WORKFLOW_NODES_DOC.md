@@ -89,6 +89,12 @@ This document details the configuration and parameters for the available workflo
   - `delayMinutes` (Number, Required): Delay time in minutes (Maximum: 1440 minutes / 24 hours).
   - `inputData` (String, Optional): Template string for input data, processed by the template engine. Passed to the target workflow as `userMessage` and in `variables.inputData`.
 
+### 15. YES/NO Switch (`yes_no`)
+- **Description**: Uses an LLM to evaluate a prompt and returns "YES" or "NO" to route the workflow.
+- **Configuration (`data.config`)**:
+  - `modelId` (String, Required): ID of the LLM model to use.
+  - `systemPrompt` (String, Required): The prompt to evaluate (supports template variables). The LLM is instructed to answer strictly "YES" or "NO".
+
 ---
 
 ## Generated Workflow Demo
