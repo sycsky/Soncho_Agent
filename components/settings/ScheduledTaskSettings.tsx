@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Calendar, 
   Plus, 
@@ -51,6 +51,10 @@ const ScheduledTaskSettings = () => {
   const [customerRoles, setCustomerRoles] = useState<CustomerRole[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+
+  const roleNameById = useMemo(() => {
+    return new Map(customerRoles.map(role => [String(role.id), role.name]));
+  }, [customerRoles]);
 
   useEffect(() => {
     loadTasks();
@@ -186,7 +190,9 @@ const ScheduledTaskSettings = () => {
                             {task.customerMode === 'CUSTOMER_ROLE' ? <Users size={14} className="text-purple-500"/> : <User size={14} className="text-blue-500"/>}
                             <span>
                                 {task.targetIds && task.targetIds.length > 0 
-                                    ? (task.targetIds.length > 1 ? `${task.targetIds.length} targets` : task.targetIds[0]) 
+                                    ? (task.customerMode === 'CUSTOMER_ROLE'
+                                        ? task.targetIds.map(id => roleNameById.get(String(id)) || id).join(', ')
+                                        : (task.targetIds.length > 1 ? `${task.targetIds.length} targets` : task.targetIds[0]))
                                     : 'No target'}
                             </span>
                         </div>
