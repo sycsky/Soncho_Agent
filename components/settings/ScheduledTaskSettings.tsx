@@ -639,7 +639,7 @@ const TaskDialog = ({
                                     >
                                         <option value="">-- Select Role --</option>
                                         {roles.map(role => (
-                                            <option key={role.code} value={role.code}>{role.name}</option>
+                                            <option key={role.id} value={role.id}>{role.name}</option>
                                         ))}
                                     </select>
                                 </div>
