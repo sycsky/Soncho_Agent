@@ -20,7 +20,7 @@ import {
   EdgeProps
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Play, GitBranch, Database, Bot, MessageSquare, GripHorizontal, Plus, Trash2, X, MoreHorizontal, ArrowLeft, ArrowRight, Calendar, User, Search, Filter, Save, Loader2, Square, Settings, ChevronRight, Star, Power, CheckCircle, Edit2, Headphones, Hammer, ListFilter, Split, Image, Tags, Wand2, Layout, Braces, Copy, Languages, Clock, HelpCircle } from 'lucide-react';
+import { Play, GitBranch, Database, Bot, MessageSquare, GripHorizontal, Plus, Trash2, X, MoreHorizontal, ArrowLeft, ArrowRight, Calendar, User, Search, Filter, Save, Loader2, Square, Settings, ChevronRight, Star, Power, CheckCircle, Edit2, Headphones, Hammer, ListFilter, Split, Image, Tags, Wand2, Layout, Braces, Copy, Languages, Clock, HelpCircle, Sparkles, BrainCircuit } from 'lucide-react';
 import { workflowApi } from '../services/workflowApi';
 import knowledgeBaseApi from '../services/knowledgeBaseApi';
 import aiToolApi from '../services/aiToolApi';
@@ -1151,7 +1151,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
   };
   
   useEffect(() => {
-    if (node && (node.type === 'intent' || node.type === 'llm' || node.type === 'agent' || node.type === 'imageTextSplit' || node.type === 'setSessionMetadata' || node.type === 'translation')) {
+    if (node && (node.type === 'intent' || node.type === 'llm' || node.type === 'agent' || node.type === 'advancedAgent' || node.type === 'imageTextSplit' || node.type === 'setSessionMetadata' || node.type === 'translation' || node.type === 'yes_no' || node.type === 'parameter_extraction')) {
       workflowApi.getAllModels()
         .then(data => {
             const enabledModels = data.filter((m: LlmModel) => m.enabled);
@@ -1160,7 +1160,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
         .catch(err => console.error('Failed to fetch models', err));
     }
 
-    if (node && (node.type === 'llm' || node.type === 'tool' || node.type === 'agent')) {
+    if (node && (node.type === 'llm' || node.type === 'tool' || node.type === 'agent' || node.type === 'advancedAgent')) {
         aiToolApi.getTools()
             .then(data => setTools(data))
             .catch(err => console.error('Failed to fetch tools', err));
@@ -1440,17 +1440,9 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="" disabled>Select a model</option>
-                {llmModels.length > 0 ? (
-                    llmModels.map(model => (
+                {llmModels.map(model => (
                       <option key={model.id} value={model.id}>{model.name} ({model.provider})</option>
-                    ))
-                  ) : (
-                    <>
-                      <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
-                      <option value="gpt-4">gpt-4</option>
-                      <option value="claude-3-opus">claude-3-opus</option>
-                    </>
-                  )}
+                    ))}
               </select>
             </div>
 
@@ -1580,17 +1572,9 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                 >
                   <option value="" disabled>Select a model</option>
-                  {llmModels.length > 0 ? (
-                      llmModels.map(model => (
+                  {llmModels.map(model => (
                         <option key={model.id} value={model.id}>{model.name} ({model.provider})</option>
-                      ))
-                    ) : (
-                      <>
-                        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
-                        <option value="gpt-4">gpt-4</option>
-                        <option value="claude-3-opus">claude-3-opus</option>
-                      </>
-                    )}
+                      ))}
                 </select>
               </div>
 
@@ -1663,17 +1647,9 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                 >
                   <option value="" disabled>Select a model</option>
-                  {llmModels.length > 0 ? (
-                      llmModels.map(model => (
+                  {llmModels.map(model => (
                         <option key={model.id} value={model.id}>{model.name} ({model.provider})</option>
-                      ))
-                    ) : (
-                      <>
-                        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
-                        <option value="gpt-4">gpt-4</option>
-                        <option value="claude-3-opus">claude-3-opus</option>
-                      </>
-                    )}
+                      ))}
                 </select>
               </div>
 
@@ -1716,17 +1692,9 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
                 >
                   <option value="" disabled>Select a model</option>
-                  {llmModels.length > 0 ? (
-                      llmModels.map(model => (
+                  {llmModels.map(model => (
                         <option key={model.id} value={model.id}>{model.name} ({model.provider})</option>
-                      ))
-                    ) : (
-                      <>
-                        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
-                        <option value="gpt-4">gpt-4</option>
-                        <option value="claude-3-opus">claude-3-opus</option>
-                      </>
-                    )}
+                      ))}
                 </select>
               </div>
 
@@ -1847,17 +1815,9 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                 >
                   <option value="" disabled>Select a model</option>
-                  {llmModels.length > 0 ? (
-                      llmModels.map(model => (
-                        <option key={model.id} value={model.id}>{model.name} ({model.provider})</option>
-                      ))
-                    ) : (
-                      <>
-                        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
-                        <option value="gpt-4">gpt-4</option>
-                        <option value="claude-3-opus">claude-3-opus</option>
-                      </>
-                    )}
+                  {llmModels.map(model => (
+                    <option key={model.id} value={model.id}>{model.name} ({model.provider})</option>
+                  ))}
                 </select>
               </div>
 
@@ -1970,17 +1930,9 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="" disabled>Select a model</option>
-                {llmModels.length > 0 ? (
-                    llmModels.map(model => (
+                {llmModels.map(model => (
                       <option key={model.id} value={model.id}>{model.name} ({model.provider})</option>
-                    ))
-                  ) : (
-                    <>
-                      <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
-                      <option value="gpt-4">gpt-4</option>
-                      <option value="claude-3-opus">claude-3-opus</option>
-                    </>
-                  )}
+                    ))}
               </select>
             </div>
             <div>
@@ -2168,17 +2120,9 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="" disabled>Select a model</option>
-                  {llmModels.length > 0 ? (
-                      llmModels.map(model => (
+                  {llmModels.map(model => (
                         <option key={model.id} value={model.id}>{model.name} ({model.provider})</option>
-                      ))
-                    ) : (
-                      <>
-                        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
-                        <option value="gpt-4">gpt-4</option>
-                        <option value="claude-3-opus">claude-3-opus</option>
-                      </>
-                    )}
+                      ))}
                 </select>
               </div>
 
@@ -2205,7 +2149,7 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
           </div>
         )}
 
-        {node.type === 'agent' && (
+        {(node.type === 'agent' || node.type === 'advancedAgent') && (
           <div className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Model</label>
@@ -2215,17 +2159,9 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="" disabled>Select a model</option>
-                {llmModels.length > 0 ? (
-                    llmModels.map(model => (
+                {llmModels.map(model => (
                       <option key={model.id} value={model.id}>{model.name} ({model.provider})</option>
-                    ))
-                  ) : (
-                    <>
-                      <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
-                      <option value="gpt-4">gpt-4</option>
-                      <option value="claude-3-opus">claude-3-opus</option>
-                    </>
-                  )}
+                    ))}
               </select>
             </div>
 
@@ -2240,6 +2176,29 @@ const PropertyPanel = ({ node, nodes = [], edges = [], onChange, onClose, curren
                   className="min-h-[150px]"
                />
             </div>
+
+            {node.type === 'advancedAgent' && (
+                <div className="p-3 bg-pink-50 border border-pink-100 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2 text-pink-700 font-medium text-xs">
+                        <Sparkles size={14} />
+                        <span>Advanced Capabilities</span>
+                    </div>
+                    <div className="space-y-2 text-[10px] text-pink-600">
+                        <div className="flex items-center gap-1.5">
+                            <CheckCircle size={10} />
+                            <span>Self-Evolving Tools (Lambda)</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <CheckCircle size={10} />
+                            <span>Long-term Memory (MongoDB)</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <CheckCircle size={10} />
+                            <span>Episodic Recall (RAG)</span>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Max Iterations</label>
@@ -3022,6 +2981,52 @@ const YesNoNode = ({ id, data, selected }: NodeProps) => {
   );
 };
 
+const AdvancedAgentNode = ({ id, data, selected }: NodeProps) => {
+  const config = data.config as any;
+  const modelDisplay = useModelName(config?.modelId || config?.model, config?.modelDisplayName);
+  const toolCount = (config?.tools || []).length;
+
+  return (
+    <div className={`bg-white rounded-xl shadow-lg border p-0 min-w-[240px] group hover:border-pink-300 transition-colors relative ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'}`}>
+      <NodeMenu nodeId={id} />
+      <div className="bg-gradient-to-r from-pink-50 to-purple-50 px-4 py-2 rounded-t-xl border-b border-pink-100 flex items-center gap-2">
+        <div className="bg-white p-1 rounded-lg text-pink-600 shadow-sm">
+          <Sparkles size={14} />
+        </div>
+        <span className="font-semibold text-gray-700 text-sm">{(data as any).label || 'Advanced Agent'}</span>
+      </div>
+      <div className="p-3 bg-gray-50 border-b border-gray-100">
+        <div className="flex items-center gap-2 text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 w-fit">
+          <Bot size={12} />
+          <span>{modelDisplay}</span>
+        </div>
+      </div>
+      <div className="p-4 space-y-3">
+        <div className="flex items-center gap-2 text-xs text-gray-600">
+          <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+            <BrainCircuit size={14} />
+          </div>
+          <span className="font-medium">Self-Evolution</span>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-gray-600">
+          <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
+            <Hammer size={14} />
+          </div>
+          <span>{toolCount} Tools + Auto</span>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-gray-600">
+          <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+            <Database size={14} />
+          </div>
+          <span>Long-term Memory</span>
+        </div>
+      </div>
+      <Handle type="target" position={Position.Left} className="!bg-gray-400" />
+      <Handle type="source" position={Position.Right} className="!bg-pink-500" />
+    </div>
+  );
+};
+
 const nodeTypes = {
   start: StartNode,
   end: EndNode,
@@ -3040,6 +3045,7 @@ const nodeTypes = {
   flow_end: FlowEndNode,
   flow_update: FlowUpdateNode,
   agent: AgentNode,
+  advancedAgent: AdvancedAgentNode,
   tool: ToolNode,
   delay: DelayNode,
 
@@ -3119,6 +3125,7 @@ const Sidebar = () => {
       items: [
         { type: 'llm', label: 'LLM Generation', Icon: Bot, itemClassName: 'bg-indigo-50 border-indigo-100', iconClassName: 'bg-indigo-100 text-indigo-600' },
         { type: 'agent', label: 'Agent', Icon: Wand2, itemClassName: 'bg-pink-50 border-pink-100', iconClassName: 'bg-pink-100 text-pink-600' },
+        { type: 'advancedAgent', label: 'Advanced Agent', Icon: Sparkles, itemClassName: 'bg-gradient-to-r from-pink-50 to-purple-50 border-pink-100', iconClassName: 'bg-white text-pink-600 shadow-sm' },
         { type: 'tool', label: 'Tool Execution', Icon: Hammer, itemClassName: 'bg-orange-50 border-orange-100', iconClassName: 'bg-orange-100 text-orange-600' },
         { type: 'translation', label: 'Translation', Icon: Languages, itemClassName: 'bg-orange-50 border-orange-100', iconClassName: 'bg-orange-100 text-orange-600' },
         { type: 'delay', label: 'Delay Execution', Icon: Clock, itemClassName: 'bg-purple-50 border-purple-100', iconClassName: 'bg-purple-100 text-purple-600' },
