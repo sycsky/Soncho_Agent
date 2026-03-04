@@ -733,6 +733,7 @@
   "specific_customers_selected": "{{count}} spezifische Kunden ausgewählt",
   "start_signal_placeholder": "Startsignal...",
   "status": "Status",
+  "status_explanation_model": "Status Explanation Model",
   "status_busy": "Beschäftigt",
   "status_completed": "ABGESCHLOSSEN",
   "status_failed": "FEHLGESCHLAGEN",
@@ -884,7 +885,8 @@
       "end": "Ende",
       "transfer": "Übertragung an Agent",
       "agent": "Agent",
-      "flow": "Flow"
+      "flow": "Flow",
+      "delay": "Delay Execution"
     },
     "string": "Zeichenkette",
     "number": "Zahl",
@@ -898,7 +900,8 @@
       "knowledge": "Relevanten Kontext abrufen",
       "llm": "Antwort basierend auf Kontext generieren",
       "translation": "Text in Zielsprache übersetzen",
-      "end": "Workflow-Ausstiegspunkt"
+      "end": "Workflow-Ausstiegspunkt",
+      "delay": "Delays execution and triggers another workflow"
     },
     "ui": {
       "select_model": "Modell auswählen",
@@ -1092,7 +1095,16 @@
     "nodes_count": "Knoten",
     "delete_workflow_confirm": "Sind Sie sicher, dass Sie diesen Workflow löschen möchten?",
     "variable_name_example": "z. B. user_id",
-    "source_field_example": "z. B. {{LLM.text}}"
+    "source_field_example": "z. B. {{LLM.text}}",
+    "delay_node": "Delay Execution",
+    "delay_execution_desc": "Delays execution and triggers another workflow.",
+    "delay_node_desc": "Configure delay duration and the target workflow to trigger after the delay.",
+    "delay_minutes": "Delay (Minutes)",
+    "delay_minutes_help": "Max 1440 minutes (24 hours).",
+    "target_workflow": "Target Workflow",
+    "input_data_template": "Input Data Template",
+    "enter_input_data_template": "Enter input data template...",
+    "input_data_help": "Template string processed and passed to the target workflow."
   },
   "workflow_execution": {
     "workflow_label": "Workflow:",
@@ -1192,9 +1204,12 @@
     "available_plans": "Verfügbare Pläne",
     "upgrade": "Upgrade",
     "current_plan": "Aktueller Plan",
+    "scheduled_plan": "Scheduled Plan",
     "switch_confirm": "Sind Sie sicher, dass Sie zum Plan {{plan}} wechseln möchten?",
     "switch_success": "Erfolgreich zum Plan {{plan}} gewechselt",
     "switch_failed": "Planwechsel fehlgeschlagen",
+    "next_plan_scheduled": "Scheduled to switch to {{plan}} on {{date}}",
+    "downgrade_confirm": "This will downgrade your plan to {{plan}} starting from the next billing cycle. Confirm?",
     "cancels_on": "Kündigung am",
     "cancelling": "Kündigung läuft",
     "cancel_confirm": "Sind Sie sicher, dass Sie Ihr Abonnement kündigen möchten? Sie behalten den Zugriff bis zum Ende des aktuellen Abrechnungszeitraums.",
@@ -1236,5 +1251,27 @@
     "title": "Connection Lost",
     "message": "We cannot connect to the server. Please check your internet connection and try again.",
     "refresh_button": "Refresh Page"
+  },
+  "shopify_app_embed": {
+    "title": "Online-Shop Chat",
+    "on": "Ein",
+    "off": "Aus",
+    "manage_chat": "Chat verwalten",
+    "enable_chat": "Chat aktivieren",
+    "description": "Aktivieren Sie das Chat-Widget in Ihrem Online-Shop, um Kundenfragen zu beantworten.",
+    "warning_title": "Chat-Widget ist nicht aktiviert",
+    "warning_desc": "Um das KI-Chat-Widget in Ihrem Schaufenster anzuzeigen, müssen Sie die App-Einbettung in Ihrem Shopify-Theme-Editor aktivieren.",
+    "follow_steps": "Folgen Sie diesen Schritten:",
+    "step_1": "Klicken Sie oben auf die Schaltfläche <b>\"Chat aktivieren\"</b>, um den Theme-Editor Ihres Shops zu öffnen.",
+    "step_2": "In der linken Seitenleiste wird der Reiter <b>App embeds</b> automatisch ausgewählt.",
+    "step_3": "Stellen Sie sicher, dass der Schalter <b>\"Chat Widget\"</b> auf <b>ON</b> steht.",
+    "step_4": "Klicken Sie oben rechts auf <b>Speichern</b>.",
+    "modal_title": "Chat-Widget aktivieren",
+    "modal_content": "Das KI-Chat-Widget ist in Ihrem Schaufenster nicht aktiviert. Klicken Sie auf \"Chat aktivieren\", um den Shopify-Theme-Editor zu öffnen und die App-Einbettung einzuschalten.",
+    "refresh_status": "Status aktualisieren",
+    "checking_status": "Status wird überprüft..."
+  },
+  "shopify_dashboard": {
+    "title": "KI-Agent-Assistent"
   }
 }

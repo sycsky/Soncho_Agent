@@ -733,6 +733,7 @@
   "specific_customers_selected": "{{count}}명의 특정 고객이 선택됨",
   "start_signal_placeholder": "시작 신호...",
   "status": "상태",
+  "status_explanation_model": "Status Explanation Model",
   "status_busy": "바쁨",
   "status_completed": "완료됨",
   "status_failed": "실패함",
@@ -884,7 +885,8 @@
       "end": "종료",
       "transfer": "상담원에게 전달",
       "agent": "에이전트",
-      "flow": "플로우"
+      "flow": "플로우",
+      "delay": "Delay Execution"
     },
     "string": "문자열 (String)",
     "number": "숫자 (Number)",
@@ -898,7 +900,8 @@
       "knowledge": "관련 컨텍스트 검색",
       "llm": "컨텍스트 기반 답변 생성",
       "translation": "텍스트를 대상 언어로 번역",
-      "end": "워크플로우 종료점"
+      "end": "워크플로우 종료점",
+      "delay": "Delays execution and triggers another workflow"
     },
     "ui": {
       "select_model": "모델 선택",
@@ -1092,7 +1095,16 @@
     "nodes_count": "노드",
     "delete_workflow_confirm": "이 워크플로를 삭제하시겠습니까?",
     "variable_name_example": "예: user_id",
-    "source_field_example": "예: {{LLM.text}}"
+    "source_field_example": "예: {{LLM.text}}",
+    "delay_node": "Delay Execution",
+    "delay_execution_desc": "Delays execution and triggers another workflow.",
+    "delay_node_desc": "Configure delay duration and the target workflow to trigger after the delay.",
+    "delay_minutes": "Delay (Minutes)",
+    "delay_minutes_help": "Max 1440 minutes (24 hours).",
+    "target_workflow": "Target Workflow",
+    "input_data_template": "Input Data Template",
+    "enter_input_data_template": "Enter input data template...",
+    "input_data_help": "Template string processed and passed to the target workflow."
   },
   "workflow_execution": {
     "workflow_label": "워크플로우:",
@@ -1192,9 +1204,12 @@
     "available_plans": "이용 가능한 요금제",
     "upgrade": "업그레이드",
     "current_plan": "현재 요금제",
+    "scheduled_plan": "Scheduled Plan",
     "switch_confirm": "{{plan}} 요금제로 변경하시겠습니까?",
     "switch_success": "{{plan}} 요금제로 성공적으로 변경되었습니다",
     "switch_failed": "요금제 변경에 실패했습니다",
+    "next_plan_scheduled": "Scheduled to switch to {{plan}} on {{date}}",
+    "downgrade_confirm": "This will downgrade your plan to {{plan}} starting from the next billing cycle. Confirm?",
     "cancels_on": "취소 예정일",
     "cancelling": "취소 중",
     "cancel_confirm": "구독을 취소하시겠습니까? 현재 청구 기간이 끝날 때까지 액세스 권한은 유지됩니다.",
@@ -1236,5 +1251,27 @@
     "title": "Connection Lost",
     "message": "We cannot connect to the server. Please check your internet connection and try again.",
     "refresh_button": "Refresh Page"
+  },
+  "shopify_app_embed": {
+    "title": "온라인 스토어 채팅",
+    "on": "켜짐",
+    "off": "꺼짐",
+    "manage_chat": "채팅 관리",
+    "enable_chat": "채팅 활성화",
+    "description": "온라인 스토어에서 채팅 위젯을 활성화하여 고객 질문에 답변을 시작하세요.",
+    "warning_title": "채팅 위젯이 활성화되지 않았습니다",
+    "warning_desc": "스토어프론트에 AI 채팅 위젯을 표시하려면 Shopify 테마 편집기에서 앱 임베드를 활성화해야 합니다.",
+    "follow_steps": "다음 단계를 따르세요:",
+    "step_1": "위의 <b>\"채팅 활성화\"</b> 버튼을 클릭하여 스토어의 테마 편집기를 엽니다.",
+    "step_2": "왼쪽 사이드바에서 <b>App embeds</b> 탭이 자동으로 선택됩니다.",
+    "step_3": "<b>\"Chat Widget\"</b> 토글이 <b>ON</b>으로 전환되어 있는지 확인하세요.",
+    "step_4": "오른쪽 상단의 <b>저장</b>을 클릭하세요.",
+    "modal_title": "채팅 위젯 활성화",
+    "modal_content": "스토어프론트에서 AI 채팅 위젯이 활성화되지 않았습니다. \"채팅 활성화\"를 클릭하여 Shopify 테마 편집기를 열고 앱 임베드를 켜세요.",
+    "refresh_status": "상태 새로고침",
+    "checking_status": "상태 확인 중..."
+  },
+  "shopify_dashboard": {
+    "title": "AI 에이전트 어시스턴트"
   }
 }

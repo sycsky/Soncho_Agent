@@ -885,7 +885,8 @@
       "end": "结束",
       "transfer": "转人工",
       "agent": "智能体",
-      "flow": "工作流"
+      "flow": "工作流",
+      "delay": "Delay Execution"
     },
     "string": "字符串",
     "number": "数字",
@@ -899,7 +900,8 @@
       "knowledge": "检索相关上下文",
       "llm": "基于上下文生成回答",
       "translation": "将文本翻译为目标语言",
-      "end": "工作流出口"
+      "end": "工作流出口",
+      "delay": "Delays execution and triggers another workflow"
     },
     "ui": {
       "select_model": "选择模型",
@@ -1093,7 +1095,16 @@
     "nodes_count": "个节点",
     "delete_workflow_confirm": "确定要删除此工作流吗？",
     "variable_name_example": "例如：user_id",
-    "source_field_example": "例如：{{LLM.text}}"
+    "source_field_example": "例如：{{LLM.text}}",
+    "delay_node": "Delay Execution",
+    "delay_execution_desc": "Delays execution and triggers another workflow.",
+    "delay_node_desc": "Configure delay duration and the target workflow to trigger after the delay.",
+    "delay_minutes": "Delay (Minutes)",
+    "delay_minutes_help": "Max 1440 minutes (24 hours).",
+    "target_workflow": "Target Workflow",
+    "input_data_template": "Input Data Template",
+    "enter_input_data_template": "Enter input data template...",
+    "input_data_help": "Template string processed and passed to the target workflow."
   },
   "workflow_execution": {
     "workflow_label": "工作流：",
@@ -1193,6 +1204,7 @@
     "available_plans": "可选套餐",
     "upgrade": "升级",
     "current_plan": "当前套餐",
+    "scheduled_plan": "Scheduled Plan",
     "switch_confirm": "确定要切换到 {{plan}} 套餐吗？",
     "switch_success": "成功切换到 {{plan}} 套餐",
     "switch_failed": "切换套餐失败",
@@ -1239,5 +1251,27 @@
     "title": "连接已断开",
     "message": "无法连接到服务器。请检查您的网络连接并重试。",
     "refresh_button": "刷新页面"
+  },
+  "shopify_app_embed": {
+    "title": "在线商店聊天",
+    "on": "开启",
+    "off": "关闭",
+    "manage_chat": "管理聊天",
+    "enable_chat": "开启聊天",
+    "description": "在您的在线商店开启聊天挂件，开始回复客户问题。",
+    "warning_title": "聊天挂件未开启",
+    "warning_desc": "要在店铺前台显示 AI 聊天挂件，您必须在 Shopify 主题编辑器中开启应用嵌入。",
+    "follow_steps": "请按以下步骤操作：",
+    "step_1": "点击上方的 <b>“开启聊天”</b> 按钮打开店铺主题编辑器。",
+    "step_2": "在左侧边栏中，<b>App embeds</b> 选项卡将被自动选中。",
+    "step_3": "确保 <b>“Chat Widget”</b> 开关已切换为 <b>开启 (ON)</b>。",
+    "step_4": "点击右上角的 <b>保存 (Save)</b>。",
+    "modal_title": "开启聊天挂件",
+    "modal_content": "您的店铺前台尚未开启 AI 聊天挂件。点击“开启聊天”打开 Shopify 主题编辑器并开启应用嵌入。",
+    "refresh_status": "刷新状态",
+    "checking_status": "正在检查状态..."
+  },
+  "shopify_dashboard": {
+    "title": "AI 智能客服助手"
   }
 }

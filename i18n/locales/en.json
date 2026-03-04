@@ -235,11 +235,11 @@
   "delete_group_tooltip": "Delete Group",
   "delete_personal_reply": "Delete Personal Reply",
   "delete_role_confirm": "Are you sure you want to delete this role?",
-    "delete_agent_confirm": "Are you sure you want to delete this agent?",
-    "delete_agent_admin_error": "Cannot delete an agent with Administrator role.",
-    "delete_agent_success": "Agent deleted successfully.",
-    "delete_agent_failed": "Failed to delete agent.",
-    "delete_tool": "Delete Tool",
+  "delete_agent_confirm": "Are you sure you want to delete this agent?",
+  "delete_agent_admin_error": "Cannot delete an agent with Administrator role.",
+  "delete_agent_success": "Agent deleted successfully.",
+  "delete_agent_failed": "Failed to delete agent.",
+  "delete_tool": "Delete Tool",
   "description": "Description",
   "description_label": "Description",
   "description_placeholder": "Describe what this tool does. This helps the AI understand when to use it.",
@@ -473,7 +473,7 @@
       "restocked": "Restocked",
       "shipped": "Shipped"
     }
-},
+  },
   "message_content_placeholder": "Message content...",
   "messages_count": "messages",
   "minute_label": "Minute (0-59)",
@@ -715,8 +715,8 @@
   "settings_nav_roles": "Roles",
   "settings_nav_scheduled_tasks": "Scheduled Tasks",
   "settings_nav_cancellation_policy": "Cancellation Policy",
-    "settings_nav_billing": "Billing & Subscription",
-    "settings_title": "Settings",
+  "settings_nav_billing": "Billing & Subscription",
+  "settings_title": "Settings",
   "shop_domain": "Shop Domain",
   "shop_domain_hint": "Your Shopify store domain (e.g. my-store.myshopify.com)",
   "sign_in_btn": "Sign In to Workspace",
@@ -870,10 +870,9 @@
       "fetch_tools": "Failed to fetch tools"
     },
     "categories": {
-      "basic": "Basic",
-      "routing": "Routing",
-      "ai": "AI",
-      "data": "Data",
+      "flow_control": "Flow Control",
+      "ai_capabilities": "AI Capabilities",
+      "interaction": "Interaction & Data",
       "advanced": "Advanced"
     },
     "nodes": {
@@ -1042,12 +1041,6 @@
     "agent_update": "Flow Update",
     "transfer_to_human": "Transfer to Human",
     "components": "Components",
-    "categories": {
-      "flow_control": "Flow Control",
-      "ai_capabilities": "AI Capabilities",
-      "interaction": "Interaction & Data",
-      "advanced": "Advanced"
-    },
     "drag_to_add": "Drag to add to workflow",
     "enter_system_prompt_intent": "Enter system prompt for intent classification. Type '/' to insert variable...",
     "enter_additional_instructions": "Enter additional instructions for translation...",
@@ -1071,7 +1064,6 @@
     "copy_workflow": "Copy Workflow",
     "edit_details": "Edit Details",
     "no_description_provided": "No description provided",
-    "create_new_workflow": "Create New Workflow",
     "generate_workflow": "Generate Workflow",
     "auto_layout": "Auto Layout",
     "test_workflow": "Test Workflow",
@@ -1081,11 +1073,6 @@
     "select_a_model": "Select a model",
     "select_a_workflow": "Select a workflow",
     "select_a_tool": "Select a tool",
-    "string": "String",
-    "number": "Number",
-    "boolean": "Boolean",
-    "array": "Array",
-    "object": "Object",
     "contains": "Contains",
     "not_contains": "Not Contains",
     "starts_with": "Starts With",
@@ -1143,7 +1130,7 @@
   "workflows": "Workflows",
   "yes": "Yes",
   "zen_mode": "Zen Mode",
-    "zen_mode_label": "Zen Mode",
+  "zen_mode_label": "Zen Mode",
   "order_cancellation": {
     "title": "Order Cancellation Policy",
     "add_policy": "Add Policy",
@@ -1217,6 +1204,7 @@
     "available_plans": "Available Plans",
     "upgrade": "Upgrade",
     "current_plan": "Current Plan",
+    "scheduled_plan": "Scheduled Plan",
     "switch_confirm": "Are you sure you want to switch to {{plan}} plan?",
     "switch_success": "Successfully switched to {{plan}} plan",
     "switch_failed": "Failed to change plan",
@@ -1263,5 +1251,27 @@
     "title": "Connection Lost",
     "message": "We cannot connect to the server. Please check your internet connection and try again.",
     "refresh_button": "Refresh Page"
+  },
+  "shopify_app_embed": {
+    "title": "Online Store Chat",
+    "on": "On",
+    "off": "Off",
+    "manage_chat": "Manage Chat",
+    "enable_chat": "Enable Chat",
+    "description": "Enable the chat widget on your online store to start answering customer questions.",
+    "warning_title": "Chat widget is not enabled",
+    "warning_desc": "To display the AI chat widget on your storefront, you must enable the App Embed in your Shopify Theme Editor.",
+    "follow_steps": "Follow these steps:",
+    "step_1": "Click the <b>\"Enable Chat\"</b> button above to open your store's Theme Editor.",
+    "step_2": "In the left sidebar, the <b>App embeds</b> tab will be automatically selected.",
+    "step_3": "Ensure the <b>\"Chat Widget\"</b> toggle is switched to <b>ON</b>.",
+    "step_4": "Click <b>Save</b> in the top right corner.",
+    "modal_title": "Enable Chat Widget",
+    "modal_content": "The AI chat widget is not enabled on your storefront. Click \"Enable Chat\" to open the Shopify Theme Editor and turn on the App Embed.",
+    "refresh_status": "Refresh Status",
+    "checking_status": "Checking Status..."
+  },
+  "shopify_dashboard": {
+    "title": "AI Agent Assistant"
   }
 }

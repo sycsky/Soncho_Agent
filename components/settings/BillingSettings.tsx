@@ -236,14 +236,21 @@ export const BillingSettings: React.FC = () => {
                         </ul>
                         <button
                             onClick={() => handlePlanChange(plan.name)}
-                            disabled={subscription?.plan === plan.name || upgrading}
+                            disabled={subscription?.plan === plan.name || subscription?.nextPlan === plan.name || upgrading}
                             className={`w-full py-2 rounded-lg text-sm font-medium transition-colors ${
-                                subscription?.plan === plan.name 
+                                subscription?.plan === plan.name || subscription?.nextPlan === plan.name
                                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                     : 'bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50'
                             }`}
                         >
-                            {subscription?.plan === plan.name ? t('billing.current_plan') : upgrading ? <Loader2 className="animate-spin mx-auto" size={16}/> : t('billing.upgrade')}
+                            {subscription?.plan === plan.name 
+                                ? t('billing.current_plan') 
+                                : subscription?.nextPlan === plan.name 
+                                    ? t('billing.scheduled_plan')
+                                    : upgrading 
+                                        ? <Loader2 className="animate-spin mx-auto" size={16}/> 
+                                        : t('billing.upgrade')
+                            }
                         </button>
                     </div>
                 ))}

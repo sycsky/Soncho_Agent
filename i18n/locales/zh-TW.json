@@ -733,6 +733,7 @@
   "specific_customers_selected": "已選擇 {{count}} 個特定客戶",
   "start_signal_placeholder": "啟動信號...",
   "status": "狀態",
+  "status_explanation_model": "Status Explanation Model",
   "status_busy": "忙碌",
   "status_completed": "已完成",
   "status_failed": "失敗",
@@ -884,7 +885,8 @@
       "end": "結束",
       "transfer": "轉人工",
       "agent": "智能體",
-      "flow": "工作流"
+      "flow": "工作流",
+      "delay": "Delay Execution"
     },
     "string": "字串 (String)",
     "number": "數字 (Number)",
@@ -898,7 +900,8 @@
       "knowledge": "檢索相關上下文",
       "llm": "基於上下文生成回答",
       "translation": "將文本翻譯為目標語言",
-      "end": "工作流出口"
+      "end": "工作流出口",
+      "delay": "Delays execution and triggers another workflow"
     },
     "ui": {
       "select_model": "選擇模型",
@@ -1092,7 +1095,16 @@
     "nodes_count": "節點",
     "delete_workflow_confirm": "您確定要刪除此工作流嗎？",
     "variable_name_example": "例如 user_id",
-    "source_field_example": "例如 {{LLM.text}}"
+    "source_field_example": "例如 {{LLM.text}}",
+    "delay_node": "Delay Execution",
+    "delay_execution_desc": "Delays execution and triggers another workflow.",
+    "delay_node_desc": "Configure delay duration and the target workflow to trigger after the delay.",
+    "delay_minutes": "Delay (Minutes)",
+    "delay_minutes_help": "Max 1440 minutes (24 hours).",
+    "target_workflow": "Target Workflow",
+    "input_data_template": "Input Data Template",
+    "enter_input_data_template": "Enter input data template...",
+    "input_data_help": "Template string processed and passed to the target workflow."
   },
   "workflow_execution": {
     "workflow_label": "工作流：",
@@ -1192,9 +1204,12 @@
     "available_plans": "可選套餐",
     "upgrade": "升級",
     "current_plan": "當前套餐",
+    "scheduled_plan": "Scheduled Plan",
     "switch_confirm": "確定要切換到 {{plan}} 套餐嗎？",
     "switch_success": "成功切換到 {{plan}} 套餐",
     "switch_failed": "切換套餐失敗",
+    "next_plan_scheduled": "Scheduled to switch to {{plan}} on {{date}}",
+    "downgrade_confirm": "This will downgrade your plan to {{plan}} starting from the next billing cycle. Confirm?",
     "cancels_on": "將於此日期取消：",
     "cancelling": "取消中",
     "cancel_confirm": "確定要取消訂閱嗎？您將保留訪問權限直到當前計費週期結束。",
@@ -1236,5 +1251,27 @@
     "title": "連線中斷",
     "message": "無法連線到伺服器。請檢查您的網路連線並重試。",
     "refresh_button": "重新整理頁面"
+  },
+  "shopify_app_embed": {
+    "title": "線上商店聊天",
+    "on": "開啟",
+    "off": "關閉",
+    "manage_chat": "管理聊天",
+    "enable_chat": "開啟聊天",
+    "description": "在您的線上商店開啟聊天工具，開始回覆客戶問題。",
+    "warning_title": "聊天工具未開啟",
+    "warning_desc": "若要在商店前台顯示 AI 聊天工具，您必須在 Shopify 佈景主題編輯器中開啟應用程式嵌入。",
+    "follow_steps": "請依照以下步驟操作：",
+    "step_1": "點擊上方的 <b>「開啟聊天」</b> 按鈕開啟商店佈景主題編輯器。",
+    "step_2": "在左側欄位中，<b>App embeds</b> 分頁將會自動選取。",
+    "step_3": "確保 <b>「Chat Widget」</b> 切換開關已設定為 <b>開啟 (ON)</b>。",
+    "step_4": "點擊右上角的 <b>儲存 (Save)</b>。",
+    "modal_title": "開啟聊天工具",
+    "modal_content": "您的商店前台尚未開啟 AI 聊天工具。點擊「開啟聊天」開啟 Shopify 佈景主題編輯器並開啟應用程式嵌入。",
+    "refresh_status": "重新整理狀態",
+    "checking_status": "正在檢查狀態..."
+  },
+  "shopify_dashboard": {
+    "title": "AI 智能客服助手"
   }
 }

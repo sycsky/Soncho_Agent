@@ -97,7 +97,6 @@ function App() {
   // ✅ 使用 ref 追踪已经调度的获取任务
   const scheduledFetchesRef = useRef<Set<string>>(new Set());
 
-  // Debug: Monitor session updates
   const setSessions = (action: React.SetStateAction<ChatSession[]>) => {
     _setSessions(prev => {
       const next = typeof action === 'function' ? action(prev) : action;
@@ -131,7 +130,10 @@ function App() {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
 
   // UI States
-  const [activeView, setActiveView] = useState<'DASHBOARD' | 'INBOX' | 'TEAM' | 'CUSTOMERS' | 'ANALYTICS' | 'SETTINGS' | 'WORKFLOW'>('INBOX');
+  const [activeView, setActiveView] = useState<'DASHBOARD' | 'INBOX' | 'TEAM' | 'CUSTOMERS' | 'ANALYTICS' | 'SETTINGS' | 'WORKFLOW'>(() => {
+    const { shop } = getShopifyLaunchParams();
+    return shop ? 'DASHBOARD' : 'INBOX';
+  });
   const [isZenMode, setIsZenMode] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -144,6 +146,9 @@ function App() {
   const [showAgentSwitcher, setShowAgentSwitcher] = useState(false);
   const [showForceChangePasswordModal, setShowForceChangePasswordModal] = useState(false);
   const [connectionError, setConnectionError] = useState(false);
+
+  // Debug: Monitor session updates
+  console.log('App Render State:', { activeView, isShopifyEmbedded, activeSessionId, shop: getShopifyLaunchParams().shop });
 
   useEffect(() => {
     if (currentUser?.language) {
@@ -457,10 +462,13 @@ function App() {
       }));
       const sortedNormalized = [...normalized].sort((a,b) => b.lastActive - a.lastActive);
       const defaultSessionId = sortedNormalized.length > 0 ? sortedNormalized[0].id : undefined;
-      if (defaultSessionId) {
+      const { shop } = getShopifyLaunchParams();
+      const shouldActivate = defaultSessionId && !shop;
+      
+      if (shouldActivate) {
         setActiveSessionId(defaultSessionId);
       }
-      setSessions(sortByOwnershipAndLastActive(sortedNormalized.map(s => (defaultSessionId && s.id === defaultSessionId) ? { ...s, unreadCount: 0 } : s)));
+      setSessions(sortByOwnershipAndLastActive(sortedNormalized.map(s => (shouldActivate && s.id === defaultSessionId) ? { ...s, unreadCount: 0 } : s)));
       setChatGroups(groups);  // ✅ 使用转换后的 groups
       setRoles(data.roles || []);
       setSystemQuickReplies(data.quickReplies || []);
@@ -1673,12 +1681,20 @@ function App() {
                             />
                            </div>
                          ) : (
-                           <div className="hidden lg:flex flex-1 flex-col items-center justify-center bg-gray-50 text-gray-400">
-                             <MessageCircle size={48} className="mb-4 opacity-50" />
-                             <h2 className="text-xl font-semibold">{t('no_conversation_selected')}</h2>
-                             <p className="text-sm mt-2">{t('choose_conversation_hint')}</p>
-                           </div>
-                         )}
+                          isShopifyEmbedded ? (
+                            <ShopifyDashboard
+                              onOpenChat={() => {/* Already in Inbox */}}
+                              onOpenSettings={() => setActiveView('SETTINGS')}
+                              onOpenKnowledge={() => setActiveView('WORKFLOW')}
+                            />
+                          ) : (
+                            <div className="hidden lg:flex flex-1 flex-col items-center justify-center bg-gray-50 text-gray-400">
+                              <MessageCircle size={48} className="mb-4 opacity-50" />
+                              <h2 className="text-xl font-semibold">{t('no_conversation_selected')}</h2>
+                              <p className="text-sm mt-2">{t('choose_conversation_hint')}</p>
+                            </div>
+                          )
+                        )}
 
                          {activeSession && !isZenMode && (
                            <div className="hidden lg:block w-80 shrink-0 h-full overflow-hidden border-l border-gray-200 bg-white">

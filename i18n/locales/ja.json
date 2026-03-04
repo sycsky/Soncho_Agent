@@ -733,6 +733,7 @@
   "specific_customers_selected": "{{count}} 人の特定の顧客が選択されました",
   "start_signal_placeholder": "開始シグナル...",
   "status": "ステータス",
+  "status_explanation_model": "Status Explanation Model",
   "status_busy": "取り込み中",
   "status_completed": "完了",
   "status_failed": "失敗",
@@ -884,7 +885,8 @@
       "end": "終了",
       "transfer": "エージェントに転送",
       "agent": "エージェント",
-      "flow": "フロー"
+      "flow": "フロー",
+      "delay": "Delay Execution"
     },
     "string": "文字列",
     "number": "数値",
@@ -898,7 +900,8 @@
       "knowledge": "関連するコンテキストを取得します",
       "llm": "コンテキストに基づいて回答を生成します",
       "translation": "テキストを対象言語に翻訳します",
-      "end": "ワークフローの終了点"
+      "end": "ワークフローの終了点",
+      "delay": "Delays execution and triggers another workflow"
     },
     "ui": {
       "select_model": "モデルを選択",
@@ -1092,7 +1095,16 @@
     "nodes_count": "ノード",
     "delete_workflow_confirm": "このワークフローを削除してもよろしいですか？",
     "variable_name_example": "例: user_id",
-    "source_field_example": "例: {{LLM.text}}"
+    "source_field_example": "例: {{LLM.text}}",
+    "delay_node": "Delay Execution",
+    "delay_execution_desc": "Delays execution and triggers another workflow.",
+    "delay_node_desc": "Configure delay duration and the target workflow to trigger after the delay.",
+    "delay_minutes": "Delay (Minutes)",
+    "delay_minutes_help": "Max 1440 minutes (24 hours).",
+    "target_workflow": "Target Workflow",
+    "input_data_template": "Input Data Template",
+    "enter_input_data_template": "Enter input data template...",
+    "input_data_help": "Template string processed and passed to the target workflow."
   },
   "workflow_execution": {
     "workflow_label": "ワークフロー:",
@@ -1192,9 +1204,12 @@
     "available_plans": "利用可能なプラン",
     "upgrade": "アップグレード",
     "current_plan": "現在のプラン",
+    "scheduled_plan": "Scheduled Plan",
     "switch_confirm": "{{plan}}プランに変更してもよろしいですか？",
     "switch_success": "{{plan}}プランに正常に変更されました",
     "switch_failed": "プランの変更に失敗しました",
+    "next_plan_scheduled": "Scheduled to switch to {{plan}} on {{date}}",
+    "downgrade_confirm": "This will downgrade your plan to {{plan}} starting from the next billing cycle. Confirm?",
     "cancels_on": "解約予定日",
     "cancelling": "解約手続き中",
     "cancel_confirm": "サブスクリプションを解約してもよろしいですか？現在の請求期間が終了するまでアクセス権は保持されます。",
@@ -1236,5 +1251,27 @@
     "title": "Connection Lost",
     "message": "We cannot connect to the server. Please check your internet connection and try again.",
     "refresh_button": "Refresh Page"
+  },
+  "shopify_app_embed": {
+    "title": "オンラインストアチャット",
+    "on": "オン",
+    "off": "オフ",
+    "manage_chat": "チャットを管理",
+    "enable_chat": "チャットを有効化",
+    "description": "オンラインストアでチャットウィジェットを有効にして、顧客の質問に答えましょう。",
+    "warning_title": "チャットウィジェットが無効です",
+    "warning_desc": "ストアフロントにAIチャットウィジェットを表示するには、Shopifyテーマエディタでアプリの埋め込みを有効にする必要があります。",
+    "follow_steps": "以下の手順に従ってください：",
+    "step_1": "上記の<b>「チャットを有効化」</b>ボタンをクリックして、ストアのテーマエディタを開きます。",
+    "step_2": "左側のサイドバーで、<b>App embeds</b>（アプリの埋め込み）タブが自動的に選択されます。",
+    "step_3": "<b>「Chat Widget」</b>のトグルが<b>ON</b>（オン）になっていることを確認してください。",
+    "step_4": "右上の<b>保存</b>をクリックします。",
+    "modal_title": "チャットウィジェットを有効化",
+    "modal_content": "ストアフロントでAIチャットウィジェットが有効になっていません。「チャットを有効化」をクリックしてShopifyテーマエディタを開き、アプリの埋め込みをオンにしてください。",
+    "refresh_status": "ステータスを更新",
+    "checking_status": "ステータスを確認中..."
+  },
+  "shopify_dashboard": {
+    "title": "AIエージェントアシスタント"
   }
 }

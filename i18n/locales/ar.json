@@ -733,6 +733,7 @@
   "specific_customers_selected": "تم تحديد {{count}} عملاء محددين",
   "start_signal_placeholder": "إشارة البدء...",
   "status": "الحالة",
+  "status_explanation_model": "Status Explanation Model",
   "status_busy": "مشغول",
   "status_completed": "مكتمل",
   "status_failed": "فشل",
@@ -884,7 +885,8 @@
       "end": "نهاية",
       "transfer": "تحويل إلى وكيل",
       "agent": "وكيل",
-      "flow": "تدفق"
+      "flow": "تدفق",
+      "delay": "Delay Execution"
     },
     "string": "سلسلة",
     "number": "رقم",
@@ -898,7 +900,8 @@
       "knowledge": "استرجاع السياق ذي الصلة",
       "llm": "توليد إجابة بناءً على السياق",
       "translation": "ترجمة النص إلى اللغة الهدف",
-      "end": "نقطة خروج سير العمل"
+      "end": "نقطة خروج سير العمل",
+      "delay": "Delays execution and triggers another workflow"
     },
     "ui": {
       "select_model": "اختر النموذج",
@@ -1092,7 +1095,16 @@
     "nodes_count": "عقد",
     "delete_workflow_confirm": "هل أنت متأكد أنك تريد حذف سير العمل هذا?",
     "variable_name_example": "مثال: user_id",
-    "source_field_example": "مثال: {{LLM.text}}"
+    "source_field_example": "مثال: {{LLM.text}}",
+    "delay_node": "Delay Execution",
+    "delay_execution_desc": "Delays execution and triggers another workflow.",
+    "delay_node_desc": "Configure delay duration and the target workflow to trigger after the delay.",
+    "delay_minutes": "Delay (Minutes)",
+    "delay_minutes_help": "Max 1440 minutes (24 hours).",
+    "target_workflow": "Target Workflow",
+    "input_data_template": "Input Data Template",
+    "enter_input_data_template": "Enter input data template...",
+    "input_data_help": "Template string processed and passed to the target workflow."
   },
   "workflow_execution": {
     "workflow_label": "سير العمل:",
@@ -1192,9 +1204,12 @@
     "available_plans": "الخطط المتاحة",
     "upgrade": "ترقية",
     "current_plan": "الخطة الحالية",
+    "scheduled_plan": "Scheduled Plan",
     "switch_confirm": "هل أنت متأكد أنك تريد التبديل إلى خطة {{plan}}؟",
     "switch_success": "تم التبديل بنجاح إلى خطة {{plan}}",
     "switch_failed": "فشل تغيير الخطة",
+    "next_plan_scheduled": "Scheduled to switch to {{plan}} on {{date}}",
+    "downgrade_confirm": "This will downgrade your plan to {{plan}} starting from the next billing cycle. Confirm?",
     "cancels_on": "ينتهي في",
     "cancelling": "جاري الإلغاء",
     "cancel_confirm": "هل أنت متأكد أنك تريد إلغاء اشتراكك؟ ستحتفظ بإمكانية الوصول حتى نهاية فترة الفوترة الحالية.",
@@ -1236,5 +1251,27 @@
     "title": "Connection Lost",
     "message": "We cannot connect to the server. Please check your internet connection and try again.",
     "refresh_button": "Refresh Page"
+  },
+  "shopify_app_embed": {
+    "title": "Online Store Chat",
+    "on": "On",
+    "off": "Off",
+    "manage_chat": "Manage Chat",
+    "enable_chat": "Enable Chat",
+    "description": "Enable the chat widget on your online store to start answering customer questions.",
+    "warning_title": "Chat widget is not enabled",
+    "warning_desc": "To display the AI chat widget on your storefront, you must enable the App Embed in your Shopify Theme Editor.",
+    "follow_steps": "Follow these steps:",
+    "step_1": "Click the <b>\"Enable Chat\"</b> button above to open your store's Theme Editor.",
+    "step_2": "In the left sidebar, the <b>App embeds</b> tab will be automatically selected.",
+    "step_3": "Ensure the <b>\"Chat Widget\"</b> toggle is switched to <b>ON</b>.",
+    "step_4": "Click <b>Save</b> in the top right corner.",
+    "modal_title": "Enable Chat Widget",
+    "modal_content": "The AI chat widget is not enabled on your storefront. Click \"Enable Chat\" to open the Shopify Theme Editor and turn on the App Embed.",
+    "refresh_status": "Refresh Status",
+    "checking_status": "Checking Status..."
+  },
+  "shopify_dashboard": {
+    "title": "AI Agent Assistant"
   }
 }

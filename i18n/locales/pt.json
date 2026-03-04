@@ -733,6 +733,7 @@
   "specific_customers_selected": "{{count}} clientes específicos selecionados",
   "start_signal_placeholder": "Sinal de início...",
   "status": "Status",
+  "status_explanation_model": "Status Explanation Model",
   "status_busy": "Ocupado",
   "status_completed": "CONCLUÍDO",
   "status_failed": "FALHOU",
@@ -884,7 +885,8 @@
       "end": "Fim",
       "transfer": "Transferir para agente",
       "agent": "Agente",
-      "flow": "Fluxo"
+      "flow": "Fluxo",
+      "delay": "Delay Execution"
     },
     "string": "String",
     "number": "Número (Number)",
@@ -898,7 +900,8 @@
       "knowledge": "Recuperar contexto relevante",
       "llm": "Gerar resposta com base no contexto",
       "translation": "Traduzir texto para o idioma de destino",
-      "end": "Ponto de Saída do Fluxo de Trabalho"
+      "end": "Ponto de Saída do Fluxo de Trabalho",
+      "delay": "Delays execution and triggers another workflow"
     },
     "ui": {
       "select_model": "Selecionar Modelo",
@@ -1092,7 +1095,16 @@
     "nodes_count": "nós",
     "delete_workflow_confirm": "Tem certeza de que deseja excluir este fluxo de trabalho?",
     "variable_name_example": "ex: user_id",
-    "source_field_example": "ex: {{LLM.text}}"
+    "source_field_example": "ex: {{LLM.text}}",
+    "delay_node": "Delay Execution",
+    "delay_execution_desc": "Delays execution and triggers another workflow.",
+    "delay_node_desc": "Configure delay duration and the target workflow to trigger after the delay.",
+    "delay_minutes": "Delay (Minutes)",
+    "delay_minutes_help": "Max 1440 minutes (24 hours).",
+    "target_workflow": "Target Workflow",
+    "input_data_template": "Input Data Template",
+    "enter_input_data_template": "Enter input data template...",
+    "input_data_help": "Template string processed and passed to the target workflow."
   },
   "workflow_execution": {
     "workflow_label": "Fluxo de Trabalho:",
@@ -1192,9 +1204,12 @@
     "available_plans": "Planos Disponíveis",
     "upgrade": "Atualizar",
     "current_plan": "Plano Atual",
+    "scheduled_plan": "Scheduled Plan",
     "switch_confirm": "Tem certeza de que deseja mudar para o plano {{plan}}?",
     "switch_success": "Mudou para o plano {{plan}} com sucesso",
     "switch_failed": "Falha ao mudar de plano",
+    "next_plan_scheduled": "Scheduled to switch to {{plan}} on {{date}}",
+    "downgrade_confirm": "This will downgrade your plan to {{plan}} starting from the next billing cycle. Confirm?",
     "cancels_on": "Cancela em",
     "cancelling": "Cancelando",
     "cancel_confirm": "Tem certeza que deseja cancelar sua assinatura? Você manterá o acesso até o final do período de cobrança atual.",
@@ -1236,5 +1251,27 @@
     "title": "Connection Lost",
     "message": "We cannot connect to the server. Please check your internet connection and try again.",
     "refresh_button": "Refresh Page"
+  },
+  "shopify_app_embed": {
+    "title": "Chat da Loja Online",
+    "on": "Ligado",
+    "off": "Desligado",
+    "manage_chat": "Gerenciar Chat",
+    "enable_chat": "Ativar Chat",
+    "description": "Ative o widget de chat em sua loja online para começar a responder às perguntas dos clientes.",
+    "warning_title": "O widget de chat não está ativado",
+    "warning_desc": "Para exibir o widget de chat de IA em sua vitrine, você deve ativar a incorporação do aplicativo no Editor de Temas do Shopify.",
+    "follow_steps": "Siga estas etapas:",
+    "step_1": "Clique no botão <b>\"Ativar Chat\"</b> acima para abrir o Editor de Temas da sua loja.",
+    "step_2": "Na barra lateral esquerda, a guia <b>App embeds</b> será selecionada automaticamente.",
+    "step_3": "Certifique-se de que a opção <b>\"Chat Widget\"</b> esteja alterada para <b>ON</b>.",
+    "step_4": "Clique em <b>Salvar</b> no canto superior direito. ",
+    "modal_title": "Ativar Widget de Chat",
+    "modal_content": "O widget de chat de IA não está ativado em sua vitrine. Clique em \"Ativar Chat\" para abrir o Editor de Temas do Shopify e ativar a incorporação do aplicativo.",
+    "refresh_status": "Atualizar Status",
+    "checking_status": "Verificando Status..."
+  },
+  "shopify_dashboard": {
+    "title": "Assistente de Agente de IA"
   }
 }
