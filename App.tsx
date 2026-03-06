@@ -1636,6 +1636,7 @@ function App() {
                         onOpenChat={() => setActiveView('INBOX')}
                         onOpenSettings={() => setActiveView('SETTINGS')}
                         onOpenKnowledge={() => setActiveView('WORKFLOW')}
+                        suppressAppEmbedModal={showForceChangePasswordModal}
                       />
                     </div>
                   )}

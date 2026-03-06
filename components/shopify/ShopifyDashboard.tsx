@@ -31,12 +31,14 @@ interface ShopifyDashboardProps {
   onOpenChat?: () => void;
   onOpenSettings?: () => void;
   onOpenKnowledge?: () => void;
+  suppressAppEmbedModal?: boolean;
 }
 
 export const ShopifyDashboard: React.FC<ShopifyDashboardProps> = ({
   onOpenChat,
   onOpenSettings,
-  onOpenKnowledge
+  onOpenKnowledge,
+  suppressAppEmbedModal = false
 }) => {
   const { t } = useTranslation();
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
@@ -64,7 +66,7 @@ export const ShopifyDashboard: React.FC<ShopifyDashboardProps> = ({
       <Layout>
         {shop && (
           <Layout.Section>
-            <AppEmbedGuide shop={shop} />
+            <AppEmbedGuide shop={shop} suppressModal={suppressAppEmbedModal} />
           </Layout.Section>
         )}
       </Layout>

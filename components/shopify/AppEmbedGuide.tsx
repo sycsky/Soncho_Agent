@@ -5,9 +5,10 @@ import api from '../../services/api';
 
 export interface AppEmbedGuideProps {
   shop: string;
+  suppressModal?: boolean;
 }
 
-export const AppEmbedGuide: React.FC<AppEmbedGuideProps> = ({ shop }) => {
+export const AppEmbedGuide: React.FC<AppEmbedGuideProps> = ({ shop, suppressModal = false }) => {
   const { t } = useTranslation();
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
@@ -97,7 +98,7 @@ export const AppEmbedGuide: React.FC<AppEmbedGuideProps> = ({ shop }) => {
         </Card>
         
         <Modal
-            open={showModal}
+            open={showModal && !suppressModal}
             onClose={handleCloseModal}
             title={t('shopify_app_embed.modal_title')}
             primaryAction={{
