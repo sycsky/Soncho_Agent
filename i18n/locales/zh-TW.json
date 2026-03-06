@@ -1192,6 +1192,18 @@
       "any_time": "任何時間"
     }
   },
+  "subscription": {
+    "subscription_details": "訂閱詳情",
+    "current_plan": "目前方案",
+    "active": "活躍",
+    "billing_cycle_ends": "計費週期結束於 {{date}}",
+    "next_billing_cycle": "下一個計費週期",
+    "scheduled": "已排程",
+    "starts_on": "開始於 {{date}}",
+    "price_per_month": "${{price}}/月",
+    "select_plan": "選擇方案",
+    "subtitle": "選擇最適合您業務需求的方案"
+  },
   "billing": {
     "title": "訂閱與計費",
     "current_subscription": "當前訂閱",

@@ -1,15 +1,37 @@
-import React, { useState } from 'react';
-import { Page, Layout, Card, BlockStack, Text, Button, Grid, List, Box, Badge, Banner } from '@shopify/polaris';
-import { CheckIcon } from '@shopify/polaris-icons';
+import React, { useState, useEffect } from 'react';
+import { Page, Layout, Card, BlockStack, Text, Button, Grid, Box, Badge, Banner, Divider, InlineStack } from '@shopify/polaris';
+import { CheckIcon, CalendarIcon } from '@shopify/polaris-icons';
+import { useTranslation } from 'react-i18next';
 import { SHOPIFY_PLANS, createSubscription, PricingPlan } from '../../services/shopifyBillingService';
+import { billingApi, Subscription } from '../../services/billingApi';
 
 interface ShopifyBillingProps {
   shop: string;
 }
 
 export const ShopifyBilling: React.FC<ShopifyBillingProps> = ({ shop }) => {
+  const { t } = useTranslation();
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [loadingSubscription, setLoadingSubscription] = useState(true);
+
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      try {
+        const response = await billingApi.getCurrentSubscription();
+        setSubscription(response.data);
+      } catch (err) {
+        console.error('Failed to fetch subscription', err);
+      } finally {
+        setLoadingSubscription(false);
+      }
+    };
+
+    if (shop) {
+      fetchSubscription();
+    }
+  }, [shop]);
 
   const handleSelectPlan = async (plan: PricingPlan) => {
     setLoadingPlanId(plan.id);
@@ -26,9 +48,65 @@ export const ShopifyBilling: React.FC<ShopifyBillingProps> = ({ shop }) => {
     }
   };
 
+  const renderCurrentSubscription = () => {
+    if (!subscription) return null;
+
+    const hasNextPlan = subscription.nextPlan && subscription.nextBillingDate;
+
+    return (
+      <Layout.Section>
+        <Card>
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">{t('subscription.subscription_details', 'Subscription Details')}</Text>
+            
+            <Grid>
+                <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
+                    <BlockStack gap="200">
+                        <Text as="h3" variant="headingSm" tone="subdued">{t('subscription.current_plan', 'Current Plan')}</Text>
+                        <InlineStack gap="200" blockAlign="center">
+                            <Text as="span" variant="headingLg">{subscription.plan}</Text>
+                            <Badge tone="success">{t('subscription.active', 'Active')}</Badge>
+                        </InlineStack>
+                        <Text as="p" tone="subdued">
+                            {t('subscription.billing_cycle_ends', 'Billing cycle ends on {{date}}', { date: new Date(subscription.currentPeriodEnd).toLocaleDateString() })}
+                        </Text>
+                    </BlockStack>
+                </Grid.Cell>
+
+                {hasNextPlan && (
+                    <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
+                        <BlockStack gap="200">
+                            <Text as="h3" variant="headingSm" tone="subdued">{t('subscription.next_billing_cycle', 'Next Billing Cycle')}</Text>
+                            <InlineStack gap="200" blockAlign="center">
+                                <Text as="span" variant="headingLg">{subscription.nextPlan}</Text>
+                                <Badge tone="info">{t('subscription.scheduled', 'Scheduled')}</Badge>
+                            </InlineStack>
+                            <InlineStack gap="200" blockAlign="center">
+                                <Box as="span"><CalendarIcon width={16} /></Box>
+                                <Text as="p" tone="subdued">
+                                    {t('subscription.starts_on', 'Starts on {{date}}', { date: new Date(subscription.nextBillingDate!).toLocaleDateString() })}
+                                </Text>
+                            </InlineStack>
+                             {subscription.nextPrice !== undefined && (
+                                <Text as="p" fontWeight="bold">
+                                    {t('subscription.price_per_month', '${{price}}/month', { price: subscription.nextPrice })}
+                                </Text>
+                             )}
+                        </BlockStack>
+                    </Grid.Cell>
+                )}
+            </Grid>
+          </BlockStack>
+        </Card>
+      </Layout.Section>
+    );
+  };
+
   return (
-    <Page title="Select a Plan" subtitle="Choose the best plan for your business needs">
+    <Page title={t('subscription.select_plan', 'Select a Plan')} subtitle={t('subscription.subtitle', 'Choose the best plan for your business needs')}>
       <Layout>
+        {renderCurrentSubscription()}
+
         {error && (
           <Layout.Section>
             <Banner tone="critical" onDismiss={() => setError(null)}>

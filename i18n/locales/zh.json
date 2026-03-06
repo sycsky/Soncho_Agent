@@ -1192,6 +1192,18 @@
       "any_time": "任何时间"
     }
   },
+  "subscription": {
+    "subscription_details": "订阅详情",
+    "current_plan": "当前计划",
+    "active": "活跃",
+    "billing_cycle_ends": "计费周期结束于 {{date}}",
+    "next_billing_cycle": "下一个计费周期",
+    "scheduled": "已安排",
+    "starts_on": "开始于 {{date}}",
+    "price_per_month": "${{price}}/月",
+    "select_plan": "选择计划",
+    "subtitle": "选择最适合您业务需求的计划"
+  },
   "billing": {
     "title": "订阅与计费",
     "current_subscription": "当前订阅",

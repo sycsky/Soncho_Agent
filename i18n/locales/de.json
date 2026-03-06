@@ -1192,6 +1192,18 @@
       "any_time": "Jederzeit"
     }
   },
+  "subscription": {
+    "subscription_details": "Subscription Details",
+    "current_plan": "Current Plan",
+    "active": "Active",
+    "billing_cycle_ends": "Billing cycle ends on {{date}}",
+    "next_billing_cycle": "Next Billing Cycle",
+    "scheduled": "Scheduled",
+    "starts_on": "Starts on {{date}}",
+    "price_per_month": "${{price}}/month",
+    "select_plan": "Select a Plan",
+    "subtitle": "Choose the best plan for your business needs"
+  },
   "billing": {
     "title": "Abrechnung & Abonnement",
     "current_subscription": "Aktuelles Abonnement",

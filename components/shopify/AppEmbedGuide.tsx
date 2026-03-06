@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, BlockStack, InlineStack, Text, Button, Banner, Badge, Modal, List } from '@shopify/polaris';
+import { Card, BlockStack, InlineStack, Text, Button, Banner, Badge, List } from '@shopify/polaris';
 import { useTranslation, Trans } from 'react-i18next';
 import api from '../../services/api';
 
@@ -12,7 +12,6 @@ export const AppEmbedGuide: React.FC<AppEmbedGuideProps> = ({ shop, suppressModa
   const { t } = useTranslation();
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
-  const [showModal, setShowModal] = useState(false);
 
   // Extension UUID from environment variables
   const EXTENSION_UUID = import.meta.env.VITE_SHOPIFY_EXTENSION_UUID;
@@ -27,9 +26,6 @@ export const AppEmbedGuide: React.FC<AppEmbedGuideProps> = ({ shop, suppressModa
         console.log('App Embed status:', data);
 
         setEnabled(data.enabled);
-        if (data.enabled === false) {
-            setShowModal(true);
-        }
     } catch (e) {
         console.error("Failed to check status", e);
     } finally {
@@ -44,10 +40,6 @@ export const AppEmbedGuide: React.FC<AppEmbedGuideProps> = ({ shop, suppressModa
   const handleOpenThemeEditor = () => {
     const url = `https://${shop}/admin/themes/current/editor?context=apps&activateAppId=${EXTENSION_UUID}/${APP_EMBED_HANDLE}`;
     window.open(url, '_blank');
-  };
-
-  const handleCloseModal = () => {
-      setShowModal(false);
   };
 
   return (
@@ -96,49 +88,6 @@ export const AppEmbedGuide: React.FC<AppEmbedGuideProps> = ({ shop, suppressModa
             )}
         </BlockStack>
         </Card>
-        
-        <Modal
-            open={showModal && !suppressModal}
-            onClose={handleCloseModal}
-            title={t('shopify_app_embed.modal_title')}
-            primaryAction={{
-                content: t('shopify_app_embed.enable_chat'),
-                onAction: handleOpenThemeEditor,
-            }}
-            secondaryActions={[
-                {
-                    content: t('shopify_app_embed.refresh_status'),
-                    onAction: checkStatus,
-                    loading: loading
-                },
-                {
-                    content: t('close', { defaultValue: 'Close' }),
-                    onAction: handleCloseModal,
-                }
-            ]}
-        >
-            <Modal.Section>
-                <BlockStack gap="400">
-                    <Text as="p">
-                        {t('shopify_app_embed.modal_content')}
-                    </Text>
-                    <List type="number">
-                        <List.Item>
-                            <span dangerouslySetInnerHTML={{ __html: t('shopify_app_embed.step_1') }} />
-                        </List.Item>
-                        <List.Item>
-                            <span dangerouslySetInnerHTML={{ __html: t('shopify_app_embed.step_2') }} />
-                        </List.Item>
-                        <List.Item>
-                            <span dangerouslySetInnerHTML={{ __html: t('shopify_app_embed.step_3') }} />
-                        </List.Item>
-                        <List.Item>
-                            <span dangerouslySetInnerHTML={{ __html: t('shopify_app_embed.step_4') }} />
-                        </List.Item>
-                    </List>
-                </BlockStack>
-            </Modal.Section>
-        </Modal>
     </>
   );
 };
