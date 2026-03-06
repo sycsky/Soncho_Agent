@@ -64,7 +64,7 @@ export const ShopifyDashboard: React.FC<ShopifyDashboardProps> = ({
   return (
     <Page title={t('shopify_dashboard.title')} primaryAction={<Button variant="primary" onClick={onOpenSettings}>{t('settings')}</Button>}>
       <Layout>
-        {shop && (
+        {shop && !suppressAppEmbedModal && (
           <Layout.Section>
             <AppEmbedGuide shop={shop} suppressModal={suppressAppEmbedModal} />
           </Layout.Section>
